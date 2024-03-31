@@ -1,0 +1,6 @@
+**cron job path in virtualmin **
+/usr/bin/php /home/moodle.medi-wiki.com/public_html/admin/cli/cron.php
+search cron in left-webmin menu and add as a root user- above mentioned command
+
+**php extensions check while migrating to another virtualmin vps**
+  soap, zip, 
