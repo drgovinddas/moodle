@@ -4,3 +4,7 @@ search cron in left-webmin menu and add as a root user- above mentioned command
 
 **php extensions check while migrating to another virtualmin vps**
   soap, zip, 
+**php settings**
+/etc/php/fpm/php.ini
+max_upload_file   search it, and modify size, remove ; or ; from beginning
+max_input_vars     set to 5000
