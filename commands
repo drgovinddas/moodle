@@ -11,8 +11,9 @@ reboot
 ****extract moodle folder & point to domain registrar at last****
 **Afer installation, change php.ini max upload file size inside as mentioned above**
 
-****cron job path in virtualmin- from left WEBMIN> SYSTEM >scheduled cron job ****
+**If an error for cloudflare domains come about "installation must be finished from original IP addresses, sorry !" then ignore it and press continue. Do this steps after reboot server again if required**
 
+****cron job path in virtualmin- from left WEBMIN> SYSTEM >scheduled cron job ****
 **select installed user only, and tick all minutes right button (time and date selected below radio button, don't mess with time and date actually, default one is proper**
 
 /usr/bin/php /home/moodle.medi-wiki.com/public_html/admin/cli/cron.php    (replace domain name with your own)
