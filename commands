@@ -1,10 +1,21 @@
-**cron job path in virtualmin **
-/usr/bin/php /home/moodle.medi-wiki.com/public_html/admin/cli/cron.php
-search cron in left-webmin menu and add as a root user- above mentioned command
+********for moodle installation ************
+apt install php-zip php-soap php-intl -y
 
-**php extensions check while migrating to another virtualmin vps**
-  soap, zip, 
-**php settings**
-/etc/php/fpm/php.ini
-upload_max_filesize = 2M  change to whatever-  remove ; or ; from beginning
-max_input_vars     set to 5000
+max_input_vars=5000  
+do it in core php.ini file at     /etc/php/8.1/fpm/php.ini
+
+****If you want to change upload file size limit- do same in this php.ini file and then after moodle install, do it in installation php.ini file***
+max_upload_filesize - change to whatever M
+
+reboot
+****extract moodle folder & point to domain registrar at last****
+**Afer installation, change php.ini max upload file size inside as mentioned above**
+
+****cron job path in virtualmin- from left WEBMIN> SYSTEM >scheduled cron job ****
+
+**select installed user only, and tick all minutes right button (time and date selected below radio button, don't mess with time and date actually, default one is proper**
+
+/usr/bin/php /home/moodle.medi-wiki.com/public_html/admin/cli/cron.php    (replace domain name with your own)
+
+**paste same in comment, and command both. After saving, go back and press run now, then check inside moodle notifications menu**
+
