@@ -27,5 +27,5 @@ if (!file_exists($configfile)) {
     header("Location: install.php");
     die;
 }
-
+// echo $configfile;die;
 require($configfile);

@@ -1,0 +1,1323 @@
+<?php
+// This file is part of mod_grouptool for Moodle - http://moodle.org/
+//
+// It is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// It is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * This file contains the moodle hooks for the grouptool module.
+ *
+ * @package   mod_grouptool
+ * @author    Philipp Hager
+ * @author    Anne Kreppenhofer
+ * @copyright 2024 Academic Moodle Cooperation {@link http://www.academic-moodle-cooperation.org}
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+defined('MOODLE_INTERNAL') || die();
+
+require_once(dirname(__FILE__) . '/definitions.php');
+
+/*******************************************************************************
+ * Moodle core API                                                             *
+ *******************************************************************************/
+
+/**
+ * Returns the information on whether the module supports a feature
+ *
+ * @param string $feature FEATURE_xx constant for requested feature
+ * @return mixed true if the feature is supported, null if unknown
+ * @see plugin_supports() in lib/moodlelib.php
+ */
+function grouptool_supports($feature) {
+    return match ($feature) {
+        FEATURE_COMPLETION_TRACKS_VIEWS,
+        FEATURE_COMPLETION_HAS_RULES,
+        FEATURE_SHOW_DESCRIPTION,
+        FEATURE_BACKUP_MOODLE2,
+        FEATURE_MOD_INTRO,
+        FEATURE_IDNUMBER => true,
+        FEATURE_MOD_ARCHETYPE => MOD_ARCHETYPE_OTHER,
+        FEATURE_MOD_PURPOSE => MOD_PURPOSE_ADMINISTRATION,
+        default => null,
+    };
+}
+
+/**
+ * Callback which returns human-readable strings describing the active completion custom rules for the module instance.
+ *
+ * @param cm_info|stdClass $cm object with fields ->completion and ->customdata['customcompletionrules']
+ * @return array $descriptions the array of descriptions for the custom rules.
+ */
+function mod_grouptool_get_completion_active_rule_descriptions($cm) {
+    // Values will be present in cm_info, and we assume these are up to date.
+    if (
+        empty($cm->customdata['customcompletionrules'])
+        || $cm->completion != COMPLETION_TRACKING_AUTOMATIC
+    ) {
+        return [];
+    }
+
+    $descriptions = [];
+    foreach ($cm->customdata['customcompletionrules'] as $key => $val) {
+        switch ($key) {
+            case 'completionregister':
+                if (!empty($val)) {
+                    $descriptions[] = get_string('completionregister', 'grouptool');
+                }
+                break;
+            default:
+                break;
+        }
+    }
+    return $descriptions;
+}
+
+/**
+ * Saves a new instance of the grouptool into the database
+ *
+ * Given an object containing all the necessary data,
+ * (defined by the form in mod_form.php) this function
+ * will create a new instance and return the id number
+ * of the new instance.
+ *
+ * @param stdClass $grouptool An object from the form in mod_form.php
+ * @return bool|int The id of the newly inserted grouptool record
+ * @throws coding_exception
+ * @throws dml_exception
+ */
+function grouptool_add_instance(stdClass $grouptool) {
+    global $DB;
+
+    $grouptool->timecreated = time();
+
+    if (!isset($grouptool->use_size)) {
+        $grouptool->use_size = 0;
+    }
+    if (!isset($grouptool->use_queue)) {
+        $grouptool->use_queue = 0;
+    }
+    if (!isset($grouptool->users_queues_limit) || empty($grouptool->limit_users_queues)) {
+        $grouptool->users_queues_limit = 0;
+    }
+    if (!isset($grouptool->groups_queues_limit) || empty($grouptool->limit_groups_queues)) {
+        $grouptool->groups_queues_limit = 0;
+    }
+    if (!isset($grouptool->allow_multiple)) {
+        $grouptool->allow_multiple = 0;
+        $grouptool->choose_min = 0;
+        $grouptool->choose_max = 1;
+    } else {
+        $grouptool->choose_min = clean_param($grouptool->choose_min, PARAM_INT);
+        $grouptool->choose_max = clean_param($grouptool->choose_max, PARAM_INT);
+    }
+
+    $grouptool->grpsize = clean_param($grouptool->grpsize, PARAM_INT);
+
+    $return = $DB->insert_record('grouptool', $grouptool);
+
+    grouptool_refresh_events($grouptool->course, $return);
+
+    $coursegroups = $DB->get_fieldset_select('groups', 'id', 'courseid = ?', [$grouptool->course]);
+    foreach ($coursegroups as $groupid) {
+        if (
+            !$DB->record_exists('grouptool_agrps', [
+                'grouptoolid' => $return,
+                'groupid' => $groupid,
+            ])
+        ) {
+            $record = new stdClass();
+            $record->grouptoolid = $return;
+            $record->groupid = $groupid;
+            $record->sort_order = 9999999;
+            $record->grpsize = $grouptool->grpsize;
+            $record->active = 0;
+            $DB->insert_record('grouptool_agrps', $record);
+        }
+    }
+
+    return $return;
+}
+
+/**
+ * Updates an instance of the grouptool in the database
+ *
+ * Given an object containing all the necessary data,
+ * (defined by the form in mod_form.php) this function
+ * will update an existing instance with new data.
+ *
+ * @param stdClass $grouptool An object from the form in mod_form.php
+ * @return bool Success/Fail
+ * @throws coding_exception
+ * @throws dml_exception
+ * @throws moodle_exception
+ */
+function grouptool_update_instance(stdClass $grouptool) {
+    global $DB, $CFG;
+
+    $grouptool->timemodified = time();
+    $grouptool->id = $grouptool->instance;
+
+    if (!isset($grouptool->use_size)) {
+        $grouptool->use_size = 0;
+    }
+    if (!isset($grouptool->use_queue) || ($grouptool->use_size == 0)) {
+        $queues = $DB->count_records_sql("SELECT COUNT(DISTINCT queues.id) AS count
+                                            FROM {grouptool_agrps} agrps
+                                       LEFT JOIN {grouptool_queued} queues ON queues.agrpid = agrps.id
+                                           WHERE agrps.grouptoolid = ? AND agrps.active = 1", [$grouptool->instance]);
+        if (!empty($queues)) {
+            $grouptool->use_queue = 1;
+        } else {
+            $grouptool->use_queue = 0;
+            $grouptool->users_queues_limit = 0;
+            $grouptool->groups_queues_limit = 0;
+        }
+    }
+    if (!isset($grouptool->users_queues_limit) || empty($grouptool->limit_users_queues)) {
+        $grouptool->users_queues_limit = 0;
+    }
+    if (!isset($grouptool->groups_queues_limit) || empty($grouptool->limit_groups_queues)) {
+        $grouptool->groups_queues_limit = 0;
+    }
+    if (!isset($grouptool->allow_multiple)) {
+        $grouptool->allow_multiple = 0;
+    }
+
+    $grouptool->grpsize = clean_param($grouptool->grpsize, PARAM_INT);
+    $grouptool->choose_min = clean_param($grouptool->choose_min, PARAM_INT);
+    $grouptool->choose_max = clean_param($grouptool->choose_max, PARAM_INT);
+
+    // Register students if immediate registration has been turned on!
+    if ($grouptool->immediate_reg) {
+        require_once($CFG->dirroot . '/mod/grouptool/locallib.php');
+        $cmid = $grouptool->coursemodule;
+        $cm = get_coursemodule_from_id('grouptool', $cmid);
+        $course = $DB->get_record('course', ['id' => $cm->course]);
+        $instance = new mod_grouptool($cmid, $grouptool, $cm, $course);
+        $instance->push_registrations();
+    }
+
+    grouptool_refresh_events($grouptool->course, $grouptool);
+
+    $coursegroups = $DB->get_fieldset_select('groups', 'id', 'courseid = ?', [$grouptool->course]);
+    foreach ($coursegroups as $groupid) {
+        if (
+            !$DB->record_exists('grouptool_agrps', [
+                'grouptoolid' => $grouptool->instance,
+                'groupid' => $groupid,
+            ])
+        ) {
+            $record = new stdClass();
+            $record->grouptoolid = $grouptool->instance;
+            $record->groupid = $groupid;
+            $record->sort_order = 9999999;
+            $record->grpsize = $grouptool->grpsize;
+            $record->active = 0;
+            $DB->insert_record('grouptool_agrps', $record);
+        }
+    }
+
+    // We have to override the functions fetching of data, because it's not updated yet!
+    grouptool_update_queues($grouptool);
+
+    return $DB->update_record('grouptool', $grouptool);
+}
+
+/**
+ * Make sure up-to-date events are created for all grouptool instances
+ *
+ * This standard function will check all instances of this module
+ * and make sure there are up-to-date vents created for each of them.
+ * If courseid = 0, then every grouptool event in the site is checked, else
+ * only grouptool events belonging to the course specified are checked.
+ * This function is used, in it's new format, by restore_refresh_events()
+ *
+ * TODO this callback changed in 3.3.2 and we quick fixed it but should take a look at at for 3.4!
+ *
+ * @param int $courseid
+ * @param int|stdClass $instance Assign module instance or ID.
+ * @param int|stdClass $cm Course module object or ID (not used in this module).
+ * @return bool
+ * @throws coding_exception
+ * @throws dml_exception
+ */
+function grouptool_refresh_events($courseid = 0, $instance = null, $cm = null) {
+    global $DB, $CFG;
+    require_once($CFG->dirroot . '/calendar/lib.php');
+
+    // If we have instance information then we can just update the one event instead of updating all events.
+    if (isset($instance)) {
+        if (!is_object($instance)) {
+            $instance = $DB->get_record('grouptool', ['id' => $instance], '*', MUST_EXIST);
+        }
+        $grouptools = [$instance->id => $instance];
+    } else {
+        $cond = [];
+
+        if ($courseid) {
+            // Make sure that the course id is numeric.
+            if (!is_numeric($courseid)) {
+                return false;
+            }
+            $cond['course'] = $courseid;
+        }
+
+        if (!$grouptools = $DB->get_records('grouptool', $cond)) {
+            return true;
+        }
+    }
+
+    if ($grouptools) {
+        foreach ($grouptools as $grouptool) {
+            if (count($grouptools) > 1 || !isset($cm) || !is_object($cm)) {
+                $cm = get_coursemodule_from_instance('grouptool', $grouptool->id);
+            }
+
+            // Start with creating the event.
+            $event = new stdClass();
+            $event->modulename = 'grouptool';
+            $event->courseid = $grouptool->course;
+            $event->groupid = 0;
+            $event->userid = 0;
+            $event->instance = $grouptool->id;
+            $event->name = $grouptool->name;
+            $event->type = CALENDAR_EVENT_TYPE_ACTION;
+
+            if (!empty($grouptool->intro)) {
+                if (!$cm) {
+                    // Convert the links to pluginfile. It is a bit hacky but at this stage the files.
+                    // might not have been saved in the module area yet..
+                    $intro = $grouptool->intro;
+                    if ($draftid = file_get_submitted_draft_itemid('introeditor')) {
+                        $intro = file_rewrite_urls_to_pluginfile($intro, $draftid);
+                    }
+
+                    // We need to remove the links to files as the calendar is not ready.
+                    // to support module events with file areas.
+                    $intro = strip_pluginfile_content($intro);
+                    $event->description = [
+                        'text' => $intro,
+                        'format' => $grouptool->introformat,
+                    ];
+                } else {
+                    $event->description = format_module_intro('grouptool', $grouptool, $cm->id);
+                }
+            }
+
+            if ($grouptool->timeavailable) {
+                $event->eventtype = GROUPTOOL_EVENT_TYPE_AVAILABLEFROM;
+                $event->name = get_string('calendaravailable', 'grouptool', $grouptool->name);
+
+                $event->timestart = $grouptool->timeavailable;
+                $event->timesort = $grouptool->timeavailable;
+                $select = "modulename = :modulename
+                           AND instance = :instance
+                           AND eventtype = :eventtype
+                           AND groupid = 0
+                           AND courseid <> 0";
+                $params = ['modulename' => 'grouptool', 'instance' => $grouptool->id, 'eventtype' => $event->eventtype];
+                $event->id = $DB->get_field_select('event', 'id', $select, $params);
+
+                // Now process the event.
+                if ($event->id) {
+                    $calendarevent = calendar_event::load($event->id);
+                    $calendarevent->update($event, false);
+                } else {
+                    calendar_event::create($event, false);
+                }
+            } else {
+                $DB->delete_records('event', [
+                    'modulename' => 'grouptool', 'instance' => $grouptool->id,
+                    'eventtype' => GROUPTOOL_EVENT_TYPE_AVAILABLEFROM,
+                ]);
+            }
+            if ($grouptool->timedue) {
+                $event->eventtype = GROUPTOOL_EVENT_TYPE_DUE;
+                $event->name = get_string('calendardue', 'grouptool', $grouptool->name);
+
+                $event->timestart = $grouptool->timedue;
+                $event->timesort = $grouptool->timedue;
+                $select = "modulename = :modulename
+                           AND instance = :instance
+                           AND eventtype = :eventtype
+                           AND groupid = 0
+                           AND courseid <> 0";
+                $params = ['modulename' => 'grouptool', 'instance' => $grouptool->id, 'eventtype' => $event->eventtype];
+                $event->id = $DB->get_field_select('event', 'id', $select, $params);
+
+                // Now process the event.
+                if ($event->id) {
+                    $calendarevent = calendar_event::load($event->id);
+                    $calendarevent->update($event, false);
+                } else {
+                    calendar_event::create($event, false);
+                }
+            } else {
+                $DB->delete_records('event', [
+                    'modulename' => 'grouptool', 'instance' => $grouptool->id,
+                    'eventtype' => GROUPTOOL_EVENT_TYPE_DUE,
+                ]);
+            }
+        }
+    }
+    return true;
+}
+
+/**
+ * Callback to fetch the activity event type lang string.
+ *
+ * @param string $eventtype The event type.
+ * @return lang_string The event type lang string.
+ */
+function mod_grouptool_core_calendar_get_event_action_string(string $eventtype): string {
+    $modulename = get_string('modulename', 'grouptool');
+
+    switch ($eventtype) {
+        case GROUPTOOL_EVENT_TYPE_DUE:
+            $identifier = 'calendardue';
+            break;
+        case GROUPTOOL_EVENT_TYPE_AVAILABLEFROM:
+            $identifier = 'calendaravailable';
+            break;
+        default:
+            return get_string('requiresaction', 'calendar', $modulename);
+    }
+    return get_string($identifier, 'grouptool', $modulename);
+}
+
+/**
+ * function looks through all the queues and moves users from queue to reg if there's place
+ *
+ * @param int|stdClass $grouptool grouptool object or grouptoolid
+ * @throws coding_exception
+ * @throws dml_exception
+ */
+function grouptool_update_queues(int|stdClass $grouptool = 0): void {
+    global $DB, $OUTPUT, $CFG;
+    // Update queues and move users from queue to reg if there's place!
+    if (!is_object($grouptool)) {
+        $grouptool = $DB->get_record('grouptool', ['id' => $grouptool], MUST_EXIST);
+        $grouptool->instance = $grouptool->id;
+    } else {
+        $grouptool->instance = $grouptool->id;
+    }
+
+    if ($agrps = $DB->get_records('grouptool_agrps', ['grouptoolid' => $grouptool->instance])) {
+        [$agrpsql, $params] = $DB->get_in_or_equal(array_keys($agrps));
+        $groupregs = $DB->get_records_sql_menu('SELECT agrpid, COUNT(id)
+                                                  FROM {grouptool_registered}
+                                                 WHERE agrpid ' . $agrpsql . ' AND modified_by >= 0
+                                              GROUP BY agrpid', $params);
+        foreach ($agrps as $agrpid => $agrp) {
+            $size = empty($agrp->grpsize) ? $grouptool->grpsize : $agrp->grpsize;
+            $min = empty($grouptool->allow_multiple) ? 0 : $grouptool->choose_min;
+            $max = empty($grouptool->allow_multiple) ? 1 : $grouptool->choose_max;
+            // We use MAX to trick Postgres into thinking this is an full GROUP BY statement.
+            $sql = "SELECT queued.id AS id, MAX(queued.agrpid) AS agrpid, MAX(queued.timestamp) AS timestamp,
+                           MAX(queued.userid) AS userid, (regs < ?) AS priority, MAX(reg.regs) AS regs
+                      FROM {grouptool_queued} queued
+                 LEFT JOIN (SELECT userid, COUNT(DISTINCT id) AS regs
+                              FROM {grouptool_registered}
+                             WHERE agrpid " . $agrpsql . " AND modified_by >= 0
+                          GROUP BY userid) reg ON queued.userid = reg.userid
+                     WHERE queued.agrpid = ?
+                  GROUP BY queued.id, priority
+                  ORDER BY priority DESC, queued.timestamp ASC";
+
+            if (
+                $records = $DB->get_records_sql($sql, array_merge(
+                    [$min],
+                    $params,
+                    [$agrpid]
+                ))
+            ) {
+                foreach ($records as $record) {
+                    if (!empty($grouptool->use_size) && ($groupregs[$agrpid] >= $size)) {
+                        // Group is full!
+                        break;
+                    }
+                    if ($record->regs >= $max) {
+                        // User got too many regs!
+                        continue;
+                    }
+                    unset($record->id);
+                    if (
+                        !$DB->record_exists('grouptool_registered', [
+                            'agrpid' => $agrpid,
+                            'userid' => $record->userid,
+                        ])
+                    ) {
+                        unset($record->priority);
+                        unset($record->regs);
+                        $record->modified_by = 0;
+                        $DB->insert_record('grouptool_registered', $record);
+                        if (!empty($grouptool->immediate_reg)) {
+                            groups_add_member($agrp->groupid, $record->userid);
+                        }
+                    } else if (
+                        $mark = $DB->get_record('grouptool_registered', [
+                            'agrpid' => $agrpid,
+                            'userid' => $record->userid,
+                            'modified_by' => -1,
+                        ])
+                    ) {
+                        $mark->modified_by = 0;
+                        $DB->update_record('grouptool_registered', $mark);
+                        if (!empty($grouptool->immediate_reg)) {
+                            groups_add_member($agrp->groupid, $record->userid);
+                        }
+                    }
+                    $cmid = $grouptool->coursemodule;
+                    $cm = get_coursemodule_from_id('grouptool', $cmid);
+                    $course = $DB->get_record('course', ['id' => $cm->course]);
+                    $context = context_module::instance($cm->id);
+
+                    $postsubject = $course->shortname . ': ' .
+                        get_string('modulenameplural', 'grouptool') . ': ' .
+                        format_string($grouptool->name, true);
+
+                    $messageuser = $DB->get_record('user', ['id' => $record->userid]);
+                    $moodlemessage = new \core\message\message();
+                    $userfrom = core_user::get_noreply_user();
+                    $moodlemessage->component = 'mod_grouptool';
+                    $moodlemessage->name = 'grouptool_moveupreg';
+                    $moodlemessage->courseid = $course->id;
+                    $moodlemessage->userfrom = $userfrom;
+                    $moodlemessage->userto = $messageuser;
+                    $moodlemessage->subject = $postsubject;
+                    $messagedata = [
+                        'courseurl' => $CFG->wwwroot . '/course/view.php?id=' . $cm->id,
+                        'course' => [
+                            'shortname' => format_string($course->shortname, true),
+                        ],
+                        'coursegrouptoolsurl' => $CFG->wwwroot . '/mod/grouptool/index.php?id=' . $cm->id,
+                        'grouptoolurl' => $CFG->wwwroot . '/mod/grouptool/view.php?id=' . $grouptool->id,
+                        'grouptoolname' => format_string($grouptool->name, true),
+                        'groupname' => format_string(groups_get_group_name($agrp->groupid), true),
+                    ];
+                    $moodlemessage->fullmessage = get_string(
+                        'registrationnotification',
+                        'mod_grouptool',
+                        $messagedata
+                    );
+                    $moodlemessage->fullmessageformat = FORMAT_HTML;
+                    $moodlemessage->fullmessagehtml =
+                        $OUTPUT->render_from_template('mod_grouptool/registrationnotification', $messagedata);
+                    $moodlemessage->notification = 1;
+                    $moodlemessage->contexturl = $CFG->wwwroot . '/mod/grouptool/view.php?id=' . $cm->id;
+                    $moodlemessage->contexturlname = $grouptool->name;
+
+                    message_send($moodlemessage);
+                    $DB->delete_records('grouptool_queued', [
+                        'agrpid' => $agrpid,
+                        'userid' => $record->userid,
+                    ]);
+
+                    $groupregs[$agrpid]++;
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Removes an instance of the grouptool from the database
+ *
+ * Given an ID of an instance of this module,
+ * this function will permanently delete the instance
+ * and any data that depends on it.
+ *
+ * @param int $id Id of the module instance
+ * @return boolean Success/Failure
+ * @throws coding_exception
+ * @throws dml_exception
+ */
+function grouptool_delete_instance($id) {
+    global $DB;
+
+    if (!$grouptool = $DB->get_record('grouptool', ['id' => $id])) {
+        return false;
+    }
+
+    // Get all agrp-ids for this grouptool-instance!
+    if ($DB->record_exists('grouptool_agrps', ['grouptoolid' => $id])) {
+        $ids = $DB->get_fieldset_select('grouptool_agrps', 'id', "grouptoolid = ?", [$id]);
+
+        /*
+         * delete all entries in grouptool_agrps, grouptool_queued, grouptool_registered
+         * with correct grouptoolid or agrps_id
+         */
+        if (is_array($ids)) {
+            [$sql, $params] = $DB->get_in_or_equal($ids);
+            $DB->delete_records_select('grouptool_queued', "agrpid " . $sql, $params);
+            $DB->delete_records_select('grouptool_registered', "agrpid " . $sql, $params);
+            $DB->delete_records_select('grouptool_agrps', "id " . $sql, $params);
+        }
+    }
+
+    $DB->delete_records('event', ['modulename' => 'grouptool', 'instance' => $grouptool->id]);
+
+    $DB->delete_records('grouptool', ['id' => $id]);
+
+    return true;
+}
+
+/**
+ * Add a get_coursemodule_info function in case any grouptool type wants to add 'extra' information
+ * for the course (see resource).
+ *
+ * Given a course_module object, this function returns any "extra" information that may be needed
+ * when printing this activity in a course listing.  See get_array_of_activities() in course/lib.php.
+ *
+ * @param stdClass $coursemodule The coursemodule object (record).
+ * @return cached_cm_info|bool An object on information that the courses
+ *                             will know about (most noticeably, an icon).
+ * @throws dml_exception
+ */
+function grouptool_get_coursemodule_info($coursemodule) {
+    global $DB;
+
+    $dbparams = ['id' => $coursemodule->instance];
+    $fields = 'id, name, alwaysshowdescription, timeavailable, intro, introformat, completionregister';
+    if (!$grouptool = $DB->get_record('grouptool', $dbparams, $fields)) {
+        return false;
+    }
+
+    $result = new cached_cm_info();
+    $result->name = $grouptool->name;
+    if ($coursemodule->showdescription) {
+        if ($grouptool->alwaysshowdescription || (time() > $grouptool->timeavailable)) {
+            // Convert intro to html. Do not filter cached version, filters run at display time.
+            $result->content = format_module_intro('grouptool', $grouptool, $coursemodule->id, false);
+        } else {
+            unset($result->content);
+        }
+    }
+    // Populate the custom completion rules as key => value pairs, but only if the completion mode is 'automatic'.
+    if ($coursemodule->completion == COMPLETION_TRACKING_AUTOMATIC) {
+        $result->customdata['customcompletionrules']['completionregister'] = $grouptool->completionregister;
+    }
+    return $result;
+}
+
+/**
+ * Returns all other caps used in the module
+ *
+ * @return array
+ */
+function grouptool_get_extra_capabilities() {
+    return ['moodle/course:managegroups'];
+}
+
+/*******************************************************************************
+ * Navigation API                                                              *
+ *******************************************************************************/
+/**
+ * Extends the global navigation tree by adding grouptool nodes if there is a relevant content
+ *
+ * This can be called by an AJAX request so do not rely on $PAGE as it might not be set up properly.
+ *
+ * @param navigation_node $navref Object representing the nav tree node of the grouptool mod instance
+ * @param stdClass $course course object
+ * @param stdClass $module module object
+ * @param cm_info $cm course module info object
+ * @throws coding_exception
+ * @throws moodle_exception
+ */
+function grouptool_extend_navigation(navigation_node $navref, stdClass $course, stdClass $module, cm_info $cm) {
+
+    if ($course->id != $module->course) {
+        // Just so PHPMD won't complain about $course being here ;) These have to be equal all the time!
+        return;
+    }
+
+    $context = context_module::instance($cm->id);
+
+    $admingrps = has_capability('mod/grouptool:administrate_groups', $context);
+    $viewreggv = has_capability('mod/grouptool:view_regs_group_view', $context);
+    $managegrps = has_capability('moodle/course:managegroups', $context);
+
+    $gt = $module;
+    $regopen = ($gt->allow_reg && (($gt->timedue == 0) || (time() < $gt->timedue))
+        && ($gt->timeavailable < time()));
+    if (
+        has_capability('mod/grouptool:administrate_registration', $context)
+        || ($regopen && has_capability('mod/grouptool:register', $context))
+    ) {
+        $url = new moodle_url('/mod/grouptool/view.php', ['id' => $cm->id, 'tab' => 'selfregistration']);
+        $navref->add(get_string('selfregistration', 'grouptool'), $url);
+    }
+    if ($admingrps) {
+        $url = new moodle_url('/mod/grouptool/administration.php', ['id' => $cm->id, 'tab' => 'group_admin']);
+        $admin = $navref->add(get_string('administration', 'grouptool'), $url);
+        $url = new moodle_url('/mod/grouptool/administration.php', ['id' => $cm->id, 'tab' => 'group_admin']);
+        $admin->add(get_string('group_administration', 'grouptool'), $url);
+        $url = new moodle_url('/mod/grouptool/administration.php', ['id' => $cm->id, 'tab' => 'group_creation']);
+        $admin->add(get_string('group_creation', 'grouptool'), $url);
+    }
+    if ($viewreggv) {
+        $url = new moodle_url('/mod/grouptool/groupregistrations.php', ['id' => $cm->id, 'tab' => 'overview']);
+        $groupregistrations = $navref->add(get_string('registrations', 'grouptool'), $url);
+        $url = new moodle_url('/mod/grouptool/groupregistrations.php', ['id' => $cm->id, 'tab' => 'import']);
+        $groupregistrations->add(get_string('import', 'grouptool'), $url);
+        $url = new moodle_url('/mod/grouptool/groupregistrations.php', ['id' => $cm->id, 'tab' => 'unregister']);
+        $groupregistrations->add(get_string('unregister', 'grouptool'), $url);
+    }
+    $navref->nodetype = navigation_node::NODETYPE_BRANCH;
+}
+
+/**
+ * extend an grouptool navigation settings
+ *
+ * @param settings_navigation $settings
+ * @param navigation_node $navref
+ * @return void
+ */
+function grouptool_extend_settings_navigation(settings_navigation $settings, navigation_node $navref) {
+    global $DB, $CFG;
+
+    $cm = $settings->get_page()->cm;
+    if (!$cm) {
+        return;
+    }
+    $context = $cm->context;
+    $course = $settings->get_page()->course;
+
+    if (!$course) {
+        return;
+    }
+
+    $creategrps = has_capability('mod/grouptool:administrate_groups', $context);
+    $creategrpgs = has_capability('mod/grouptool:administrate_groups', $context);
+    $admingrps = has_capability('mod/grouptool:administrate_groups', $context);
+    $viewreggv = has_capability('mod/grouptool:view_regs_group_view', $context);
+    $managegrps = has_capability('moodle/course:managegroups', $context);
+
+    // Add "Administation" to menu.
+    if ($admingrps) {
+        $url = new moodle_url('/mod/grouptool/administration.php', ['id' => $cm->id, 'tab' => 'group_admin']);
+        $node = navigation_node::create(
+            get_string('administration', 'grouptool'),
+            $url,
+            navigation_node::TYPE_SETTING,
+            null,
+            'mod_grouptool_administration'
+        );
+        $navref->add_node($node);
+    }
+
+    // Add "Registrations" to menu.
+    if ($viewreggv) {
+        $url = new moodle_url('/mod/grouptool/groupregistrations.php', ['id' => $cm->id, 'tab' => 'overview']);
+        $node = navigation_node::create(
+            get_string('registrations', 'grouptool'),
+            $url,
+            navigation_node::TYPE_SETTING,
+            null,
+            'mod_grouptool_registration'
+        );
+        $navref->add_node($node);
+    }
+
+    // Add "viewmoodlegroups" to more menu.
+    if ($managegrps) {
+        $url = new moodle_url('/group/index.php', ['id' => $course->id]);
+        $node = navigation_node::create(
+            get_string('viewmoodlegroups', 'grouptool'),
+            $url,
+            navigation_node::TYPE_SETTING,
+            null,
+            'mod_grouptool_viewmoodlegroups'
+        );
+        $node->forceintomoremenu = true;
+        $navref->add_node($node);
+    }
+
+    // Add "report grouptool" to more menu.
+    $reportplugins = core_plugin_manager::instance()->get_installed_plugins('report');
+
+    // TODO Remove it from here and add to Grouptool Report.
+    try {
+        $reportgrouptoolversion = $reportplugins['grouptool'];
+    } catch (Exception $ex) {
+        $reportgrouptoolversion = null;
+    }
+
+    if (!is_null($reportgrouptoolversion) && has_capability('report/grouptool:view', $context)) {
+        $url = new moodle_url('/report/grouptool/index.php', ['id' => $course->id]);
+        $node = navigation_node::create(
+            get_string('report', 'grouptool'),
+            $url,
+            navigation_node::TYPE_SETTING,
+            null,
+            'mod_grouptool_report'
+        );
+        $node->forceintomoremenu = true;
+        $navref->add_node($node);
+    }
+}
+
+/**
+ * displays if submission was early enough or late...
+ *
+ * @param int $timesubmitted
+ * @param int $timedue
+ * @return array string color class, string html-fragment
+ * @throws coding_exception
+ */
+function grouptool_display_lateness($timesubmitted = null, $timedue = null) {
+    if ($timesubmitted == null) {
+        $timesubmitted = time();
+    }
+    $time = $timedue - $timesubmitted;
+    if (empty($timedue)) {
+        $colorclass = 'early';
+        $timeremaining = ' (' . html_writer::tag(
+            'span',
+            format_time($time),
+            ['class' => 'early']
+        ) . ')';
+    } else if ($time >= 7 * 24 * 60 * 60) { // More than 7 days?
+        $colorclass = 'early';
+        $timeremaining = ' (' . html_writer::tag(
+            'span',
+            get_string(
+                'early',
+                'grouptool',
+                format_time($time)
+            ),
+            ['class' => 'early']
+        ) . ')';
+    } else if ($time >= 24 * 60 * 60) { // More than 1 day (less than 7 days)?
+        $colorclass = 'soon';
+        $timeremaining = ' (' . html_writer::tag(
+            'span',
+            get_string(
+                'early',
+                'grouptool',
+                format_time($time)
+            ),
+            ['class' => 'soon']
+        ) . ')';
+    } else if ($time >= 0) { // In future but less than 1 day?
+        $colorclass = 'today';
+        $timeremaining = ' (' . html_writer::tag(
+            'span',
+            get_string(
+                'early',
+                'grouptool',
+                format_time($time)
+            ),
+            ['class' => 'today']
+        ) . ')';
+    } else {
+        $colorclass = 'late';
+        $timeremaining = ' (' . html_writer::tag('span', get_string(
+            'late',
+            'grouptool',
+            format_time($time)
+        ), ['class' => 'late']) . ')';
+    }
+    return [$colorclass, $timeremaining];
+}
+
+/**
+ * prepare text for mymoodle-Page to be displayed
+ *
+ * @param stdClass[] $courses
+ * @param string[][] $htmlarray
+ * @throws coding_exception
+ * @throws dml_exception
+ * @throws moodle_exception
+ * @todo The final deprecation of this function will take place in Moodle 3.7 - see MDL-57487.
+ * @deprecated since 3.3
+ */
+function grouptool_print_overview($courses, &$htmlarray) {
+    global $CFG;
+
+    debugging('The function grouptool_print_overview() is now deprecated.', DEBUG_DEVELOPER);
+
+    require_once($CFG->dirroot . '/mod/grouptool/locallib.php');
+
+    if (empty($courses) || !is_array($courses) || count($courses) == 0) {
+        return;
+    }
+
+    if (!$grouptools = get_all_instances_in_courses('grouptool', $courses)) {
+        return;
+    }
+
+    foreach ($grouptools as $grouptool) {
+        $context = context_module::instance($grouptool->coursemodule, MUST_EXIST);
+
+        $strgrouptool = get_string('grouptool', 'grouptool');
+        $strduedate = get_string('duedate', 'grouptool');
+        $strduedateno = get_string('duedateno', 'grouptool');
+
+        $str = "";
+        if (
+            has_capability('mod/grouptool:register', $context)
+            || has_capability('mod/grouptool:view_regs_group_view', $context)
+        ) {
+            $attrib = [
+                'title' => $strgrouptool, 'href' => $CFG->wwwroot .
+                    '/mod/grouptool/view.php?id=' .
+                    $grouptool->coursemodule,
+            ];
+            if (
+                !$grouptool->visible
+                || (($grouptool->timedue != 0) && ($grouptool->timedue <= time()))
+            ) {
+                $attrib['class'] = 'dimmed';
+            }
+            [$cc, ] = grouptool_display_lateness(time(), $grouptool->timedue);
+            $str .= html_writer::tag(
+                'div',
+                $strgrouptool . ': ' .
+                html_writer::tag('a', $grouptool->name, $attrib),
+                ['class' => 'name']
+            );
+            $attr = ['class' => 'info'];
+            if ($grouptool->timeavailable > time()) {
+                $ta = $grouptool->timeavailable;
+                $str .= html_writer::tag('div', get_string('availabledate', 'grouptool') . ': ' .
+                    html_writer::tag('span', userdate($ta)), $attr);
+            }
+            if ($grouptool->timedue) {
+                $tagargs = ['class' => (($cc == 'late') ? ' late' : '')];
+                $datesnippet = html_writer::tag('span', userdate($grouptool->timedue), $tagargs);
+                $str .= html_writer::tag('div', $strduedate . ': ' . $datesnippet, $attr);
+            } else {
+                $str .= html_writer::tag('div', $strduedateno, $attr);
+            }
+        }
+        $details = grouptool_get_user_reg_details($grouptool, $context);
+
+        if (
+            has_capability('mod/grouptool:view_regs_group_view', $context)
+            || has_capability('mod/grouptool:register', $context)
+        ) {
+            $str = html_writer::tag('div', $str . $details, ['class' => 'grouptool overview']);
+            if (empty($htmlarray[$grouptool->course]['grouptool'])) {
+                $htmlarray[$grouptool->course]['grouptool'] = $str;
+            } else {
+                $htmlarray[$grouptool->course]['grouptool'] .= $str;
+            }
+        }
+    }
+}
+
+/**
+ * Get a nice overview over user's registration details!
+ *
+ * @param stdClass $grouptool Grouptool DB record with additional coursemodule property set!
+ * @param context $context Context instance
+ * @return string HTML snippet with user's registration details
+ * @throws coding_exception
+ * @throws dml_exception
+ * @throws moodle_exception
+ */
+function grouptool_get_user_reg_details($grouptool, $context) {
+    global $USER, $DB;
+
+    $details = '';
+    if (
+        has_capability('mod/grouptool:register', $context)
+        || has_capability('mod/grouptool:view_regs_group_view', $context)
+    ) {
+        // It's similar to the student mymoodle output!
+        $cmid = $grouptool->coursemodule;
+        $cm = get_coursemodule_from_id('grouptool', $cmid);
+        $course = $DB->get_record('course', ['id' => $cm->course]);
+        $instance = new mod_grouptool($grouptool->coursemodule, $grouptool, $cm, $course, $context);
+        $userstats = $instance->get_registration_stats($USER->id);
+    } else {
+        return '';
+    }
+
+    [$colorclass, ] = grouptool_display_lateness(time(), $grouptool->timedue);
+
+    if (has_capability('mod/grouptool:register', $context)) {
+        if ($grouptool->allow_reg) {
+            if (count($userstats->registered)) {
+                $tempstr = "";
+                foreach ($userstats->registered as $registration) {
+                    if ($tempstr != "") {
+                        $tempstr .= '; ';
+                    }
+                    $tempstr .= html_writer::tag('span', $registration->grpname);
+                }
+                if (
+                    ($grouptool->allow_multiple &&
+                        (count($userstats->registered) < $grouptool->choose_min)) ||
+                    (!$grouptool->allow_multiple &&
+                        !count($userstats->registered))
+                ) {
+                    if ($grouptool->allow_multiple) {
+                        $missing = ($grouptool->choose_min - count($userstats->registered));
+                        $stringlabel = ($missing > 1) ? 'registrations_missing' : 'registration_missing';
+                    } else {
+                        $missing = 1;
+                        $stringlabel = 'registration_missing';
+                    }
+                    $details .= html_writer::tag(
+                        'div',
+                        html_writer::tag(
+                            'div',
+                            get_string($stringlabel, 'grouptool', $missing),
+                            ['class' => $colorclass]
+                        ) . ' ' .
+                        get_string('registrations', 'grouptool') . ': ' . $tempstr,
+                        ['class' => 'registered']
+                    );
+                } else {
+                    $details .= html_writer::tag(
+                        'div',
+                        get_string('registrations', 'grouptool') . ': ' . $tempstr,
+                        ['class' => 'registered']
+                    );
+                }
+            } else {
+                if ($grouptool->allow_multiple) {
+                    $missing = ($grouptool->choose_min - count($userstats->registered));
+                    $stringlabel = ($missing > 1) ? 'registrations_missing' : 'registration_missing';
+                } else {
+                    $missing = 1;
+                    $stringlabel = 'registration_missing';
+                }
+                $details .= html_writer::tag(
+                    'div',
+                    html_writer::tag(
+                        'div',
+                        get_string($stringlabel, 'grouptool', $missing),
+                        ['class' => $colorclass]
+                    ) .
+                    get_string('registrations', 'grouptool') . ': ' .
+                    get_string('not_registered', 'grouptool'),
+                    ['class' => 'registered']
+                );
+            }
+            if (count($userstats->queued)) {
+                $tempstr = "";
+                foreach ($userstats->queued as $queue) {
+                    [$colorclass, ] = grouptool_display_lateness(
+                        $queue->timestamp,
+                        $grouptool->timedue
+                    );
+                    if ($tempstr != "") {
+                        $tempstr .= ", ";
+                    }
+                    $tempstr .= html_writer::tag(
+                        'span',
+                        $queue->grpname . ' (' . $queue->rank . ')',
+                        ['class' => $colorclass]
+                    );
+                }
+                $details .= html_writer::tag('div', get_string('queues', 'grouptool') . ': ' .
+                    $tempstr, ['class' => 'queued']);
+            }
+        }
+    }
+
+    if (
+        (has_capability('mod/grouptool:view_regs_group_view', $context))
+        && $grouptool->allow_reg
+    ) {
+        $details .= html_writer::tag('div', get_string('global_userstats', 'grouptool', $userstats), ['class' => 'userstats']);
+    }
+
+    return html_writer::tag('div', $details, ['class' => 'details']);
+}
+
+/**
+ * This function is used by the reset_course_userdata function in moodlelib.
+ * This function will remove all posts from the specified grouptool(s)
+ * and clean up any related data.
+ *
+ * @param stdClass $data the data submitted from the reset course.
+ * @return array status array
+ * @throws coding_exception
+ * @throws dml_exception
+ */
+function grouptool_reset_userdata($data) {
+    global $CFG, $DB;
+
+    if (!$DB->count_records('grouptool', ['course' => $data->courseid])) {
+        return []; // No grouptools present!
+    }
+
+    $componentstr = get_string('modulenameplural', 'grouptool');
+    $status = [];
+
+    $grouptoolids = $DB->get_fieldset_select(
+        'grouptool',
+        'id',
+        'course = ?',
+        [$data->courseid]
+    );
+
+    $agrps = $DB->get_records_list('grouptool_agrps', 'grouptoolid', $grouptoolids);
+
+    if (!empty($data->reset_grouptool_transparent_unreg)) {
+        require_once($CFG->dirroot . '/group/lib.php');
+        $regdata = $DB->get_records_list('grouptool_registered', 'agrpid', array_keys($agrps));
+        foreach ($regdata as $registration) {
+            groups_remove_member($agrps[$registration->agrpid]->groupid, $registration->userid);
+        }
+        $status[] = [
+            'component' => $componentstr,
+            'item' => get_string('reset_transparent_unreg', 'grouptool'),
+            'error' => false,
+        ];
+    }
+
+    if (!empty($data->reset_grouptool_queues) || !empty($data->reset_grouptool_agrps)) {
+        $DB->delete_records_list('grouptool_queued', 'agrpid', array_keys($agrps));
+        $status[] = [
+            'component' => $componentstr,
+            'item' => get_string('reset_queues', 'grouptool'),
+            'error' => false,
+        ];
+    }
+
+    if (!empty($data->reset_grouptool_registrations) || !empty($data->reset_grouptool_agrps)) {
+        $DB->delete_records_list('grouptool_registered', 'agrpid', array_keys($agrps));
+        $status[] = [
+            'component' => $componentstr,
+            'item' => get_string('reset_registrations', 'grouptool'),
+            'error' => false,
+        ];
+    }
+
+    if (!empty($data->reset_grouptool_agrps)) {
+        $DB->delete_records_list('grouptool_agrps', 'grouptoolid', $grouptoolids);
+        $status[] = [
+            'component' => $componentstr,
+            'item' => get_string('reset_agrps', 'grouptool'),
+            'error' => false,
+        ];
+    }
+
+    return $status;
+}
+
+/**
+ * Implementation of the function for printing the form elements that control
+ * whether the course reset functionality affects the grouptool.
+ * @param MoodleQuickForm $mform form passed by reference
+ * @throws coding_exception
+ */
+function grouptool_reset_course_form_definition(MoodleQuickForm &$mform) {
+    $mform->addElement('header', 'grouptoolheader', get_string('modulenameplural', 'grouptool'));
+    $mform->addElement(
+        'advcheckbox',
+        'reset_grouptool_agrps',
+        get_string('reset_agrps', 'grouptool')
+    );
+    $mform->addHelpButton('reset_grouptool_agrps', 'reset_agrps', 'grouptool');
+    $mform->addElement(
+        'advcheckbox',
+        'reset_grouptool_registrations',
+        get_string('reset_registrations', 'grouptool')
+    );
+    $mform->addHelpButton('reset_grouptool_registrations', 'reset_registrations', 'grouptool');
+    $mform->disabledIf('reset_grouptool_registrations', 'reset_grouptool_agrps', 'checked');
+    $mform->addElement(
+        'advcheckbox',
+        'reset_grouptool_queues',
+        get_string('reset_queues', 'grouptool')
+    );
+    $mform->addHelpButton('reset_grouptool_queues', 'reset_queues', 'grouptool');
+    $mform->disabledIf('reset_grouptool_queues', 'reset_grouptool_agrps', 'checked');
+    $mform->addElement(
+        'advcheckbox',
+        'reset_grouptool_transparent_unreg',
+        get_string('reset_transparent_unreg', 'grouptool')
+    );
+    $mform->addHelpButton(
+        'reset_grouptool_transparent_unreg',
+        'reset_transparent_unreg',
+        'grouptool'
+    );
+}
+
+/**
+ * Course reset form defaults.
+ */
+function grouptool_reset_course_form_defaults() {
+    return [
+        'reset_grouptool_registrations' => 1,
+        'reset_grouptool_queues' => 1,
+        'reset_grouptool_agrps' => 0,
+        'reset_grouptool_transparent_unreg' => 0,
+    ];
+}
+
+
+/*
+ ******************** CALENDAR API AND SIMILAR FUNCTIONS FOR GROUPTOOLS ***********************
+ */
+
+/**
+ * Is the event visible?
+ *
+ * This is used to determine global visibility of an event in all places throughout Moodle. For example,
+ * the ASSIGN_EVENT_TYPE_GRADINGDUE event will not be shown to students on their calendar, and
+ * ASSIGN_EVENT_TYPE_DUE events will not be shown to teachers.
+ *
+ * @param calendar_event $event
+ * @return bool Returns true if the event is visible to the current user, false otherwise.
+ * @throws coding_exception
+ * @throws dml_exception
+ * @throws moodle_exception
+ */
+function mod_grouptool_core_calendar_is_event_visible(calendar_event $event) {
+    global $CFG, $DB;
+
+    require_once($CFG->dirroot . '/mod/grouptool/locallib.php');
+
+    $cm = get_fast_modinfo($event->courseid)->instances['grouptool'][$event->instance];
+    $context = context_module::instance($cm->id);
+    $course = $DB->get_record('course', ['id' => $cm->course]);
+    $grouptool = $DB->get_record('grouptool', ['id' => $cm->instance], '*', MUST_EXIST);
+
+    $grouptool = new mod_grouptool($cm->id, $grouptool, $cm, $course);
+
+    $managesregs = has_capability('mod/grouptool:administrate_registration', $context) || has_capability(
+        'mod/grouptool:administrate_registration',
+        $context
+    );
+
+    if ($event->eventtype == GROUPTOOL_EVENT_TYPE_DUE) {
+        return ((has_capability('mod/grouptool:register', $context))
+            || ($managesregs && ($grouptool->get_missing_registrations() >= 1 || $grouptool->is_registration_open())));
+    }
+
+    if ($event->eventtype == GROUPTOOL_EVENT_TYPE_AVAILABLEFROM) {
+        return time() <= $grouptool->get_settings()->timeavailable && ((has_capability('mod/grouptool:register', $context))
+                || ($managesregs && ($grouptool->get_missing_registrations() >= 1 || $grouptool->is_registration_open())));
+    }
+
+    return false;
+}
+
+/**
+ * This function receives a calendar event and returns the action associated with it, or null if there is none.
+ *
+ * This is used by block_myoverview in order to display the event appropriately. If null is returned then the event
+ * is not displayed on the block.
+ *
+ * @param calendar_event $event
+ * @param \core_calendar\action_factory $factory
+ * @return \core_calendar\local\event\entities\action_interface|\core_calendar\local\event\value_objects\action
+ * @throws coding_exception
+ * @throws dml_exception
+ * @throws moodle_exception
+ */
+function mod_grouptool_core_calendar_provide_event_action(calendar_event $event, \core_calendar\action_factory $factory) {
+    global $CFG, $USER, $DB;
+
+    require_once($CFG->dirroot . '/mod/grouptool/locallib.php');
+
+    $cm = get_fast_modinfo($event->courseid)->instances['grouptool'][$event->instance];
+    $context = context_module::instance($cm->id);
+    $course = $DB->get_record('course', ['id' => $cm->course]);
+    $grouptool = $DB->get_record('grouptool', ['id' => $cm->instance], '*', MUST_EXIST);
+
+    $grouptool = new mod_grouptool($cm->id, $grouptool, $cm, $course, $context);
+
+    $managesregs = has_capability('mod/grouptool:administrate_registration', $context) || has_capability(
+        'mod/grouptool:administrate_registration',
+        $context
+    );
+    $isopen = $grouptool->is_registration_open();
+
+    $url = new \moodle_url('/mod/grouptool/view.php', [
+        'id' => $cm->id,
+    ]);
+
+    $actionable = false;
+    // Item count can't be 0 for the event to be displayed, but now we use it to count the real items!
+    $itemcount = -1;
+    $label = '';
+
+    if (!$managesregs && has_capability('mod/grouptool:register', $context)) {
+        $userstats = $grouptool->get_registration_stats($USER->id);
+        [$allowmultiple, $choosemin, ] = $grouptool->get_reg_settings();
+        if ($allowmultiple) {
+            $itemcount = ($choosemin - count($userstats->registered));
+            $label = get_string(($itemcount > 1) ? 'register' : 'register', 'grouptool');
+        } else {
+            $itemcount = !empty($userstats->registered) ? 0 : 1;
+            $label = get_string('register', 'grouptool');
+        }
+        if ($itemcount <= 0) {
+            $label = get_string('view_registrations', 'grouptool');
+            $itemcount = -1;
+        }
+        if (
+            ($allowmultiple && ($choosemin - count($userstats->registered)) == 0) ||
+            (!empty($userstats->registered) ? 0 : 1) == 0
+        ) {
+            // If enough registration were made we want to remove the event from the dashboard for the student.
+            return null;
+        }
+        // Clickable if registration is open and registrations are missing or enough registrations are made!
+        $actionable = ($isopen && ($itemcount > 0)) || ($itemcount <= 0);
+    } else if ($managesregs) {
+        $missing = $grouptool->get_missing_registrations();
+        $itemcount = ($missing > 0) ? $missing : 0;
+        if ($missing > 1) {
+            $label = get_string('myoverview_registrations_missing', 'grouptool');
+        } else if ($missing == 1) {
+            $label = get_string('myoverview_registrations_missing', 'grouptool');
+        } else {
+            $label = get_string('view');
+            $itemcount = -1;
+        }
+        $url = new moodle_url($url, ['tab' => 'overview']);
+        $actionable = true;
+    }
+
+    return $factory->create_instance($label, $url, $itemcount, $actionable);
+}
+
+/**
+ * Callback function that determines whether an action event should be showing its item count
+ * based on the event type and the item count.
+ *
+ * @param calendar_event $event The calendar event.
+ * @param int $itemcount The item count associated with the action event.
+ * @return bool
+ */
+function mod_grouptool_core_calendar_event_action_shows_item_count(calendar_event $event, $itemcount = 0) {
+    // List of event types where the action event's item count should be shown.
+    $showitemcountfor = [
+        GROUPTOOL_EVENT_TYPE_DUE,
+    ];
+    // For mod_grouptool, item count should be shown if the event type is 'due' and there is one or more items.
+    return in_array($event->eventtype, $showitemcountfor) && $itemcount > 0;
+}
+
+/**
+ * Map icons for font-awesome themes.
+ *
+ * @return string[] Mapping array with font awesome classes indexed by image names
+ */
+function mod_grouptool_get_fontawesome_icon_map() {
+    return [
+        'mod_grouptool:active' => 'fa-circle text-success',
+        'mod_grouptool:inactive' => 'fa-circle',
+    ];
+}
