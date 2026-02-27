@@ -78,10 +78,10 @@ require_once($CFG->dirroot . '/repository/googledocs/lib.php');
     // Write with file locking
     file_put_contents($logFile, $formattedMessage, FILE_APPEND | LOCK_EX);
 } */
- // krushal gdrive upload function start
+// krushal gdrive upload function start
 function webservice_upload_to_googledrive(
     stdClass $filerecord,
-    string   $localpath,
+    string $localpath,
     stdClass $site
 ): bool {
     global $CFG, $DB;
@@ -121,7 +121,7 @@ function webservice_upload_to_googledrive(
         clean_param($site->shortname . ' (id ' . $site->id . ')', PARAM_PATH),
         'webservice_uploads',
         $userfolder,
-        clean_param((string)$filerecord->itemid . '_' . (function() use ($DB, $filerecord): string {
+        clean_param((string) $filerecord->itemid . '_' . (function () use ($DB, $filerecord): string{
             // Attempt 1: course from user's most recently modified assignment submission.
             $sql = "SELECT c.shortname
                       FROM {assign_submission} asub
@@ -154,7 +154,7 @@ function webservice_upload_to_googledrive(
             return '';
         })(), PARAM_PATH),
         // Assignment name folder.
-        clean_param((function() use ($DB, $filerecord): string {
+        clean_param((function () use ($DB, $filerecord): string{
             $sql = "SELECT a.name
                       FROM {assign_submission} asub
                       JOIN {assign} a ON a.id = asub.assignment
@@ -165,18 +165,18 @@ function webservice_upload_to_googledrive(
             return ($row && !empty($row->name)) ? $row->name : '';
         })(), PARAM_PATH),
     ];
-    $cache    = cache::make('repository_googledocs', 'folder');
+    $cache = cache::make('repository_googledocs', 'folder');
     $parentid = 'root';
     $fullpath = 'root';
 
     foreach ($allfolders as $foldername) {
         $fullpath .= '/' . $foldername;
-        $folderid  = $cache->get($fullpath);
+        $folderid = $cache->get($fullpath);
         if (empty($folderid)) {
             // Search Drive for existing folder.
-            $q    = '\'' . addslashes($parentid) . '\' in parents'
-                  . ' and trashed = false'
-                  . ' and name = \'' . addslashes($foldername) . '\'';
+            $q = '\'' . addslashes($parentid) . '\' in parents'
+                . ' and trashed = false'
+                . ' and name = \'' . addslashes($foldername) . '\'';
             $resp = $client->call('list', ['q' => $q, 'fields' => 'files(id,name)']);
             $folderid = false;
             if (!empty($resp->files)) {
@@ -190,10 +190,10 @@ function webservice_upload_to_googledrive(
         }
         if (empty($folderid)) {
             // Create the folder.
-            $body    = json_encode([
+            $body = json_encode([
                 'mimeType' => 'application/vnd.google-apps.folder',
-                'name'     => $foldername,
-                'parents'  => [$parentid],
+                'name' => $foldername,
+                'parents' => [$parentid],
             ]);
             $created = $client->call('create', ['fields' => 'id'], $body);
             $folderid = $created->id ?? null;
@@ -222,21 +222,21 @@ function webservice_upload_to_googledrive(
 
     // Build the FILE_CONTROLLED_LINK reference (googledocs format).
     $reference = json_encode([
-        'id'          => $uploaded->id,
-        'name'        => $filerecord->filename,
-        'link'        => $link,
-        'exportformat'=> 'download',
-        'usesystem'   => true,
+        'id' => $uploaded->id,
+        'name' => $filerecord->filename,
+        'link' => $link,
+        'exportformat' => 'download',
+        'usesystem' => true,
     ]);
 
     // Store as a reference in the draft area.
-    $gdrepoid   = $gdrepo->id;
-    $fs         = get_file_storage();
+    $gdrepoid = $gdrepo->id;
+    $fs = get_file_storage();
     $storedfile = $fs->create_file_from_reference($filerecord, $gdrepoid, $reference);
 
     return $storedfile !== false;
 }
- // krushal gdrive upload function end
+// krushal gdrive upload function end
 // Allow CORS requests.
 header('Access-Control-Allow-Origin: *');
 
@@ -344,45 +344,55 @@ foreach ($files as $file) {
     $filerecord->itemid = $itemid;
     $filerecord->license = $CFG->sitedefaultlicense;
     $filerecord->author = fullname($authenticationinfo['user']);
-    $filerecord->source = serialize((object)array('source' => $file->filename));
+    $filerecord->source = serialize((object) array('source' => $file->filename));
     $filerecord->filesize = $file->size;
 
     // Check if the file already exist.
-    $existingfile = $fs->file_exists($filerecord->contextid, $filerecord->component, $filerecord->filearea,
-                $filerecord->itemid, $filerecord->filepath, $filerecord->filename);
+    $existingfile = $fs->file_exists(
+        $filerecord->contextid,
+        $filerecord->component,
+        $filerecord->filearea,
+        $filerecord->itemid,
+        $filerecord->filepath,
+        $filerecord->filename
+    );
     if ($existingfile) {
         $file->errortype = 'filenameexist';
         $file->error = get_string('filenameexist', 'webservice', $file->filename);
         $results[] = $file;
     } else {
-     // krushal gdrive upload function start
+        // krushal gdrive upload function start
         $gdrive_ok = webservice_upload_to_googledrive($filerecord, $file->filepath, $SITE);
         if ($gdrive_ok) {
             // File successfully stored in Google Drive as a controlled link.
             // Re-fetch the stored_file so logging has a valid object.
             $storedfile = $fs->get_file(
-                $filerecord->contextid, $filerecord->component, $filerecord->filearea,
-                $filerecord->itemid, $filerecord->filepath, $filerecord->filename
+                $filerecord->contextid,
+                $filerecord->component,
+                $filerecord->filearea,
+                $filerecord->itemid,
+                $filerecord->filepath,
+                $filerecord->filename
             );
         } else {
             // Google Drive unavailable — fall back to server storage.
             $storedfile = $fs->create_file_from_pathname($filerecord, $file->filepath);
         }
- // krushal gdrive upload function end
+        // krushal gdrive upload function end
         $results[] = $filerecord;
 
         // Log the event when a file is uploaded to the draft area.
         $logevent = \core\event\draft_file_added::create([
-                'objectid' => $storedfile->get_id(),
-                'context' => $context,
-                'other' => [
-                        'itemid' => $filerecord->itemid,
-                        'filename' => $filerecord->filename,
-                        'filesize' => $filerecord->filesize,
-                        'filepath' => $filerecord->filepath,
-                        'contenthash' => $storedfile->get_contenthash(),
-                        'avscantime' => $file->avscantime,
-                ],
+            'objectid' => $storedfile->get_id(),
+            'context' => $context,
+            'other' => [
+                'itemid' => $filerecord->itemid,
+                'filename' => $filerecord->filename,
+                'filesize' => $filerecord->filesize,
+                'filepath' => $filerecord->filepath,
+                'contenthash' => $storedfile->get_contenthash(),
+                'avscantime' => $file->avscantime,
+            ],
         ]);
         $logevent->trigger();
     }
