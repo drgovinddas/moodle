@@ -1,0 +1,237 @@
+@theme @theme_boost_union @theme_boost_union_looksettings @theme_boost_union_looksettings_sitebranding
+Feature: Configuring the theme_boost_union plugin for the "Site branding" tab on the "Look" page
+  In order to use the features
+  As admin
+  I need to be able to configure the theme Boost Union plugin
+
+  Background:
+    Given the following "users" exist:
+      | username |
+      | student1 |
+      | teacher1 |
+    And the following "courses" exist:
+      | fullname | shortname |
+      | Course 1 | C1        |
+    And the following "course enrolments" exist:
+      | user     | course | role           |
+      | teacher1 | C1     | editingteacher |
+      | student1 | C1     | student        |
+
+  Scenario: Setting: Logo - Upload a custom logo to the theme
+    Given the following "theme_boost_union > setting files" exist:
+      | filearea | filepath                                        |
+      | logo     | theme/boost_union/tests/fixtures/moodlelogo.png |
+    When I am on site homepage
+    And I click on "Log in" "link" in the ".logininfo" "css_element"
+    # We can't check the uploaded image file visually, but we can verify that the compact logo is shipped from the theme_boost_union global logo filearea.
+    Then "//div[@id='loginlogo']//img[@id='logoimage'][contains(@src, 'pluginfile.php/1/theme_boost_union/logo')][contains(@src, 'moodlelogo.png')]" "xpath_element" should exist
+
+  Scenario: Setting: Logo - Do not upload a custom logo to the theme (countercheck)
+    When I am on site homepage
+    And I click on "Log in" "link" in the ".logininfo" "css_element"
+    Then "#loginlogo #logoimage" "css_element" should not exist
+
+  Scenario: Setting: Logo - Upload a custom logo to Moodle core (countercheck)
+    Given the following "theme_boost_union > core files" exist:
+      | filearea | filepath                                        |
+      | logo     | theme/boost_union/tests/fixtures/moodlelogo.png |
+    When I am on site homepage
+    And I click on "Log in" "link" in the ".logininfo" "css_element"
+    Then "#loginlogo #logoimage" "css_element" should not exist
+
+  Scenario: Setting: Logo - Upload a PNG logo to the theme and check that it is resized on the server-side
+    Given the following "theme_boost_union > setting files" exist:
+      | filearea | filepath                                        |
+      | logo     | theme/boost_union/tests/fixtures/moodlelogo.png |
+    When I am on site homepage
+    And I click on "Log in" "link" in the ".logininfo" "css_element"
+    Then "//div[@id='loginlogo']//img[@id='logoimage'][contains(@src, 'pluginfile.php/1/theme_boost_union/logo/0x200/')][contains(@src, 'moodlelogo.png')]" "xpath_element" should exist
+
+  Scenario: Setting: Logo - Upload a SVG logo to the theme and check that it is not resized on the server-side
+    Given the following "theme_boost_union > setting files" exist:
+      | filearea | filepath                                        |
+      | logo     | theme/boost_union/tests/fixtures/moodlelogo.svg |
+    When I am on site homepage
+    And I click on "Log in" "link" in the ".logininfo" "css_element"
+    Then "//div[@id='loginlogo']//img[@id='logoimage'][contains(@src, 'pluginfile.php/1/theme_boost_union/logo/1/')][contains(@src, 'moodlelogo.svg')]" "xpath_element" should exist
+
+  Scenario: Setting: Compact logo - Upload a custom compact logo to the theme
+    Given the following "theme_boost_union > setting files" exist:
+      | filearea    | filepath                                        |
+      | logocompact | theme/boost_union/tests/fixtures/moodlelogo.png |
+    When I am on site homepage
+    # We can't check the uploaded image file visually, but we can verify that the compact logo is shipped from the theme_boost_union global logo filearea.
+    Then "//nav[contains(@class, 'navbar')]//img[contains(@class, 'logo')][contains(@src, 'pluginfile.php/1/theme_boost_union/logocompact')][contains(@src, 'moodlelogo.png')]" "xpath_element" should exist
+
+  Scenario: Setting: Compact logo - Do not upload a custom compact logo to the theme (countercheck)
+    When I am on site homepage
+    Then ".navbar .logo" "css_element" should not exist
+
+  Scenario: Setting: Compact logo - Upload a custom compact logo to Moodle core (countercheck)
+    Given the following "theme_boost_union > core files" exist:
+      | filearea    | filepath                                        |
+      | logocompact | theme/boost_union/tests/fixtures/moodlelogo.png |
+    When I am on site homepage
+    Then ".navbar .logo" "css_element" should not exist
+
+  Scenario: Setting: Compact logo - Upload a PNG compact logo to the theme and check that it is resized on the server-side
+    Given the following "theme_boost_union > setting files" exist:
+      | filearea    | filepath                                        |
+      | logocompact | theme/boost_union/tests/fixtures/moodlelogo.png |
+    When I am on site homepage
+    Then "//nav[contains(@class, 'navbar')]//img[contains(@class, 'logo')][contains(@src, 'pluginfile.php/1/theme_boost_union/logocompact/300x300/')][contains(@src, 'moodlelogo.png')]" "xpath_element" should exist
+
+  Scenario: Setting: Compact logo - Upload a SVG compact logo to the theme and check that it is not resized on the server-side
+    Given the following "theme_boost_union > setting files" exist:
+      | filearea    | filepath                                        |
+      | logocompact | theme/boost_union/tests/fixtures/moodlelogo.svg |
+    When I am on site homepage
+    Then "//nav[contains(@class, 'navbar')]//img[contains(@class, 'logo')][contains(@src, 'pluginfile.php/1/theme_boost_union/logocompact/1/')][contains(@src, 'moodlelogo.svg')]" "xpath_element" should exist
+
+  Scenario: Setting: Favicon - Upload a custom favicon to the theme
+    Given the following "theme_boost_union > setting files" exist:
+      | filearea | filepath                                     |
+      | favicon  | theme/boost_union/tests/fixtures/favicon.ico |
+    When I am on site homepage
+    # We can't check the uploaded favicon visually, but we can verify that the site's favicon is not shipped by pluginfile.php (for uploaded files) and not by theme/image.php (for image files from disk) anymore.
+    Then "//head//link[contains(@rel, 'shortcut')][contains(@href, 'pluginfile.php/1/theme_boost_union/favicon')][contains(@href, 'favicon.ico')]" "xpath_element" should exist
+    And "//head//link[contains(@rel, 'shortcut')][contains(@href, 'theme/image.php/boost_union')][contains(@href, 'favicon')]" "xpath_element" should not exist
+
+  Scenario: Setting: Favicon - Do not upload a custom favicon to the theme (countercheck)
+    When I am on site homepage
+    Then "//head//link[contains(@rel, 'shortcut')][contains(@href, 'theme/image.php/boost_union')][contains(@href, 'favicon')]" "xpath_element" should exist
+    And "//head//link[contains(@rel, 'shortcut')][contains(@href, 'pluginfile.php/1/theme_boost_union/favicon')][contains(@href, 'favicon.ico')]" "xpath_element" should not exist
+
+  Scenario: Setting: Favicon - Upload a custom favicon to Moodle core (countercheck)
+    Given the following "theme_boost_union > core files" exist:
+      | filearea | filepath                                     |
+      | favicon  | theme/boost_union/tests/fixtures/favicon.ico |
+    When I am on site homepage
+    Then "//head//link[contains(@rel, 'shortcut')][contains(@href, 'theme/image.php/boost_union')][contains(@href, 'favicon')]" "xpath_element" should exist
+    And "//head//link[contains(@rel, 'shortcut')][contains(@href, 'pluginfile.php/1/theme_boost_union/favicon')][contains(@href, 'favicon.ico')]" "xpath_element" should not exist
+
+  @javascript
+  Scenario: Setting: Background image - Upload a background image.
+    Given the following "theme_boost_union > setting files" exist:
+      | filearea        | filepath                                       |
+      | backgroundimage | theme/boost_union/tests/fixtures/login_bg1.png |
+    And the theme cache is purged and the theme is reloaded
+    When I am on site homepage
+    # Reloading the page is necessary to ensure that the background image is applied, as sometimes it might not appear on the first load due to caching.
+    And I reload the page
+    Then DOM element "body" should have computed style "background-size" "cover"
+    And DOM element "body" should have background image with file name "login_bg1.png"
+
+  @javascript
+  Scenario: Setting: Background image - Do not upload a background image (countercheck).
+    When I am on site homepage
+    Then DOM element "body" should have computed style "background-image" "none"
+
+  @javascript
+  Scenario Outline: Setting: Background image - Define the background image position.
+    Given the following config values are set as admin:
+      | config                  | value      | plugin            |
+      | backgroundimageposition | <position> | theme_boost_union |
+    And the following "theme_boost_union > setting files" exist:
+      | filearea        | filepath                                       |
+      | backgroundimage | theme/boost_union/tests/fixtures/login_bg1.png |
+    And the theme cache is purged and the theme is reloaded
+    When I am on site homepage
+    # Reloading the page is necessary to ensure that the background image is applied, as sometimes it might not appear on the first load due to caching.
+    And I reload the page
+    Then DOM element "body" should have computed style "background-position" "<cssvalue>"
+
+    # We do not want to burn too much CPU time by testing all available options. We just test the default value and one non-default value.
+    Examples:
+      | position      | cssvalue |
+      | center center | 50% 50%  |
+      | left top      | 0% 0%    |
+
+  @javascript
+  Scenario: Setting: Brand color - Set the brand color
+    Given the following config values are set as admin:
+      | config     | value   | plugin            |
+      | brandcolor | #FF0000 | theme_boost_union |
+    And the following "activities" exist:
+      | activity | name      | intro                                                     | course |
+      | label    | Label one | <span class="mytesttext text-primary">My test text</span> | C1     |
+    And the theme cache is purged and the theme is reloaded
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    And I should see "My test text"
+    Then DOM element ".mytesttext" should have computed style "color" "rgb(255, 0, 0)"
+
+  @javascript
+  Scenario Outline: Setting: Bootstrap colors - Set the Bootstrap colors
+    Given the following config values are set as admin:
+      | config               | value      | plugin            |
+      | bootstrapcolor<type> | <colorhex> | theme_boost_union |
+    And the following "activities" exist:
+      | activity | name      | intro                                                    | course |
+      | label    | Label one | <span class="mytesttext text-<type>">My test text</span> | C1     |
+    And the theme cache is purged and the theme is reloaded
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    And I should see "My test text"
+    Then DOM element ".mytesttext" should have computed style "color" "<colorrgb>"
+
+    Examples:
+      | type    | colorhex | colorrgb         |
+      | success | #FF0000  | rgb(255, 0, 0)   |
+      | info    | #00FF00  | rgb(0, 255, 0)   |
+      | warning | #0000FF  | rgb(0, 0, 255)   |
+      | danger  | #FFFF00  | rgb(255, 255, 0) |
+
+  @javascript
+  Scenario Outline: Setting: Maximal width of logo in navbar - Set the maximum width
+    Given the following config values are set as admin:
+      | config       | value     | plugin            |
+      | maxlogowidth | <setting> | theme_boost_union |
+    And the following "theme_boost_union > setting files" exist:
+      | filearea    | filepath                                        |
+      | logocompact | theme/boost_union/tests/fixtures/moodlelogo.png |
+    And the theme cache is purged and the theme is reloaded
+    When I log in as "admin"
+    And I am on site homepage
+    Then DOM element ".navbar-brand" <shouldornot> have computed style "max-width" "<value>"
+    And DOM element ".navbar-brand .logo" <shouldornot> have computed style "max-width" "<value>"
+
+    Examples:
+      | setting | shouldornot | value |
+      |         | should not  | 50px  |
+      | 50px    | should      | 50px  |
+      | 13%     | should      | 13%   |
+
+  @javascript
+  Scenario Outline: Setting: Maximal width of sitename in navbar - Set the maximum width
+    Given the following config values are set as admin:
+      | config            | value     | plugin            |
+      | maxsitenamewidth  | <setting> | theme_boost_union |
+    And the theme cache is purged and the theme is reloaded
+    When I log in as "admin"
+    And I change viewport size to "<viewport>"
+    And I am on site homepage
+    Then DOM element ".navbar-brand .sitename" <widthshouldornot> have computed style "max-width" "<value>"
+    And DOM element ".navbar-brand .sitename" <truncshouldornot> have computed style "text-overflow" "ellipsis"
+
+    Examples:
+      | setting | viewport | widthshouldornot | truncshouldornot | value |
+      |         | 768x1024 | should not       | should not       | 200px |
+      | 200px   | 768x1024 | should           | should           | 200px |
+      | 200px   | 375x667  | should not       | should           | 200px |
+      | 200px   | 1024x768 | should not       | should           | 200px |
+
+  Scenario Outline: Setting: Navbar color - Set the navbar color
+    Given the following config values are set as admin:
+      | config      | value     | plugin            |
+      | navbarcolor | <setting> | theme_boost_union |
+    When I log in as "admin"
+    Then the "class" attribute of ".navbar" "css_element" should contain "<classes>"
+    And the "data-bs-theme" attribute of ".navbar" "css_element" should <databstheme>
+
+    Examples:
+      | setting      | classes    | databstheme     |
+      | light        | bg-body    | not be set      |
+      | dark         | bg-dark    | contain "dark"  |
+      | primarylight | bg-primary | contain "light" |
+      | primarydark  | bg-primary | contain "dark"  |
