@@ -573,7 +573,15 @@ class completion_info {
      */
     public function update_state($cm, $possibleresult=COMPLETION_UNKNOWN, $userid=0,
             $override = false, $isbulkupdate = false) {
-        global $USER;
+        global $DB, $USER;
+
+        // Do nothing if the mod plugin type is disabled.
+        $manager = \core_plugin_manager::resolve_plugininfo_class('mod');
+        $modname = !empty($cm->modname) ? $cm->modname : $DB->get_field('modules', 'name', ['id' => $cm->module]);
+        $enabled = $manager::get_enabled_plugin($modname);
+        if (!$enabled) {
+            return;
+        }
 
         // Do nothing if completion is not enabled for that activity
         if (!$this->is_enabled($cm)) {
@@ -1343,6 +1351,44 @@ class completion_info {
             }
         }
         return $result;
+    }
+
+    /**
+     * Return a list of activities that are visible on the course page and have completion enabled.
+     *
+     * This includes activities that the user can see on the course page (visible or restricted),
+     * but only those with completion tracking enabled. Activities hidden from
+     * the user, located in hidden sections or restricted by group/grouping are excluded.
+     *
+     * @param int $userid User id
+     * @return array Array of user visible activities with completion enabled.
+     */
+    public function get_user_activities_with_completion($userid): array {
+        $visible = [];
+        $activities = $this->get_activities();
+
+        foreach ($activities as $cm) {
+            // Step 1: Exclude activities hidden from the user on the course page.
+            if (!$cm->is_visible_on_course_page()) {
+                continue;
+            }
+
+            // Step 2: Check if the user is excluded by group or grouping style restrictions.
+            $info = new \core_availability\info_module($cm);
+
+            $users = [$userid => (object)['id' => $userid]];
+            $users = $info->filter_user_list($users);
+
+            if (empty($users)) {
+                // The user was removed from the list, meaning user list restrictions apply.
+                // This is where group and grouping restrictions exclude the user.
+                continue;
+            }
+
+            // If we reach here, count this activity for completion details and percentage.
+            $visible[$cm->id] = 1;
+        }
+        return $visible;
     }
 
     /**
