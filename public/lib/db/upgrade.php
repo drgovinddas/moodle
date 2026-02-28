@@ -2241,7 +2241,7 @@ function xmldb_main_upgrade($oldversion) {
                   FROM {customfield_data} d
                   JOIN {customfield_field} f ON d.fieldid = f.id
                   JOIN {customfield_category} c ON f.categoryid = c.id";
-        $records = $DB->get_records_sql($sql);
+        $records = $DB->get_recordset_sql($sql);
 
         foreach ($records as $r) {
             $DB->update_record('customfield_data', (object)[
@@ -2251,6 +2251,8 @@ function xmldb_main_upgrade($oldversion) {
                 'itemid'    => $r->itemid,
             ]);
         }
+
+        $records->close();
 
         // Define table customfield_shared to be created.
         $table = new xmldb_table('customfield_shared');
@@ -2367,6 +2369,66 @@ function xmldb_main_upgrade($oldversion) {
 
         // Main savepoint reached.
         upgrade_main_savepoint(true, 2025100601.02);
+    }
+
+    if ($oldversion < 2025100601.04) {
+        // Define field nextversion to be added to question_bank_entries.
+        $table = new xmldb_table('question_bank_entries');
+        $field = new xmldb_field('nextversion', XMLDB_TYPE_INTEGER, '10', null, null, null, null, 'ownerid');
+
+        // Conditionally launch add field nextversion.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025100601.04);
+    }
+
+    if ($oldversion < 2025100601.06) {
+        // Changing the default of field showactivitydates on table course to 1.
+        $table = new xmldb_table('course');
+        $field = new xmldb_field('showactivitydates', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '1', 'originalcourseid');
+
+        // Launch change of default for field showactivitydates.
+        $dbman->change_field_default($table, $field);
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025100601.06);
+    }
+
+    if ($oldversion < 2025100601.08) {
+        // Define index nextruntime_classname (not unique) to be added to task_adhoc.
+        $table = new xmldb_table('task_adhoc');
+        $index = new xmldb_index('nextruntime_classname', XMLDB_INDEX_NOTUNIQUE, ['nextruntime', 'classname']);
+
+        // Conditionally launch add index nextruntime_classname.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025100601.08);
+    }
+
+    if ($oldversion < 2025100601.09) {
+        // Define index lastruntime_nextruntime (not unique) to be added to task_scheduled.
+        $table = new xmldb_table('task_scheduled');
+        $index = new xmldb_index('lastruntime_nextruntime', XMLDB_INDEX_NOTUNIQUE, ['lastruntime', 'nextruntime']);
+
+        // Conditionally launch add index lastruntime_nextruntime.
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025100601.09);
+    }
+
+    if ($oldversion < 2025100601.10) {
+        \core_question\category_manager::fix_restored_category_parents();
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025100601.10);
     }
 
     return true;

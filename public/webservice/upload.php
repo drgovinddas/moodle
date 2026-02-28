@@ -43,7 +43,200 @@ define('NO_MOODLE_COOKIES', true);
 
 require_once(__DIR__ . '/../config.php');
 require_once($CFG->dirroot . '/webservice/lib.php');
+require_once($CFG->dirroot . '/repository/lib.php');
+require_once($CFG->dirroot . '/repository/googledocs/lib.php');
 
+// ---------------------------------------------------------------------------
+// Helper: upload a local file to Google Drive and return a stored_file record
+// (FILE_CONTROLLED_LINK) in the user draft area.
+//
+// Returns stdClass file record on success, or false if Google Drive is not
+// configured — callers fall back to normal server storage in that case.
+// ---------------------------------------------------------------------------
+
+// krushal debug function
+/* function mlog($message, $file = 'system.log', $level = null, $forceLog = false) {
+
+    $logDir = "/home/mbbs/public_html/logs/";
+    $logFile = $logDir . basename($file); // prevent directory traversal
+
+    // Ensure log directory exists
+    if (!is_dir($logDir)) {
+        mkdir($logDir, 0777, true);
+    }
+
+    // Convert array/object to readable string
+    if (is_array($message) || is_object($message)) {
+        $message = print_r($message, true);
+    }
+
+    // Format message
+    $timestamp = date('Y-m-d H:i:s');
+    $levelText = $level ? strtoupper($level) : 'INFO';
+    $formattedMessage = "[$timestamp] [$levelText] $message" . PHP_EOL;
+
+    // Write with file locking
+    file_put_contents($logFile, $formattedMessage, FILE_APPEND | LOCK_EX);
+} */
+// krushal gdrive upload function start
+function webservice_upload_to_googledrive(
+    stdClass $filerecord,
+    string $localpath,
+    stdClass $site
+): bool {
+    global $CFG, $DB;
+
+    // Get the Google Docs repository instance.
+    $gdrepos = repository::get_instances(['type' => 'googledocs']);
+    if (empty($gdrepos)) {
+        return false;
+    }
+    /** @var repository_googledocs $gdrepo */
+    $gdrepo = reset($gdrepos);
+
+    // Get system OAuth client.
+    $issuerid = get_config('googledocs', 'issuerid');
+    try {
+        $issuer = \core\oauth2\api::get_issuer($issuerid);
+    } catch (dml_missing_record_exception $e) {
+        return false;
+    }
+    $systemauth = \core\oauth2\api::get_system_oauth_client($issuer);
+    if ($systemauth === false) {
+        return false;
+    }
+    $client = new repository_googledocs\rest($systemauth);
+
+    // Build Drive folder hierarchy based on user-context draft area.
+    // For mobile uploads the context is always the user context; we don't
+    // know the course/module yet (it's set when the draft is submitted).
+    // Folder structure: root / <site shortname> / webservice_uploads / <id>_<firstname> / <itemid>
+    // ------------------------------------------------------------------
+    $uploaduser = $DB->get_record('user', ['id' => $filerecord->userid], 'id, firstname', IGNORE_MISSING);
+    $userfolder = clean_param(
+        $filerecord->userid . '_' . ($uploaduser ? $uploaduser->firstname : 'user'),
+        PARAM_PATH
+    );
+    $allfolders = [
+        clean_param($site->shortname . ' (id ' . $site->id . ')', PARAM_PATH),
+        'webservice_uploads',
+        $userfolder,
+        clean_param((string) $filerecord->itemid . '_' . (function () use ($DB, $filerecord): string{
+            // Attempt 1: course from user's most recently modified assignment submission.
+            $sql = "SELECT c.shortname
+                      FROM {assign_submission} asub
+                      JOIN {assign} a ON a.id = asub.assignment
+                      JOIN {course} c ON c.id = a.course
+                     WHERE asub.userid = :userid
+                     ORDER BY asub.timemodified DESC
+                     LIMIT 1";
+            $row = $DB->get_record_sql($sql, ['userid' => $filerecord->userid]);
+            if ($row && !empty($row->shortname)) {
+                return $row->shortname;
+            }
+            // Attempt 2: most recently accessed course that has an assign module.
+            $sql2 = "SELECT c.shortname
+                       FROM {user_lastaccess} ula
+                       JOIN {course} c ON c.id = ula.courseid
+                      WHERE ula.userid = :userid
+                        AND EXISTS (
+                            SELECT 1 FROM {assign} a
+                            JOIN {course_modules} cm ON cm.instance = a.id
+                            JOIN {modules} m ON m.id = cm.module AND m.name = 'assign'
+                            WHERE a.course = c.id AND cm.deletioninprogress = 0
+                        )
+                      ORDER BY ula.timeaccess DESC
+                      LIMIT 1";
+            $row2 = $DB->get_record_sql($sql2, ['userid' => $filerecord->userid]);
+            if ($row2 && !empty($row2->shortname)) {
+                return $row2->shortname;
+            }
+            return '';
+        })(), PARAM_PATH),
+        // Assignment name folder.
+        clean_param((function () use ($DB, $filerecord): string{
+            $sql = "SELECT a.name
+                      FROM {assign_submission} asub
+                      JOIN {assign} a ON a.id = asub.assignment
+                     WHERE asub.userid = :userid
+                     ORDER BY asub.timemodified DESC
+                     LIMIT 1";
+            $row = $DB->get_record_sql($sql, ['userid' => $filerecord->userid]);
+            return ($row && !empty($row->name)) ? $row->name : '';
+        })(), PARAM_PATH),
+    ];
+    $cache = cache::make('repository_googledocs', 'folder');
+    $parentid = 'root';
+    $fullpath = 'root';
+
+    foreach ($allfolders as $foldername) {
+        $fullpath .= '/' . $foldername;
+        $folderid = $cache->get($fullpath);
+        if (empty($folderid)) {
+            // Search Drive for existing folder.
+            $q = '\'' . addslashes($parentid) . '\' in parents'
+                . ' and trashed = false'
+                . ' and name = \'' . addslashes($foldername) . '\'';
+            $resp = $client->call('list', ['q' => $q, 'fields' => 'files(id,name)']);
+            $folderid = false;
+            if (!empty($resp->files)) {
+                foreach ($resp->files as $child) {
+                    if ($child->name == $foldername) {
+                        $folderid = $child->id;
+                        break;
+                    }
+                }
+            }
+        }
+        if (empty($folderid)) {
+            // Create the folder.
+            $body = json_encode([
+                'mimeType' => 'application/vnd.google-apps.folder',
+                'name' => $foldername,
+                'parents' => [$parentid],
+            ]);
+            $created = $client->call('create', ['fields' => 'id'], $body);
+            $folderid = $created->id ?? null;
+            if (empty($folderid)) {
+                return false;
+            }
+        }
+        $cache->set($fullpath, $folderid);
+        $parentid = $folderid;
+    }
+
+    // Upload the file content.
+    $mimetype = mime_content_type($localpath) ?: 'application/octet-stream';
+    $uploaded = $gdrepo->upload_file($client, $localpath, $filerecord->filename, $mimetype, $parentid);
+    if (empty($uploaded->id)) {
+        return false;
+    }
+
+    // Make readable by anyone with the link.
+    $perm = json_encode(['type' => 'anyone', 'role' => 'reader', 'allowFileDiscovery' => 'false']);
+    $client->call('create_permission', ['fileid' => $uploaded->id, 'supportsAllDrives' => 'true'], $perm);
+
+    // Get the web view link.
+    $meta = $client->call('get', ['fileid' => $uploaded->id, 'fields' => 'id,name,webViewLink,webContentLink']);
+    $link = $meta->webViewLink ?? ($meta->webContentLink ?? '');
+
+    // Build the FILE_CONTROLLED_LINK reference (googledocs format).
+    $reference = json_encode([
+        'id' => $uploaded->id,
+        'name' => $filerecord->filename,
+        'link' => $link,
+        'exportformat' => 'download',
+        'usesystem' => true,
+    ]);
+
+    // Store as a reference in the draft area.
+    $gdrepoid = $gdrepo->id;
+    $fs = get_file_storage();
+    $storedfile = $fs->create_file_from_reference($filerecord, $gdrepoid, $reference);
+
+    return $storedfile !== false;
+}
+// krushal gdrive upload function end
 // Allow CORS requests.
 header('Access-Control-Allow-Origin: *');
 
@@ -151,32 +344,55 @@ foreach ($files as $file) {
     $filerecord->itemid = $itemid;
     $filerecord->license = $CFG->sitedefaultlicense;
     $filerecord->author = fullname($authenticationinfo['user']);
-    $filerecord->source = serialize((object)array('source' => $file->filename));
+    $filerecord->source = serialize((object) array('source' => $file->filename));
     $filerecord->filesize = $file->size;
 
     // Check if the file already exist.
-    $existingfile = $fs->file_exists($filerecord->contextid, $filerecord->component, $filerecord->filearea,
-                $filerecord->itemid, $filerecord->filepath, $filerecord->filename);
+    $existingfile = $fs->file_exists(
+        $filerecord->contextid,
+        $filerecord->component,
+        $filerecord->filearea,
+        $filerecord->itemid,
+        $filerecord->filepath,
+        $filerecord->filename
+    );
     if ($existingfile) {
         $file->errortype = 'filenameexist';
         $file->error = get_string('filenameexist', 'webservice', $file->filename);
         $results[] = $file;
     } else {
-        $storedfile = $fs->create_file_from_pathname($filerecord, $file->filepath);
+        // krushal gdrive upload function start
+        $gdrive_ok = webservice_upload_to_googledrive($filerecord, $file->filepath, $SITE);
+        if ($gdrive_ok) {
+            // File successfully stored in Google Drive as a controlled link.
+            // Re-fetch the stored_file so logging has a valid object.
+            $storedfile = $fs->get_file(
+                $filerecord->contextid,
+                $filerecord->component,
+                $filerecord->filearea,
+                $filerecord->itemid,
+                $filerecord->filepath,
+                $filerecord->filename
+            );
+        } else {
+            // Google Drive unavailable — fall back to server storage.
+            $storedfile = $fs->create_file_from_pathname($filerecord, $file->filepath);
+        }
+        // krushal gdrive upload function end
         $results[] = $filerecord;
 
         // Log the event when a file is uploaded to the draft area.
         $logevent = \core\event\draft_file_added::create([
-                'objectid' => $storedfile->get_id(),
-                'context' => $context,
-                'other' => [
-                        'itemid' => $filerecord->itemid,
-                        'filename' => $filerecord->filename,
-                        'filesize' => $filerecord->filesize,
-                        'filepath' => $filerecord->filepath,
-                        'contenthash' => $storedfile->get_contenthash(),
-                        'avscantime' => $file->avscantime,
-                ],
+            'objectid' => $storedfile->get_id(),
+            'context' => $context,
+            'other' => [
+                'itemid' => $filerecord->itemid,
+                'filename' => $filerecord->filename,
+                'filesize' => $filerecord->filesize,
+                'filepath' => $filerecord->filepath,
+                'contenthash' => $storedfile->get_contenthash(),
+                'avscantime' => $file->avscantime,
+            ],
         ]);
         $logevent->trigger();
     }
