@@ -155,12 +155,21 @@ class repository_gdrive_upload extends repository {
         // ----------------------------------------------------------------
         // 2. Get the Google Docs repository instance + system OAuth client.
         // ----------------------------------------------------------------
-        $gdrepos = repository::get_instances(['type' => 'googledocs']);
-        if (empty($gdrepos)) {
+        // Bypass UI capability checks since users do not need the view capability
+        // to have their assignment automatically uploaded via the system account.
+        $gdrepoid = $DB->get_field_sql(
+            "SELECT i.id
+               FROM {repository_instances} i
+               JOIN {repository} r ON r.id = i.typeid
+              WHERE r.type = 'googledocs'
+           ORDER BY i.id ASC",
+            [], IGNORE_MULTIPLE);
+
+        if (empty($gdrepoid)) {
             throw new repository_exception(get_string('nogoogledocsrepo', 'repository_gdrive_upload'));
         }
         /** @var repository_googledocs $gdrepo */
-        $gdrepo = reset($gdrepos);
+        $gdrepo = repository::get_instance($gdrepoid);
 
         // Retrieve the OAuth 2 issuer configured for the Google Docs plugin.
         $issuerid = get_config('googledocs', 'issuerid');
