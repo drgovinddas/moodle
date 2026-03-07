@@ -205,7 +205,7 @@ class repository_gdrive_upload extends repository {
             try {
                 $modctx = context::instance_by_id($contextid, IGNORE_MISSING);
                 if ($modctx && $modctx->contextlevel == CONTEXT_MODULE) {
-                    $row = $DB->get_record_lssql(
+                    $row = $DB->get_record_sql(
                         "SELECT a.name AS assignname, c.shortname AS courseshortname
                            FROM {course_modules} cm
                            JOIN {assign} a ON a.id = cm.instance
