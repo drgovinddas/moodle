@@ -780,6 +780,69 @@ trait core_renderer_toolbox {
     }
 
     /**
+     * Gets the markup of the given frontpage infobox if logic determines so.
+     *
+     * @param string $name Infobox setting name.
+     * @param bool|null $checktop Check top for 'infobox' setting.
+     *
+     * @return string Markup if any.
+     */
+    protected function get_frontpage_infobox(
+        string $name,
+        $checktop = null
+    ) {
+        $output = '';
+        $themesettings = \theme_adaptable\toolbox::get_settings();
+        $infoboxsettingvalue = $themesettings->$name;
+
+        if (!empty($infoboxsettingvalue)) {
+            if ($name == 'infobox') {
+                if ($checktop == $themesettings->infoboxtop) {
+                    $output = $this->get_frontpage_infobox_markup($name, $themesettings->infoboxfullscreen, 1);
+                }
+            } else {
+                $output = $this->get_frontpage_infobox_markup($name, $themesettings->infoboxfullscreen, 2);
+            }
+        }
+
+        return $output;
+    }
+
+    /**
+     * Gets the markup of the given frontpage infobox.
+     *
+     * @param string $name The infobox setting name.
+     * @param bool $infoboxfullscreen Is the infobox to be full screen?
+     * @param int $infoboxnumber The infobox number.
+     *
+     * @return string Markup if any.
+     */
+    protected function get_frontpage_infobox_markup(
+        string $name,
+        bool $infoboxfullscreen,
+        int $infoboxnumber
+    ) {
+        $output = '<div id="theinfo' . $infoboxnumber . '"';
+        if (empty($infoboxfullscreen)) {
+            $output .= ' class="container"';
+        }
+        $output .= '>';
+        $output .= '<div class="row">';
+        $output .= '<div class="col-12">';
+        $processedsetting = \theme_adaptable\admin_setting_confightmleditor::file_rewrite_setting_urls(
+            \theme_adaptable\toolbox::get_setting($name),
+            'shed_infobox',
+            $infoboxnumber
+        );
+        $output .= format_text($processedsetting, FORMAT_MOODLE);
+        $output .= '</div>';
+        $output .= '</div>';
+        $output .= '</div>';
+
+        return $output;
+    }
+
+    /**
      * Returns all tracking methods.
      *
      * @return string Markup.
@@ -1065,9 +1128,9 @@ trait core_renderer_toolbox {
      *
      * @param string $region
      * @param string $layoutrow
-     * @param string $settingname
      * @param array $classes
      * @param string $tag
+     *
      * @return string Markup.
      */
     public function get_flexible_blocks(
@@ -1288,7 +1351,7 @@ trait core_renderer_toolbox {
      */
     public function is_footer_visible() {
         global $COURSE;
-        $value = $this->page->theme->settings->footerblocksplacement;
+        $value = $this->page->theme->settings->footerboxesplacement;
 
         if ($value == 1) {
             return true;
@@ -1305,11 +1368,11 @@ trait core_renderer_toolbox {
     }
 
     /**
-     * Renders footer blocks.
+     * Renders footer boxes.
      *
      * @return string HTML output.
      */
-    public function get_footer_blocks() {
+    public function get_footer_boxes() {
 
         if (!$this->is_footer_visible()) {
             return '';
@@ -2057,8 +2120,6 @@ trait core_renderer_toolbox {
      * Returns html to render user favourites menu on the main navigation bar.
      * @deprecated Replaced by userfav_menu_items().
      *
-     * @param string $menuid The id to use when creating menu.  Used so this could be called for a nav drawer style display.
-     *
      * @return string Markup.
      */
     public function userfav_menu() {
@@ -2686,7 +2747,7 @@ trait core_renderer_toolbox {
     /**
      * Render custom menu.
      *
-     * @param custom_menu $menu
+     * @param core_custom_menu $menu
      * @param string $wrappre
      * @param string $wrappost
      * @param string $menuid

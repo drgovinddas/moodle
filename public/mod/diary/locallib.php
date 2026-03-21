@@ -25,7 +25,7 @@
  */
 
 
-defined('MOODLE_INTERNAL') || die(); // @codingStandardsIgnoreLine
+defined('MOODLE_INTERNAL') || die(); // phpcs:ignore
 
 /**
  * Returns diary entries tagged with a specified tag.
@@ -74,7 +74,7 @@ function mod_diary_get_tagged_entries($tag, $exclusivemode = false, $fromctx = 0
         $context = $ctx ? context::instance_by_id($ctx) : context_system::instance();
         $query .= $rec ? ' AND (ctx.id = :contextid OR ctx.path LIKE :path)' : ' AND ctx.id = :contextid';
         $params['contextid'] = $context->id;
-        $params['path'] = $context->path.'/%';
+        $params['path'] = $context->path . '/%';
     }
 
     $query .= " ORDER BY ";
@@ -83,7 +83,7 @@ function mod_diary_get_tagged_entries($tag, $exclusivemode = false, $fromctx = 0
         $fromcontext = context::instance_by_id($fromctx);
         $query .= ' (CASE WHEN ctx.id = :fromcontextid OR ctx.path LIKE :frompath THEN 0 ELSE 1 END),';
         $params['fromcontextid'] = $fromcontext->id;
-        $params['frompath'] = $fromcontext->path.'/%';
+        $params['frompath'] = $fromcontext->path . '/%';
     }
     $query .= ' c.sortorder, cm.id, de.id';
 
@@ -131,6 +131,7 @@ function mod_diary_get_tagged_entries($tag, $exclusivemode = false, $fromctx = 0
         foreach ($items as $item) {
             $context = context_module::instance($item->cmid);
             $canmanage = has_capability('mod/diary:manageentries', $context);
+            $canaddentries = has_capability('mod/diary:addentries', $context);
             // 20230325 Show tagged item only if allowed to see it.
             // if (($item->userid == $USER->id) || has_capability('mod/diary:manageentries', $context)) {
             if (($item->userid == $USER->id) || $canmanage) {
@@ -139,10 +140,12 @@ function mod_diary_get_tagged_entries($tag, $exclusivemode = false, $fromctx = 0
                 $cm = $modinfo->get_cm($item->cmid);
                 // 20230325 Student go to their view page and teachers, etc. go to reportsingle for the applicable user.
                 if ($canmanage) {
-                    $pageurl = new moodle_url('/mod/diary/reportsingle.php',
+                    $pageurl = new moodle_url(
+                        '/mod/diary/reportone.php',
                         [
                             'id' => $item->cmid,
-                            'action' => 'allentries',
+                            'action' => 'currententry',
+                            'entryid' => $item->id,
                             'user' => $item->userid,
                         ]
                     );
@@ -153,7 +156,7 @@ function mod_diary_get_tagged_entries($tag, $exclusivemode = false, $fromctx = 0
                 $strtocut = $item->text;
                 $strtocut = str_replace('\n', '<br>', $strtocut);
                 if (strlen($strtocut) > 200) {
-                    $strtocut = substr($strtocut, 0, 200).'...';
+                    $strtocut = substr($strtocut, 0, 200) . '...';
                 }
 
                 $pagename = format_string($strtocut, true, ['context' => context_module::instance($item->cmid)]);
@@ -163,13 +166,23 @@ function mod_diary_get_tagged_entries($tag, $exclusivemode = false, $fromctx = 0
                 $coursename = format_string($item->fullname, true, ['context' => context_course::instance($item->courseid)]);
                 $coursename = html_writer::link($courseurl, $coursename);
                 $icon = html_writer::link($pageurl, html_writer::empty_tag('img', ['src' => $cm->get_icon_url()]));
-                $tagfeed->add($icon, $item->id.' '.$pagename, $cmname.'<br>'.$coursename);
+                $tagfeed->add($icon, $item->id . ' ' . $pagename, $cmname . '<br>' . $coursename);
             }
         }
 
         $content = $OUTPUT->render_from_template('core_tag/tagfeed', $tagfeed->export_for_template($OUTPUT));
 
-        return new core_tag\output\tagindex($tag, 'mod_diary', 'diary_entries', $content,
-            $exclusivemode, $fromctx, $ctx, $rec, $page, $totalpages);
+        return new core_tag\output\tagindex(
+            $tag,
+            'mod_diary',
+            'diary_entries',
+            $content,
+            $exclusivemode,
+            $fromctx,
+            $ctx,
+            $rec,
+            $page,
+            $totalpages
+        );
     }
 }

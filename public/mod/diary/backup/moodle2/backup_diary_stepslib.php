@@ -32,7 +32,6 @@ defined('MOODLE_INTERNAL') || die(); // @codingStandardsIgnoreLine
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class backup_diary_activity_structure_step extends backup_activity_structure_step {
-
     /**
      * Define the complete data structure for backup, with file and id annotations
      *
@@ -44,7 +43,8 @@ class backup_diary_activity_structure_step extends backup_activity_structure_ste
         $userinfo = $this->get_setting_value('userinfo');
 
         // Define each element separated.
-        $diary = new backup_nested_element('diary',
+        $diary = new backup_nested_element(
+            'diary',
             [
                 'id',
             ],
@@ -63,10 +63,12 @@ class backup_diary_activity_structure_step extends backup_activity_structure_ste
                 'timeclose',
                 'editall',
                 'editdates',
+                'deleteentry',
                 'entrybgc',
                 'entrytextbgc',
                 'enablestats',
                 'enabletitles',
+                'submissionemail',
                 'teacheremail',
                 'studentemail',
                 'mincharacterlimit',
@@ -93,7 +95,8 @@ class backup_diary_activity_structure_step extends backup_activity_structure_ste
         );
 
         $prompts = new backup_nested_element('prompts');
-        $prompt = new backup_nested_element('prompt',
+        $prompt = new backup_nested_element(
+            'prompt',
             [
                 'id',
             ],
@@ -103,6 +106,7 @@ class backup_diary_activity_structure_step extends backup_activity_structure_ste
                 'datestop',
                 'text',
                 'format',
+                'promptbgc',
                 'minchar',
                 'maxchar',
                 'minmaxcharpercent',
@@ -119,7 +123,8 @@ class backup_diary_activity_structure_step extends backup_activity_structure_ste
         );
 
         $entries = new backup_nested_element('entries');
-        $entry = new backup_nested_element('entry',
+        $entry = new backup_nested_element(
+            'entry',
             [
                 'id',
             ],
@@ -129,9 +134,9 @@ class backup_diary_activity_structure_step extends backup_activity_structure_ste
                 'timecreated',
                 'timemodified',
                 'title',
+                'entrynoticemailed',
                 'text',
                 'format',
-                'promptbgc',
                 'rating',
                 'entrycomment',
                 'teacher',
@@ -141,7 +146,8 @@ class backup_diary_activity_structure_step extends backup_activity_structure_ste
         );
 
         $tags = new backup_nested_element('entriestags');
-        $tag = new backup_nested_element('tag',
+        $tag = new backup_nested_element(
+            'tag',
             [
                 'id',
             ],
@@ -152,7 +158,8 @@ class backup_diary_activity_structure_step extends backup_activity_structure_ste
         );
 
         $ratings = new backup_nested_element('ratings');
-        $rating = new backup_nested_element('rating',
+        $rating = new backup_nested_element(
+            'rating',
             [
                 'id',
             ],
@@ -182,7 +189,7 @@ class backup_diary_activity_structure_step extends backup_activity_structure_ste
 
         // Define sources.
         $diary->set_source_table('diary', ['id' => backup::VAR_ACTIVITYID]);
-        $prompt->set_source_table('diary_prompts', ['diaryid' => backup::VAR_ACTIVITYID]);
+        $prompt->set_source_table('diary_prompts', ['diaryid' => backup::VAR_PARENTID]);
 
         // All the rest of elements only happen if we are including user info.
         if ($this->get_setting_value('userinfo')) {
@@ -197,7 +204,8 @@ class backup_diary_activity_structure_step extends backup_activity_structure_ste
             $rating->set_source_alias('rating', 'value');
 
             if (core_tag_tag::is_enabled('mod_diary', 'diary_entries')) {
-                $tag->set_source_sql('SELECT t.id, ti.itemid, t.rawname
+                $tag->set_source_sql(
+                    'SELECT t.id, ti.itemid, t.rawname
                                         FROM {tag} t
                                         JOIN {tag_instance} ti
                                           ON ti.tagid = t.id
@@ -215,23 +223,20 @@ class backup_diary_activity_structure_step extends backup_activity_structure_ste
 
         // Define id annotations.
         $diary->annotate_ids('scale', 'scale');
-
         $entry->annotate_ids('user', 'userid');
         $entry->annotate_ids('user', 'teacher'); // Not sure if this is needed.
         $entry->annotate_ids('promptid', 'promptid');
-
         $prompt->annotate_ids('diaryid', 'diaryid');
-
         $rating->annotate_ids('scale', 'scaleid');
         $rating->annotate_ids('user', 'userid');
 
         // Define file annotations.
         $diary->annotate_files('mod_diary', 'intro', null); // This file areas haven't itemid.
-        $entry->annotate_files('mod_diary_entries', 'entry', 'id');
-        $entry->annotate_files('mod_diary_entries', 'attachment', 'id');
-
         $entry->annotate_files('mod_diary_prompts', 'entry', 'id');
         $entry->annotate_files('mod_diary_prompts', 'attachment', 'id');
+
+        $entry->annotate_files('mod_diary_entries', 'entry', 'id');
+        $entry->annotate_files('mod_diary_entries', 'attachment', 'id');
 
         return $this->prepare_activity_structure($diary);
     }

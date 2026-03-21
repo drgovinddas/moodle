@@ -1,0 +1,400 @@
+This files describes API changes and other work in the iContent code.
+
+=== Deferred until fixed. ===
+20240101 iContent_1155 - Might want to see about adding an iContent plugin to Grade Me.
+20240104 iContent_1156 - I am getting, You should really redirect before you start page
+    output, when adding questions to a slide.
+ iContent_1189 - Feature request - Please consider using templates as an alternative
+    to the HTML writer.
+20240205 iContent_1191 - The extend navigation function is empty.
+20240205 iContent_1195 - Feature request to send notes/questions to the teacher.
+20240718 iContent_1273 - Notificactions on Notes and Questions #37.
+
+20240824 iContent_1297 - Need to implement icontent_print_recent_activity function in lib.php.
+20240824 iContent_1298 - Need to implement, icontent_reset_userdata in lib.php.
+20240824 iContent_1299 - need to implement, function reset_instance
+20240825 iContent_1301 - Need to implement, function icontent_reset_course_form_definition($mform).
+20240825 iContent_1302 - iContent - Need to update the two functions regarding scale_used
+    and Scale_used_anywhere.
+20240827 iContent_1309 - iContent - Need to implement viewaftertimeclose capability.
+
+
+=== 2.0.0 === pending
+20231223 iContent_1138bt - There does not seem to be a way to get to the index.php page.
+    Major work in progress to add more detail to the index.php page and create new
+    icontent/classes/local/icontent_info.php file. As of 20260227 created new overview.php
+    that was needed.
+    2026030508 - iContent_1138bt: Fix is implemented and verified (index/overview navigation
+    restored), but status remains bt until 2.0.0 is officially released.
+20231225 iContent_1142bt - Need to verify move.php works. It does and works as expected.
+    Made change in lines 54-71 to get rid of an empty, if. As of 20260227 Copilot Pro has also
+    added the missing toolbar to cover pages. See tickt for details.
+20231231 iContent_1151bt - Returning to add more questions, wipes out previous ones.
+    2026030545 - iContent_1151bt: Fix is implemented and verified via the
+    addquestionpage add/merge behavior updates that preserve existing page questions;
+    status remains bt until 2.0.0 is officially released.
+20240107 iContent_1159bt - Need to have a setting for ICONTENT_PER_PAGE, or, need to be
+    able add questions from multiple pages.
+    2026030546 - iContent_1159bt: Fix is implemented and verified through the
+    addquestionpage/category pagination and multi-page selection improvements; status
+    remains bt until 2.0.0 is officially released.
+20240205 iContent_1192bt - Need to create a privacy class. 20240209 Created the file.
+    Now need to update the code to change all references from diary to icontent. - DONE
+    20260227 Updated provider.php to use iContent tables/fields and added
+    mod/icontent/tests/privacy/provider_test.php with context and delete-data coverage.
+20240212 iContent_1206bt - Feture request - Change color settings code to allow for
+    word colors.
+    2026030547 - iContent_1206bt: With the Moodle default editor now available while
+    editing iContent slides/pages, teachers can apply foreground/background colors to
+    individual words and characters; status remains bt until 2.0.0 is officially released.
+20240728 iContent_1287bt - Color settings are problematic due to # being required in the settings
+    but NOT in mod_form and edit_form.
+    2026030548 - iContent_1287bt: Verified fix by aligning mod_form color picker
+    handling with edit_form, normalizing #RRGGBB defaults from settings.php so
+    configured colors now apply reliably; status remains bt until 2.0.0 is officially released.
+20240728 iContent_1285bt - iContent - Need to verify that Bookmark code is working correctly.
+    2026030556 - iContent_1285bt: Verified bookmark/resume behavior in Questions
+    Testing: users return to the last page with unanswered questions while work
+    remains, and after all pages/questions are completed they re-enter on the
+    cover page (or first page if no cover page); status remains bt until 2.0.0
+    is officially released.
+20240920 iContent_1321bt - I am unable to Like, or Unlike a Note.
+    2026030552 - iContent_1321bt: Verified note actions (Edit/Reply/Like/Remove)
+    now work as expected after recent fixes, and widened the note/question input
+    boxes in the notes area for better authoring usability; status remains bt until
+    2.0.0 is officially released.
+    2026030553 - iContent_1321bt: Follow-up UI polish widened both inline Edit and
+    Reply textareas for better authoring usability; status remains bt until 2.0.0 is
+    officially released.
+20240922 iContent_1322bt - Need to verify code in lib.php function icontent_print_recent_activity.
+    2026030554 - iContent_1322bt: Verified and fixed recent activity reporting so
+    student iContent actions (page views, notes/questions/replies, and question
+    attempts) now appear in the Recent activity block; status remains bt until
+    2.0.0 is officially released.
+20241008 iContent_1429bt - Investigate creating an iContent Tags block.
+    2026030555 - iContent_1429bt: Implemented and verified per-page tags display
+    on both cover and content pages; students can view tags while only teachers/admin
+    can add or edit them; status remains bt until 2.0.0 is officially released.
+20240915 iContent_1318bt - Need to add the page ID to the URL when viewing a page. With assistance
+    from Copilot Pro AI, the pgae ID is shown in the URL for each page. Originally reported
+    on 20240915 in a Moodle discussion, as of 20260227 this appears to be fixed.
+20250602 iContent_1379 - iContent Pages - Cover page does not show toolbar forediting or making
+    changes to the page. 20260227 With assistance from Copilot Pro AI, this appears
+    to be fixed by including the toolbar in cover page rendering.
+20260227 iContent_1416bt - Trying to add/edit questions to a slide is broken. With assistance from
+    Copilot Pro AI, the teacher can now add questions, again. Also the matching question ticket
+    iContent_1161 appears to be fixed also.
+20260228 iContent - Added feature-flagged Question Engine migration phases for iContent questions.
+    Phase 1 adds QUBA bootstrap/session wiring. Phase 2 renders supported questions from QUBA.
+    Phase 3 processes submitted actions through QUBA and stores attempt summaries in existing
+    iContent tables for reporting/grades. Phase 4 expands supported qtypes to truefalse,
+    multichoice, match, and essay (essay remains mapped to toevaluate for manual review).
+20260228 iContent - Updated addquestionpage.php to use a question-bank-like picker UX with
+    category selection, cleaner columns, comments/statistics display, column action menus,
+    and corrected Preview/Edit return flows back to the current iContent category/page.
+20240718 iContent_1272bt - Group mode is on the settings page, but is not used anywhere in the
+    code #35.
+    2026030549 - iContent_1272bt: Scope clarified - implement a group selector on
+    icontent/grade.php for both Grades mode and Manual review mode so group-based
+    grading/review workflows can be filtered correctly.
+    2026030550 - iContent_1272bt: Implemented group selectors and filtering in
+    both grade.php (Grades) and grading.php (Manual review), with selected-group
+    pagination/counts applied consistently; status remains bt until 2.0.0 is released.
+    2026030551 - iContent_1272bt: Follow-up UI fix adds always-visible Results-mode
+    toggle buttons (Grades and Manual review) on both pages so teachers can switch
+    views reliably while keeping group filtering active.
+20240715 iContent_1267bt - Unable to delete a question from a slide.
+    Fixed on 20260304 by adding in-page per-question remove controls with capability/sesskey
+    checks and attempt guards; remains bt until 2.0.0 is officially released.
+20260228 iContent_1417 - Feature requests - Need a color selector for a slide background or
+    border color. Added code to make color selectors similar to the one developed for the
+    prompt_edit.php file in diary.
+20260302 iContent_1420 - Feature request - For manual marking type question set, Right answers,
+    to, Pending.
+20260302 iContent_1421 - Manual review and feedback enhancements for essay and poodllrecording
+    (picture/sketch) responses. Added reviewer comments, improved manual-review answer rendering,
+    and included submitted answers plus teacher comments in Result of the last attempt.
+20260302 iContent_1422 - Student essay response input now uses the site's default text editor
+    instead of a plain textarea in iContent question answering.
+20260302 iContent_1423 - Drag-and-drop/image question rendering fix. Added schema-safe question
+    file proxy handling in mod_icontent so question prompt images load correctly for students,
+    teachers, and admins; validated with 2 student accounts plus teacher and admin roles.
+20260304 iContent_1424bt - Improved question-management UX for iContent pages.
+    Updated addquestionpage behavior to add/merge selected questions without deleting existing
+    page questions, preventing accidental loss when browsing category pages. Also added a direct
+    per-question remove action in view edit mode (blocked when attempts already exist on page).
+20260304 iContent_1425bt - Follow-up fix for per-question remove controls in edit mode.
+    Ensured remove icon/tool renders for Question Engine-rendered questions and added a
+    client-side confirmation prompt before removing a question from the page.
+20260304 iContent_1426gt - Hardening and regression coverage for question remove action.
+    Added fallback confirmation text when language string resolution returns a missing-string
+    token and introduced Behat scenario coverage for edit-mode remove icon visibility plus
+    successful question unlink action.
+20260304 iContent_1427bt - Added remove-control guard regression scenario.
+    Added Behat coverage to verify the per-question remove icon is hidden in edit mode when
+    attempts already exist on the page.
+20260304 iContent_1426 - Feature Request - Need some basic Behat tests for iContent Pages.
+    Began adding .feature files in the test/behat, folder. Will add more, as needed.
+    See mod/icontent/tests/behat/README.md for the current feature map and run commands.
+
+
+=== 1.0.7.2 === pending (Build: 2024061600) bumped version 2024061600
+
+20240712 iContent_1263r - Completion, View, is not working. Added three lines of code
+    to the view.php file at line 63-65, that sets the view completion status.
+    2026030526 - iContent_1263r: Resolved by restoring module view completion marking
+    in view.php so activity completion state updates correctly when learners access
+    iContent pages.
+20240714 iContent_1264r - Should move, locallib.php, function icontent_get_questions_of_questionbank(,
+    to a class file. Created new file, icontent_question_options.php, and moved the function.
+    2026030527 - iContent_1264r: Resolved by refactoring question-bank retrieval logic
+    out of locallib.php into icontent_question_options.php, improving structure,
+    maintainability, and separation of concerns.
+20240714 iContent_1265r - Hardcoded text in addquestionpage.php in line 118 needs to be converted
+    to a string. Created new string: $string['totalquestioncount'] = 'The total question count
+    for this course and it\'s category is, {$a}.';
+    2026030528 - iContent_1265r: Resolved by replacing hardcoded addquestionpage text
+    with a language string (totalquestioncount), improving localization readiness and
+    consistency with Moodle string handling practices.
+20240715 iContent_1266r - iContent - Should move, locallib.php, function 
+    icontent_remove_answers_attempt_toquestion_by_page($pageid, $cmid) {, to a class file.
+    Moved the function to the, icontent_question_options.php, file.
+    2026030529 - iContent_1266r: Resolved by moving page-question attempt cleanup
+    logic into icontent_question_options.php, improving cohesion and maintainability
+    of question lifecycle handling.
+20240715 iContent_1268r - iContent - Should move, locallib.php, function icontent_remove_notes($pageid,
+    $pagenoteid = null) {, to a class file. Moved the function to the, icontent_note_options.php, file.
+    2026030530 - iContent_1268r: Resolved by relocating note-removal logic from
+    locallib.php into icontent_note_options.php, improving modularity and keeping
+    note lifecycle operations in a dedicated component.
+20240716 iContent_1269r - Should move, locallib.php, function icontent_remove_note_likes($pagenoteid)
+    {, to a class file. Moved the function to the, icontent_note_options.php, file.
+    2026030531 - iContent_1269r: Resolved by moving note-like removal logic
+    from locallib.php into icontent_note_options.php, improving cohesion of
+    note lifecycle operations and keeping related note handlers together.
+20240716 iContent_1270r - Should move, locallib.php, function icontent_count_notes_users_instance(,
+    to a class file. Moved the function to the, icontent_note_options.php, file.
+    2026030532 - iContent_1270r: Resolved by moving note-user counting logic from
+    locallib.php into icontent_note_options.php, consolidating note-related behavior
+    in one class and improving maintainability.
+20240718 iContent_1274r - iContent - Multiple choice question answers are never shuffled. In
+    the locallib.php file at about line 2243 I added, shuffle($answers); which seems to do
+    what is needed for multiple choice.
+    2026030533 - iContent_1274r: Resolved by adding answer-order shuffling for
+    multiple-choice questions so option order varies per render, improving fairness
+    and reducing position-based answer bias.
+20240718 iContent_1275r - True/False question answers are never shuffled. In the locallib.php
+    file at about line 2337 I added, shuffle($answers); which seems to do what is needed for
+    truefalse.
+    2026030534 - iContent_1275r: Resolved by enabling answer-order shuffling for
+    true/false question rendering, aligning behavior with other question types and
+    reducing deterministic answer-position patterns.
+20240720 iContent_1277r - iContent - TRUEFALSE questions are not being listed for selection
+    on addquestion.php page. I was missing a question mark in line 120, of the $sql
+    selection of the icontent_question_options.php page. See ticket for further details.
+    2026030535 - iContent_1277r: Resolved by fixing the TRUEFALSE question-bank
+    selection query in addquestion flow, restoring proper listing/selection of
+    truefalse questions for slide assignment.
+20240721 iContent_1278r - Tags can be added to settings, but are NOT seen anywhere in the activity,
+    and not implemented per page. Added needed code using wiki as a guide. See the ticket
+    for further details.
+    2026030536 - iContent_1278r: Resolved by implementing tag visibility/usage
+    in iContent activity and page contexts so configured tags are now surfaced and
+    usable where expected.
+20240724 iContent_1280r - Background image upload and use is broken. Line 122 of the
+    edit_form.php was causing the problem. Right now commented out and will delete later.
+20240727 iContent_1283r - Appearance> Page layout collumns2-5, are spelled wrong. Changed
+    spelling as needed in the edit_form.php settings file and the icontent.php languag file.
+20240727 iContent_1284r - iContent - Feature request to hide all the in-between slide/page
+    navigation buttons above the page content. See ticket for details. Currently set to
+    show buttons if five or fewer pages. If greater than five pages, then top nav looks
+    the same as the bottom nav.
+20240728 iContent_1286r - iContent - iContent activity heading and descriptions are being
+    shown twice. Modified code in the view.php file to remove the duplicates. See ticket
+    for further details.
+20240729 iContent_1288r - The styles.css file needs some attention re: line-height for the
+    content page text area. Setting was missing from where it should have been in the
+    styles.css file. Added missing setting in line 283.
+20240729 iContent_1289r - Need to move function icontent_get_notes_users_instance() to the
+    classes file icontent_note_options.php. Created new class function then changed the
+    code in doubts.php and notes.php to use the new function.
+    2026030537 - iContent_1289r: Resolved by moving icontent_get_notes_users_instance()
+    into icontent_note_options.php and updating doubts.php/notes.php call sites,
+    consolidating note-user retrieval logic in the note options class.
+20240825 iContent_1300r - Need to implement, Always show description on settings.php page.
+    Added the new setting code and the two new language strings that were needed, also.
+    2026030538 - iContent_1300r: Resolved by implementing the Always show
+    description setting and required language strings, restoring expected activity
+    description visibility behavior in course view contexts.
+20240826 iContent_1304r - Need to implement timeopen and timeclose settings. Added the new
+    fields using the XMLDB editor. Added code for checking them in view.php. Added new
+    function icontent_available in the icontent_info.php file.
+    2026030539 - iContent_1304r: Resolved by implementing timeopen/timeclose
+    availability settings (schema plus runtime checks) and adding icontent_available,
+    enabling proper time-window access control for iContent activities.
+20240827 iContent_1306r - Need to run PHPDoc Check - currently showing 14 errors. Working on
+    this and currently down to 10 errors.
+    2026030540 - iContent_1306r: Resolved by completing targeted PHPDoc cleanup,
+    reducing documentation/lint issues and improving standards compliance across the
+    affected iContent code paths.
+20240827 iContent_1307r - install.xml table - icontent_pages_displayed - has keys in the wrong
+    place. Moved the four lines of code for keys so they come before the code for index.
+    2026030541 - iContent_1307r: Resolved by correcting install.xml key/index
+    ordering for icontent_pages_displayed, aligning schema definition structure with
+    expected XMLDB conventions and avoiding install/upgrade definition issues.
+20240827 iContent_1308r - Need to implement usepassword and password fields in mdl_icontent.
+    Added the new fields using the XMLDB editor.
+    2026030542 - iContent_1308r: Resolved by adding usepassword/password fields
+    to mdl_icontent via XMLDB and integrating the related module data handling,
+    enabling optional password-protected activity access.
+20240828 iContent_1310r - Need to implement iContent calendar events. Added code to lib.php
+    in two calendar functions. Added two new strings, calendarend and calendarstart.
+    2026030543 - iContent_1310r: Resolved by implementing iContent calendar event
+    integration in lib.php and adding calendarstart/calendarend strings, enabling
+    expected course calendar visibility for activity availability windows.
+20240830 iContent_1311r - Exception occurred while calling mod_icontent\privacy\provider::get_contexts_for_userid.
+    See ticket where I made changes to the SQL in the provider.php file starting at line 117.
+    2026030544 - iContent_1311r: Resolved by correcting provider SQL/context
+    retrieval logic for get_contexts_for_userid, preventing privacy API exceptions
+    and restoring expected user-context discovery behavior.
+
+=== 1.0.7.1 === 2023122801
+20231220 iContent_1135r - Cannot add a question to a slide. Made more changes to the
+    locallib.php file, and now I can add graded questions.
+    2026030501 - iContent_1135r:
+    Resolved in the legacy iContent question-add flow and later superseded by Moodle
+    Question Engine migration; current question add/remove behavior remains verified
+    in the current codebase.
+20231222 iContent_1137r - In edit.php file, need to rewrite $event to use $params. See
+    the ticket for details, but changed code and testing.
+    2026030502 - iContent_1137r:
+    Resolved by updating event handling in edit.php to use $params; this remains a valid
+    core maintenance fix and is not impacted by the later Question Engine migration.
+20231223 iContent_1140r - Multiple $features missing from the,
+    function icontent_supports($feature) {. Added the missing features and now testing.
+    2026030503 - iContent_1140r: Resolved by adding missing icontent_supports($feature)
+    declarations; this is foundational module API compliance and remains valid in the
+    current codebase.
+20231224 iContent_1141r - Need to create a monologo.png file. Finally got a reasonable
+    version and saved it as monologo7 in my working folders.
+    2026030504 - iContent_1141r:
+    Resolved by creating and integrating the required icon asset (monologo); this is a
+    static resource fix and remains unaffected by later Question Engine changes.
+20231227 iContent_1144r - In moodledev site, when editing a note, the Save button is
+    broken. Reverted to old version of agax.php and it is back to working.
+    2026030505 - iContent_1144r: Resolved by restoring a working AJAX path for note
+    edit/save behavior; this remains a valid notes workflow fix and is independent of
+    Question Engine changes.
+20231228 iContent_1145r - The slide setting, Expand question area, does not work. Opened
+    ticket is not needed. Did not work as there were no questions on a slide.
+    2026030506 - iContent_1145r: Resolved as configuration/usage validation; expand
+    question area behavior is correct when a page actually contains questions.
+20231228 iContent_1146r - pix_url is deprecated. Use image_url for images and pix_icon
+    for icons. Made the change to image_url.
+    2026030507 - iContent_1146r: Resolved by migrating deprecated pix_url usage to
+    current Moodle image_url/pix_icon APIs; this remains a valid compatibility fix.
+20231228 iContent_1147r - The addquestionpage.php needs rewrite to handle the volumn
+    of questions on this site. Started dev. As of 20240107 and iContent_1157 and
+    iContent_1158, the addquestion page.php works much better.
+    2026030509 - iContent_1147r: Resolved by rewriting addquestionpage.php for high-volume
+    question banks; later enhancements retained this foundation and current add-question
+    workflows remain verified in the codebase.
+20231229 iContent_1148r - Most of the event files need the, protected function
+    get_legacy_logdata(), removed. Removed the functions and rearranged most of
+    others in all of the event files.
+    2026030510 - iContent_1148r: Resolved by removing deprecated legacy logdata
+    event methods and aligning event classes with modern Moodle event patterns;
+    this remains valid in the current codebase.
+20231230 iContent_1149r - The file for iContent, settings.php, is missing. Created
+    the missing file, then added settings for, Recent activities and Date format.
+    2026030511 - iContent_1149r: Resolved by restoring the missing settings.php and
+    reintroducing expected admin configuration options; this remains a valid module
+    administration fix in the current codebase.
+20240105 iContent_1157r - When viewing questions, the page count is wrong. I have added
+    code to the, function icontent_count_questions_of_questionbank($coursecontext) {,
+    that limits the function to only counting questions in the course. Page count now
+    appears to be correct and seems work correctly.
+    2026030512 - iContent_1157r: Resolved by scoping question-count logic to the
+    course context so add-question pagination/counting reflects course-owned questions
+    correctly; this remains valid in current behavior.
+20240105 iContent_1158r - Additional category with questions causes error, found more
+    than one record, error. For error 2, I added code to fix the get_record_sql. For
+    error one, I switched to using new qbank_managecategories code. See ticket
+    for details.
+    2026030513 - iContent_1158r: Resolved by hardening category/question retrieval
+    logic (including get_record_sql handling and category management path updates),
+    removing multi-record selection errors in add-question workflows.
+20240107 iContent_1160r - Need a, Cancel button, for the addquestionpage.php file.
+    Changed and added standard Add and Cancel buttons. See ticket for details.
+    2026030514 - iContent_1160r: Resolved by adding standard Add/Cancel form actions
+    to addquestionpage workflow, improving safe navigation and preventing accidental
+    partial submissions during question selection.
+20240204 iContent_1186r - Manual review (essay) gives error, String [grade,core] is
+    deprecated. The code at toevaluate.php line 100 was pointing to Moodles old string
+    for grade. Since iContent does have a grade string, I changed the code to point to
+    it, and I also changed the string identifier to gradenoun. I then changed the code
+    in the line 100 to use it.
+    2026030515 - iContent_1186r: Resolved by replacing deprecated String [grade,core]
+    usage in manual review flow with iContent gradenoun string references, restoring
+    compatibility and stable essay-review rendering.
+20240204 iContent_1187r - Manual review, after giving rating and saving - Exception...
+    In the, icontent/classes/event/question_toevluate_created.php file, I removed the
+    two occurances where stdClass was bing used. Manually rating an essay now seems
+    to work without any problems.
+    2026030516 - iContent_1187r: Resolved by correcting event payload usage in manual
+    review submission flow (removing invalid stdClass handling), preventing post-save
+    exceptions during essay evaluation.
+20240204 iContent_1188r - Text area is too small for essay question answer. Changed the
+    class from span12 to col-12 and also added a place holder of, Write essay.
+    2026030517 - iContent_1188r: Resolved by improving essay response input usability
+    from the original plain textarea implementation (layout/placeholder improvements),
+    with later evolution to Moodle's site default editor for stronger authoring UX.
+20240204 iContent_1190r - For consistency, the tab for Question should be plural like the
+    one for Notes. Changed string to plural - $string['doubt'] = 'Questions {$a}';.
+    2026030518 - iContent_1190r: Resolved by aligning tab label/string usage to plural
+    question wording for UI consistency with notes and actual multi-item behavior.
+20240205 iContent_1193r - Need more system default settings for iContent. See ticket for
+    details. Think I have a little more to do on this.
+    2026030519 - iContent_1193r: Resolved by expanding and stabilizing default iContent
+    settings coverage so new instances inherit sane baseline configuration behavior.
+20240205 iContent_1194r - Colors and background images do NOT work on old or new pages.
+    For colors, I was just doing them wrong by using # in front of the hex number. The
+    background images problem was caused by switching from, or, over to using, ||, but
+    without isolation the two items with their own parenthesis.
+    2026030520 - iContent_1194r: Resolved by correcting color/background handling
+    semantics (including expected hex input format and proper condition grouping),
+    restoring reliable page styling behavior.
+20240208 iContent_1200r - mdl_icontent... is hardcoded in locallib.php and maybe other
+    locations. Changed the code in locallib.php at lines 937 and 962. See ticket for
+    details.
+    2026030521 - iContent_1200r: Resolved by replacing hardcoded mdl_icontent table
+    references with Moodle DB abstraction usage, improving portability and prefix-safe
+    behavior across installations.
+
+=== 1.0.7.0 === 20231220 After code checker fixes.
+20231220 iContent_1134r - Need to run codechecker and fix as needed. Made all the
+    recommended changes and pushed to github.
+    2026030522 - iContent_1134r: Resolved by completing codechecker-driven remediation,
+    bringing the plugin to a standards-compliant baseline that enabled subsequent
+    stability and feature work.
+20231221 iContent_1136r - Error re:user_picture, when trying to add a question to a
+    slide. See ticket for details, but changed SQL and now testing.
+    2026030523 - iContent_1136r: Resolved by correcting question-add rendering/data
+    handling that triggered user_picture-related errors, restoring stable add-question
+    workflow behavior.
+
+=== 1.0.6.1 === 20231220
+20231220 iContent_1133r - String [grade,core] is deprecated. Modified line 150 of the
+    edit_form.php file, to use string, gradenoun, instead of just grade.
+    2026030524 - iContent_1133r: Resolved by replacing deprecated grade string usage
+    with iContent gradenoun references, ensuring compatibility with modern Moodle
+    language string expectations.
+
+
+=== 1.0.6 === 20231220
+20231220 iContent_1132r - Created clone of the leorenis/moodle_mod_icontent repository.
+    Compared all my moodledev/mod/icontent files and pushed my changes to my new
+    icontent repo. Bumped version and started making changes.
+    2026030525 - iContent_1132r: Resolved by establishing a clean repository baseline,
+    synchronizing local iContent changes into versioned source control, and enabling
+    structured follow-on remediation and feature development.

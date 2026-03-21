@@ -80,12 +80,12 @@
 .path-mod-icontent .icontent-page .fulltextpage{
 	font-size: 16px;
     letter-spacing: 0.1px;
-    line-height: 1.8em;
+    line-height: 1.5em;
     word-spacing: 0.3px;
     padding: 15px;
 }
 .path-mod-icontent .icontent-page .fulltextpage ul li{
-	line-height: 1.8em;
+	line-height: 1.5em;
 }
 /*Hightcontrast */
 .path-mod-icontent .icontent-page .highcontrast h1,
@@ -150,8 +150,8 @@
 }
 .path-mod-icontent .icontent-page .fulltextpage p{
 	font-size: 16px;
-	text-indent: 1.25em;
-	line-height: 1.8em;
+	text-indent: 0em;
+	line-height: 1.5em;
 }
 .path-mod-icontent .icontent-page .fulltextpage .toolbarpage a{
 	margin: 0;
@@ -199,11 +199,25 @@
 .path-mod-icontent .notesarea #note .fields span{
 	margin-right: 15px;
 }
+.path-mod-icontent .notesarea #idcommentnote,
+.path-mod-icontent .notesarea #idcommentdoubt {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.path-mod-icontent .notesarea .notecomment .replynotecomment,
+.path-mod-icontent .notesarea .notecomment .textnotecomment {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
 .path-mod-icontent .notesarea #tabnav #messagenotes{
  	background: #6DB143 none repeat scroll 0 0;
     border-radius: 10px;
     font-size: 0.7em;
-    line-height: 1.2em;
+    line-height: 0.7em;
     text-align: center;
     color: #FFFFFF;
     float: right;
@@ -215,7 +229,7 @@
  	background: #238BC7 none repeat scroll 0 0;
     border-radius: 10px;
     font-size: 0.7em;
-    line-height: 1.2em;
+    line-height: 0.7em;
     text-align: center;
     color: #FFFFFF;
     float: right;
@@ -223,6 +237,7 @@
     margin-top: -5px;
     padding: 3px 6px 3px;
 }
+
 .path-mod-icontent .notesarea #tabnav #messagedoubt:hover,
 .path-mod-icontent .notesarea #tabnav #messagenotes:hover{
 	text-decoration: none;
@@ -276,10 +291,56 @@
 	font-size: 13px;
 	padding-right: 10px;
 }
-/** List of anotations **/
+.path-mod-icontent .questionsarea .question.match .optionslist{
+  overflow-x: auto;
+}
+.path-mod-icontent .questionsarea .question.match .optionslist .match-table{
+  width: 100%;
+  table-layout: fixed;
+}
+.path-mod-icontent .questionsarea .question.match .optionslist .match-table td{
+  vertical-align: top;
+  padding-bottom: 8px;
+}
+.path-mod-icontent .questionsarea .question.match .optionslist .match-table td.matchoptions{
+  width: 45%;
+  white-space: normal;
+  word-break: break-word;
+}
+.path-mod-icontent .questionsarea .question.match .optionslist .match-table td.matchanswer{
+  width: 55%;
+}
+.path-mod-icontent .questionsarea .question.match .optionslist .match-table td.matchanswer select.match-select{
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.path-mod-icontent .questionsarea .question.match.qengine-render .ablock{
+  overflow-x: auto;
+}
+.path-mod-icontent .questionsarea .question.match.qengine-render table.answer{
+  width: 100%;
+  table-layout: fixed;
+}
+.path-mod-icontent .questionsarea .question.match.qengine-render table.answer td.text{
+  width: 45%;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+.path-mod-icontent .questionsarea .question.match.qengine-render table.answer td.control{
+  width: 55%;
+}
+.path-mod-icontent .questionsarea .question.match.qengine-render table.answer td.control select.form-select{
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+/** List of annotations **/
 .path-mod-icontent .icontent-page .notesarea .notelist .noterowicontent{
 	margin-left: 45px;
 	font-size: 13px;
+    line-height: 1.4em;
 }
 .path-mod-icontent .icontent-page .notesarea .notelist .noterowicontent .noteheader .noteon{
 	color: #aaa;
@@ -469,7 +530,7 @@
 }
 .path-mod-icontent .contentcoverpage p{
 	 color: #1c1c1c;
-    line-height: 1.8em;
+    line-height: 1.5em;
     font-size: 16px;
 }
 /* List-Groups. Override Twitter Bootstrap */

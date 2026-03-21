@@ -620,8 +620,8 @@ class toolbox {
             '[[setting:blockheaderbackgroundcolor]]' => '#FFFFFF',
             '[[setting:blockbordercolor]]' => '#59585D',
             '[[setting:blockregionbackgroundcolor]]' => 'transparent',
-            '[[setting:marketblockbordercolor]]' => '#e8eaeb',
-            '[[setting:marketblocksbackgroundcolor]]' => 'transparent',
+            '[[setting:marketboxbordercolor]]' => '#e8eaeb',
+            '[[setting:marketboxbackgroundcolour]]' => 'transparent',
             '[[setting:blockheaderbordertop]]' => 1,
             '[[setting:blockheaderborderleft]]' => 0,
             '[[setting:blockheaderborderright]]' => 0,
@@ -862,7 +862,7 @@ class toolbox {
     /**
      * Returns version and release in the version.php file at the supplied storage location.
      *
-     * @param $fullplug Plugin location on storage.
+     * @param string $fullplug Plugin location on storage.
      * @return array Version and release or null if not there.
      */
     private static function get_version_file_info($fullplug) {
@@ -1077,6 +1077,7 @@ class toolbox {
             if ($ourprops['alertcount'] > $theirprops['alertcount']) {
                 // Schedule removal of excess.
                 for ($alertindex = $theirprops['alertcount'] + 1; $alertindex <= $ourprops['alertcount']; $alertindex++) {
+                    $alerttext = 'alert' . $alertindex;
                     $filepropremove[$alerttext] = [
                         self::FILEPROPERTYTYPE => self::CONFIGHTMLEDITORTYPE,
                         self::FILEPROPERTYFILEAREA => 'shed_alerttext',
@@ -1086,7 +1087,7 @@ class toolbox {
             }
         }
 
-        // Footer blocks.  Ref: get_footer_blocks().
+        // Footer boxes.  Ref: get_footer_boxes().
         $helper = self::admin_settings_layout_helper('footerlayoutrow', 3, $props);
         if ($helper['totalblocks'] > 0) {
             $blockcount = 0;
@@ -1217,7 +1218,7 @@ class toolbox {
      * Get properties.
      *
      * @param string $pluginfrankenstyle Plugin frankenstyle.
-     * @param bool $encodefiles.
+     * @param bool $encodefiles Encode files?
      *
      * @return array Properties.
      */
@@ -1728,9 +1729,8 @@ class toolbox {
      *    'settingthemename' => String - Indicates the setting theme name to use.  If not stated then
      *         will be 'adaptable'.  Use lower case, the bit after the underscore in the frankenstyle name.
      *    'title' => String - optional title.
-     * @param string $content - Optional content.
      *
-     * @return string markup or empty string if no icon specified.
+     * @return string Markup or empty string if no icon specified.
      */
     public static function getfontawesomemarkup($theicon, $options = []) {
         $markup = '';
@@ -2497,11 +2497,10 @@ class toolbox {
     /**
      * Admin setting layout builder helper.
      *
-     * @param string $adminsettingname
-     * @param int $totalrows
-     * @param array $totalrows
-     * @param stdClass|array $themesettings
-     * @param string $classnamebeginswith  Used when building the blockname to retrieve for display.  Optional.
+     * @param string $adminsettingname Name.
+     * @param int $totalrows Total rows.
+     * @param stdClass|array $themesettings Theme settings.
+     * @param string $classnamebeginswith Used when building the blockname to retrieve for display.  Optional.
      *
      * @return array of the blocks organised by row with their dimension size as value and total blocks.
      */

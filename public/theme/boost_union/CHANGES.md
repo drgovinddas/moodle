@@ -4,6 +4,32 @@ moodle-theme_boost_union
 Changes
 -------
 
+### v5.1-r8
+
+* 2026-03-08 - Improvement: Add additional block regions on the 'mycourses' page layout to show sticky blocks at least, resolves #1141
+* 2026-03-08 - Improvement: Improve horizontal width and vertical alignment of the login page tabs layout with JS, resolves #1187
+* 2026-03-06 - Improvement: Add dedicated Boost Union login page instructions, resolves #1170
+               Please note: If you have used the auth_instructions setting in Moodle core before, you must copy that content to the new login page instructions as Boost Union does not display auth_instructions anymore.
+* 2026-03-05 - Bugfix: Page footer got distorted on small screens with the new login layout options, resolves #1175
+* 2026-03-05 - Bugfix: Filter login tab descriptions, resolves #1179
+* 2026-03-05 - Documentation: Add a note to README that the behaviour of logos and favicons deviates from Boost Union's main principle to not change anything at all after being activated.
+* 2026-03-05 - Bugfix: Fix edge cases of the new login form layouts on smaller screens, resolves #1169
+* 2026-03-05 - Bugfix: Require FooterPopover only if footer button present, resolves #1177
+
+### v5.1-r7
+
+* 2026-02-28 - Bugfix: SCSS changes in flavours were not reflected in theme designer mode, resolves #625
+* 2026-02-28 - Bugfix: Smart Menu sometimes repeated menus, resolves #800
+* 2026-02-27 - Tests: theme_boost_union_is_active_theme() triggered "theme already set up" exception during PHPUnit tests, resolves #1165
+
+### v5.1-r6
+
+* 2026-02-26 - Bugfix: Smart menu creation was not possible if a custom field which hid itself from the course settings form was present, resolves #1164
+* 2026-02-24 - Feature: Add new login layouts and other login settings, resolves #1055
+* 2026-02-24 - Improvement: Hide the "Calendar" navigation item for guests as well, resolves #1167
+* 2026-02-12 - Improvement: Solve Mustache glitches in the enhanced header templates, resolves #1161
+* 2026-02-12 - SCSS snippet: Aligned course section borders, resolves #1132
+
 ### v5.1-r5
 
 * 2025-02-10 - Bugfix: After introducing the course-specific settings in Boost Union in the latest release, entering course settings was not possible anymore if Boost Union was not the active theme, resolves #1155

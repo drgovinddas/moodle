@@ -25,7 +25,7 @@
  */
 
 namespace mod_diary\event;
-defined('MOODLE_INTERNAL') || die(); // @codingStandardsIgnoreLine
+defined('MOODLE_INTERNAL') || die(); // phpcs:ignore
 
 /**
  * The mod_diary invalid access attempt event class.
@@ -35,7 +35,6 @@ defined('MOODLE_INTERNAL') || die(); // @codingStandardsIgnoreLine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class invalid_access_attempt extends \core\event\base {
-
     /**
      * Init method.
      */
@@ -69,7 +68,8 @@ class invalid_access_attempt extends \core\event\base {
      * @return \moodle_url
      */
     public function get_url() {
-        return new \moodle_url('/mod/diary/view.php',
+        return new \moodle_url(
+            '/mod/diary/view.php',
             [
                 'id' => $this->contextinstanceid,
             ]

@@ -1,4 +1,4 @@
-<?php
+<?php // phpcs:ignore
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -24,6 +24,7 @@
 use mod_diary\local\results;
 use mod_diary\local\diarystats;
 use mod_diary\local\prompts;
+use mod_diary\local\prompts_form;
 use mod_diary\event\invalid_access_attempt;
 use mod_diary\event\prompt_edited;
 
@@ -34,9 +35,33 @@ global $DB;
 
 $id = required_param('id', PARAM_INT); // Course Module ID.
 $cm = get_coursemodule_from_id('diary', $id);
-$action = optional_param('action', '', PARAM_ACTION); // Action(promt).
+$action = optional_param('action', '', PARAM_ALPHANUMEXT); // Action(promt).
 $promptid = optional_param('promptid', '', PARAM_INT); // Prompt ID.
-
+$promptbgc = optional_param('promptbgc', '#ffffff', PARAM_TEXT); // Prompt bgc default to fix undefined error down around line 322.
+if (!preg_match('/^#[0-9a-fA-F]{6}$/', $promptbgc)) {
+    $promptbgc = '#ffffff';
+}
+$viewby = optional_param('viewby', -1, PARAM_INT);
+$view = optional_param('viewp', -1, PARAM_INT);
+$viewbyp = optional_param('viewbyp', 1, PARAM_INT);
+$viewbyc = optional_param('viewbyc', 1, PARAM_INT);
+$viewbyf = optional_param('viewbyf', 1, PARAM_INT);
+$jumptocurrent = optional_param('jumptocurrent', 0, PARAM_INT);
+$jumpdone = optional_param('jumpdone', 0, PARAM_INT);
+$collapsedidsraw = optional_param('collapsedids', '', PARAM_TEXT);
+$collapsedids = [];
+if (!empty($collapsedidsraw)) {
+    $collapsedidparts = explode(',', $collapsedidsraw);
+    foreach ($collapsedidparts as $collapsedidpart) {
+        $collapsedidpart = trim($collapsedidpart);
+        if (ctype_digit($collapsedidpart)) {
+            $collapsedid = (int)$collapsedidpart;
+            if ($collapsedid > 0) {
+                $collapsedids[$collapsedid] = $collapsedid;
+            }
+        }
+    }
+}
 if (!$cm = get_coursemodule_from_id('diary', $id)) {
     throw new moodle_exception(get_string('incorrectmodule', 'diary'));
 }
@@ -59,6 +84,7 @@ $PAGE->set_title(format_string($diary->name));
 $PAGE->set_heading($course->fullname);
 
 $data = new stdClass();
+$selectedpromptdata = null;
 
 // 20221002 Added sort for ticket Diary_926.
 $prompts = $DB->get_records('diary_prompts', ['diaryid' => $diary->id], $sort = 'datestart, datestop');
@@ -67,24 +93,26 @@ if (!empty($action)) {
     switch ($action) {
         case 'delete':
             if (has_capability('mod/diary:manageentries', $context)) {
-                $promptid = required_param('promptid',  PARAM_INT);  // Prompt ID to delete.
+                $promptid = required_param('promptid', PARAM_INT);  // Prompt ID to delete.
                 // Before allowing the prompt to be removed, need to make sure it is NOT being used anywhere!
                 if (!prompts::prompt_in_use($cm, $promptid)) {
                     prompts::prompt_remove($cm);
                     // Need redirect back to where we came from, with a success message.
-                    redirect('prompt_edit.php?id='.$id, get_string('promptremovesuccess', 'diary', $promptid));
+                    redirect('prompt_edit.php?id=' . $id, get_string('promptremovesuccess', 'diary', $promptid));
                 } else {
                     // Need redirect back to where we came from, with a failure message.
-                    redirect('prompt_edit.php?id='.$id, get_string('promptremovefailure', 'diary', $promptid));
+                    redirect('prompt_edit.php?id=' . $id, get_string('promptremovefailure', 'diary', $promptid));
                 }
             }
-        break;
+            break;
         case 'edit':
             if (has_capability('mod/diary:manageentries', $context)) {
-                $promptid = required_param('promptid',  PARAM_INT); // Prompt ID to edit.
+                $promptid = required_param('promptid', PARAM_INT); // Prompt ID to edit.
                 $action = optional_param('action', 'edit', PARAM_ACTION); // Action(promt).
                 $data = $DB->get_record('diary_prompts', ['id' => $promptid]);
-                $prompts = $DB->get_records('diary_prompts', ['id' => $promptid], $sort = 'id ASC');
+                if ($data) {
+                    $selectedpromptdata = clone $data;
+                }
 
                 // Trigger prompt edited event.
                 $event = \mod_diary\event\prompt_edited::create(
@@ -102,7 +130,7 @@ if (!empty($action)) {
                 $event->add_record_snapshot('diary', $diary);
                 $event->trigger();
             }
-        break;
+            break;
         case 'create':
             if (has_capability('mod/diary:manageentries', $context)) {
                 $action = optional_param('action', 'create', PARAM_ACTION); // Action(promt).
@@ -113,6 +141,7 @@ if (!empty($action)) {
                 foreach ($prompts as $prompt => $temp) {
                     break;
                 }
+
                 // Trigger prompt created event.
                 $event = \mod_diary\event\prompt_created::create(
                     [
@@ -129,46 +158,96 @@ if (!empty($action)) {
                 $event->add_record_snapshot('diary', $diary);
                 $event->trigger();
             }
-        break;
+            break;
         default:
+    }
+}
 
+if ($view == -1) {
+    $view = 0;
+}
+
+$editmode = ($action === 'edit' && !empty($promptid));
+$selectedpromptcounter = 0;
+if ($editmode && !empty($prompts)) {
+    $promptindex = 0;
+    foreach ($prompts as $promptrecord) {
+        $promptindex++;
+        if ((int)$promptrecord->id === (int)$promptid) {
+            $selectedpromptcounter = $promptindex;
+            break;
+        }
     }
 }
 
 // Set up a general table to hold the list of prompts.
-$table = new html_table();
-$table->cellpadding = 5;
-$table->class = 'generaltable';
+$tableheadrow1 = '';
+$tableheadrow2 = '';
 
-// Add column headings to the table list of prompts.
-$table->head = [
-    get_string('tablecolumnstatus', 'diary'),
-    get_string('tablecolumnprompts', 'diary'),
-    get_string('tablecolumnpromptsbgc', 'diary'),
-    get_string('tablecolumnstart', 'diary'),
-    get_string('tablecolumnstop', 'diary'),
-    get_string('tablecolumncharacters', 'diary'),
-    get_string('tablecolumnwords', 'diary'),
-    get_string('tablecolumnsentences', 'diary'),
-    get_string('tablecolumnparagraphs', 'diary'),
-    get_string('tablecolumnedit', 'diary'),
-];
+// 20240603 View prompt list view/hide.
+if ($view == -1 || $view == 1) {
+    $lnkadd = "&viewp=0";
+} else {
+    $lnkadd = "&viewp=1";
+}
 
-$output = '';
-$line = [];
+$arrtextadds = [];
+$arrtextadds[1] = '<span class="arrow-s" style="font-size:1em;"></span>';
+
+$arrtextadds[$viewby] = $view == -1 || $view == 1 ? '<span class="arrow-s" style="font-size:1em;">
+    </span>' : '<span class="arrow-n" style="font-size:1em;"></span>';
+
+$tableheadrow1 .= '<tr>';
+$tableheadrow1 .= '<th><a href="?id=' . $id . '&viewby=1' . $lnkadd . '&collapsedids=#promptlist">'
+    . get_string('tablecolumnstatus', 'diary') . $arrtextadds[1] . '</a></th>';
+$tableheadrow1 .= '<th colspan="8">' . get_string('tablecolumnprompts', 'diary') . '</th>';
+$tableheadrow1 .= '</tr>';
+
+$tableheadrow2 .= '<tr>';
+$tableheadrow2 .= '<th></th>';
+$tableheadrow2 .= '<th>' . get_string('tablecolumnpromptsbgc', 'diary') . '</th>';
+$tableheadrow2 .= '<th>' . get_string('tablecolumnstart', 'diary') . '</th>';
+$tableheadrow2 .= '<th>' . get_string('tablecolumnstop', 'diary') . '</th>';
+$tableheadrow2 .= '<th>' . get_string('tablecolumncharacters', 'diary') . '</th>';
+$tableheadrow2 .= '<th>' . get_string('tablecolumnwords', 'diary') . '</th>';
+$tableheadrow2 .= '<th>' . get_string('tablecolumnsentences', 'diary') . '</th>';
+$tableheadrow2 .= '<th>' . get_string('tablecolumnparagraphs', 'diary') . '</th>';
+$tableheadrow2 .= '<th>' . get_string('tablecolumnedit', 'diary') . '</th>';
+$tableheadrow2 .= '</tr>';
+
+$output = '<a id="promptlist"></a><table class="generaltable" cellpadding="5"><thead>'
+    . $tableheadrow1 . $tableheadrow2 . '</thead><tbody>';
+$rows = '';
+// Initialize a prompt counter.
 $counter = 0;
 
-// If there are any prompts for this diary, create a list of them.
-if ($prompts) {
+// If there are any prompts for this diary, create a descending list of them.
+if ($prompts && $view == 0) {
     foreach ($prompts as $prompt) {
-        $status = '';
-        if ($prompt->datestop < time()) {
-            $status = 'Past';
-        } else if (($prompt->datestart < time()) && $prompt->datestop > time()) {
-            $status = 'Current';
-        } else if ($prompt->datestart > time()) {
-            $status = 'Future';
+        if ($editmode && (int)$prompt->id !== (int)$promptid) {
+            continue;
         }
+        $rowanchor = 'prompt-' . $prompt->id;
+        $promptidint = (int)$prompt->id;
+        $rowcollapsed = isset($collapsedids[$promptidint]);
+        $nextcollapsedids = $collapsedids;
+        if ($rowcollapsed) {
+            unset($nextcollapsedids[$promptidint]);
+        } else {
+            $nextcollapsedids[$promptidint] = $promptidint;
+        }
+        ksort($nextcollapsedids);
+        $nextcollapsedidsparam = implode(',', $nextcollapsedids);
+        $statuslabel = get_string('promptsf', 'diary');
+        if ($prompt->datestop < time()) {
+            $statuslabel = get_string('promptsp', 'diary');
+        } else if (($prompt->datestart < time()) && ($prompt->datestop > time())) {
+            $statuslabel = get_string('promptsc', 'diary');
+        }
+        $statusicon = $rowcollapsed ? '&#9654;' : '&#9660;';
+        $status = '<a href="?id=' . $id . '&collapsedids=' . urlencode($nextcollapsedidsparam) . '#' . $rowanchor . '">'
+            . $statuslabel . '<span style="font-size:1em;">' . $statusicon . '</span></a>';
+
         $data->entryid = $prompt->id;
         $data->diaryid = $prompt->diaryid;
         $data->datestart = $prompt->datestart;
@@ -193,62 +272,136 @@ if ($prompts) {
         // 20230810 Changed based on pull request #29.
         $url = new moodle_url('prompt_edit.php', ['id' => $id, 'action' => 'delete', 'promptid' => $prompt->id]);
         $jlink1 = '&nbsp;<a onclick="return confirm(\''
-                  .get_string('deleteexconfirm', 'diary')
-                  .$data->entryid
-                  .'\')" href="'. $url->out(false) .'"><img src="pix/delete.png" title="'
-                  .get_string('delete', 'diary') .'" alt="'
-                  .get_string('delete', 'diary') .'"/></a>';
+                  . get_string('deleteexconfirm', 'diary')
+                  . $data->entryid
+                  . '\')" href="' . $url->out(false) . '"><img src="pix/delete.png" title="'
+                  . get_string('delete', 'diary') . '" alt="'
+                  . get_string('delete', 'diary') . '"/></a>';
 
         // If user can edit, create an edit link to the current prompt.
         // Use prompt ID so we can come back to the Prompt Editor we came from.
         // 20230810 Changed based on pull request #29.
         $url = new moodle_url('prompt_edit.php', ['id' => $id, 'action' => 'edit', 'promptid' => $data->entryid]);
-        $jlink2 = '<a href="'.$url->out(false).'"><img src="pix/edit.png" alt='
-                  .get_string('eeditlabel', 'diary').'></a>';
+        $url->set_anchor('prompt-' . $data->entryid);
+        $jlink2 = '<a href="' . $url->out(false) . '"><img src="pix/edit.png" alt='
+                  . get_string('eeditlabel', 'diary') . '></a>';
         $counter++;
-        $prompttext = '<td bgcolor="'.$data->promptbgc.'">'
-                      .get_string('writingpromptlable2', 'diary')
-                      .$counter
-                      .get_string('idlable', 'diary', $data->entryid)
-                      .'<br>'.$data->text.'</td>';
-        $promptbgc = '<td>'.$data->promptbgc.'</td>';
-        $start = '<td>'.userdate($data->datestart).'</td>';
-        $stop = '<td>'.userdate($data->datestop).'</td>';
-        $characters = '<td>'.get_string('chars', 'diary').'<br>'
-                      .get_string('minc', 'diary').$data->minchar.'<br>'
-                      .get_string('maxc', 'diary').$data->maxchar.'<br>'
-                      .get_string('errp', 'diary').$data->minmaxcharpercent.'</td>';
-        $words = '<td>'.get_string('words', 'diary').'&nbsp;&nbsp;&nbsp;<br>'
-                 .get_string('minc', 'diary').$data->minword.'<br>'
-                 .get_string('maxc', 'diary').$data->maxword.'<br>'
-                 .get_string('errp', 'diary').$data->minmaxwordpercent.'</td>';
-        $sentences = '<td>'.get_string('sentences', 'diary').'<br>'
-                     .get_string('minc', 'diary').$data->minsentence.'<br>'
-                     .get_string('maxc', 'diary').$data->maxsentence.'<br>'
-                      .get_string('errp', 'diary').$data->minmaxsentencepercent.'</td>';
-        $paragraphs = '<td>'.get_string('paragraphs', 'diary').'<br>'
-                      .get_string('minc', 'diary').$data->minparagraph.'<br>'
-                      .get_string('maxc', 'diary').$data->maxparagraph.'<br>'
-                      .get_string('errp', 'diary').$data->minmaxparagraphpercent.'</td>';
-        $edit = '<td>'.$jlink2.' | '.$jlink1.'</td></tr>';
-        // Create a line containing the data for our current prompt.
-        $line[] = $status.$prompttext.$promptbgc.$start.$stop.$characters.$words.$sentences.$paragraphs.$edit;
+        $displaycounter = $counter;
+        if ($editmode && $selectedpromptcounter > 0) {
+            $displaycounter = $selectedpromptcounter;
+        }
+
+        if ($rowcollapsed) {
+            $promptsummary = get_string('idlable', 'diary', $data->entryid) . ' '
+                . userdate($data->datestart, get_string('strftimedateshort')) . ' - '
+                . userdate($data->datestop, get_string('strftimedateshort'));
+            $rows .= '<tr id="' . $rowanchor . '"><td>' . $status . '</td><td colspan="8">' . $promptsummary . '</td></tr>';
+        } else {
+            $prompttext = '<div class="promptentry" style="background: '
+                      . $data->promptbgc
+                      . ';">'
+                      . get_string('writingpromptlable2', 'diary')
+                      . $displaycounter
+                      . get_string('idlable', 'diary', $data->entryid)
+                      . '<br>' . $data->text . '</div>';
+            $promptbgc = '<td>' . $data->promptbgc . '</td>';
+            $start = '<td>' . userdate($data->datestart) . '</td>';
+            $stop = '<td>' . userdate($data->datestop) . '</td>';
+            $characters = '<td>' . get_string('chars', 'diary') . '<br>'
+                          . get_string('minc', 'diary') . $data->minchar . '<br>'
+                          . get_string('maxc', 'diary') . $data->maxchar . '<br>'
+                          . get_string('errp', 'diary') . $data->minmaxcharpercent . '</td>';
+            $words = '<td>' . get_string('words', 'diary') . '&nbsp;&nbsp;&nbsp;<br>'
+                     . get_string('minc', 'diary') . $data->minword . '<br>'
+                     . get_string('maxc', 'diary') . $data->maxword . '<br>'
+                     . get_string('errp', 'diary') . $data->minmaxwordpercent . '</td>';
+            $sentences = '<td>' . get_string('sentences', 'diary') . '<br>'
+                         . get_string('minc', 'diary') . $data->minsentence . '<br>'
+                         . get_string('maxc', 'diary') . $data->maxsentence . '<br>'
+                          . get_string('errp', 'diary') . $data->minmaxsentencepercent . '</td>';
+            $paragraphs = '<td>' . get_string('paragraphs', 'diary') . '<br>'
+                          . get_string('minc', 'diary') . $data->minparagraph . '<br>'
+                          . get_string('maxc', 'diary') . $data->maxparagraph . '<br>'
+                          . get_string('errp', 'diary') . $data->minmaxparagraphpercent . '</td>';
+
+            $rows .= '<tr id="' . $rowanchor . '"><td>' . $status . '</td><td colspan="8">' . $prompttext . '</td></tr>';
+            $rows .= '<tr><td></td>'
+                . $promptbgc
+                . $start
+                . $stop
+                . $characters
+                . $words
+                . $sentences
+                . $paragraphs
+                . '<td>' . $jlink2 . ' | ' . $jlink1 . '</td></tr>';
+        }
     }
 
     // Now print out all the prompts for this diary.
-    $table->data[] = $line;
-    $output = html_writer::table($table);
+    $output .= $rows;
     $counter = 0;
 } else {
+    // Double check for prompts when view is 1.
+    [$tcount, $past, $current, $future] = prompts::diary_count_prompts($diary);
     $line = [];
     $data->entryid = null;
     $data->text = '';
     $data->format = FORMAT_HTML;
-    $prompttext = get_string('promptzerocount', 'diary', $counter);
-    $line[] = $prompttext.'';
-    $table->data[] = $line;
-    $output = html_writer::table($table);
+    if ($tcount > 0 && !empty($prompts)) {
+        $lastprompt = end($prompts);
+        if ($lastprompt) {
+            $data->entryid = $lastprompt->id;
+            $data->diaryid = $lastprompt->diaryid;
+            $data->datestart = $lastprompt->datestart;
+            $data->datestop = $lastprompt->datestop;
+            $data->text = $lastprompt->text;
+            $data->format = FORMAT_HTML;
+            $data->promptbgc = $lastprompt->promptbgc;
+            $data->minchar = $lastprompt->minchar;
+            $data->maxchar = $lastprompt->maxchar;
+            $data->minmaxcharpercent = $lastprompt->minmaxcharpercent;
+            $data->minword = $lastprompt->minword;
+            $data->maxword = $lastprompt->maxword;
+            $data->minmaxwordpercent = $lastprompt->minmaxwordpercent;
+            $data->minsentence = $lastprompt->minsentence;
+            $data->maxsentence = $lastprompt->maxsentence;
+            $data->minmaxsentencepercent = $lastprompt->minmaxsentencepercent;
+            $data->minparagraph = $lastprompt->minparagraph;
+            $data->maxparagraph = $lastprompt->maxparagraph;
+            $data->minmaxparagraphpercent = $lastprompt->minmaxparagraphpercent;
+            $promptbgc = $lastprompt->promptbgc;
+        }
+    }
+    if ($tcount > 0) {
+        $prompttext = get_string('promptzerocount', 'diary', $tcount);
+    } else {
+        $prompttext = get_string('promptzerocount', 'diary', $counter);
+    }
+    $output .= '<tr><td colspan="9">' . strip_tags($prompttext) . '</td></tr>';
     $counter = 0;
+}
+
+$output .= '</tbody></table>';
+
+if (!empty($jumptocurrent) && empty($jumpdone)) {
+    $jumpurlparams = ['id' => $cm->id, 'jumptocurrent' => 1, 'jumpdone' => 1];
+    if (!empty($data->entryid)) {
+        $jumpurlparams['promptid'] = (int)$data->entryid;
+        $jumpurl = new moodle_url('/mod/diary/prompt_edit.php', $jumpurlparams);
+        $jumpurl->set_anchor('prompt-' . (int)$data->entryid);
+    } else {
+        $jumpurl = new moodle_url('/mod/diary/prompt_edit.php', $jumpurlparams);
+        $jumpurl->set_anchor('prompteditor');
+    }
+    redirect($jumpurl);
+}
+
+if (!empty($selectedpromptdata)) {
+    $data = $selectedpromptdata;
+}
+
+if (empty($data->entryid) && !empty($data->id)) {
+    $data->entryid = (int)$data->id;
 }
 
 $data->id = $cm->id;
@@ -256,21 +409,10 @@ $data->textformat = FORMAT_HTML;
 
 $maxfiles = 99; // Need to add some setting.
 $maxbytes = $course->maxbytes; // Need to add some setting.
+// 20240806 Moved variables from here down to the $form.
 $editoroptions = [
-    'promptid' => $data->entryid,
     'format' => $data->textformat,
-    'promptbgc' => $data->promptbgc,
-    'timeopen' => $diary->timeopen,
-    'timeclose' => $diary->timeclose,
-    'editall' => $diary->editall,
-    'editdates' => $diary->editdates,
-    'action' => $action,
-    'texttrust' => true,
-    'maxbytes' => $maxbytes,
-    'maxfiles' => EDITOR_UNLIMITED_FILES,
     'context' => $context,
-    'subdirs' => false,
-    'enable_filemanagement' => true,
 ];
 
 $attachmentoptions = [
@@ -279,27 +421,44 @@ $attachmentoptions = [
     'maxbytes' => $maxbytes,
 ];
 
-$data = file_prepare_standard_editor($data,
-                                     'text',
-                                     $editoroptions,
-                                     $context,
-                                     'mod_diary',
-                                     'prompt',
-                                     $data->entryid);
+$data = file_prepare_standard_editor(
+    $data,
+    'text',
+    $editoroptions,
+    $context,
+    'mod_diary',
+    'prompt',
+    $data->entryid
+);
 
-$form = new mod_diary_prompt_form(null,
+// 20240806 Moved 12 variables from $editoroptions to here.
+// 20260212 Changed the name and moved the form to /mod/diary/classes/local/.
+$form = new prompts_form(
+    null,
     [
         'current' => $data,
         'cm' => $cm,
         'diary' => $diary->editdates,
         'entryid' => $data->entryid,
         'editoroptions' => $editoroptions,
+        'promptid' => $data->entryid,
+        'promptbgc' => $promptbgc,
+        'timeopen' => $diary->timeopen,
+        'timeclose' => $diary->timeclose,
+        'editall' => $diary->editall,
+        'editdates' => $diary->editdates,
+        'action' => $action,
+        'texttrust' => true,
+        'maxbytes' => $maxbytes,
+        'maxfiles' => EDITOR_UNLIMITED_FILES,
+        'subdirs' => false,
+        'enablefilemanagement' => true,
     ]
 );
 $form->set_data($data);
 
 if ($form->is_cancelled()) {
-    redirect($CFG->wwwroot.'/mod/diary/view.php?id='.$id);
+    redirect($CFG->wwwroot . '/mod/diary/view.php?id=' . $id);
 } else if ($fromform = $form->get_data()) {
     // If the prompt was submitted, then process and store.
     $newentry = new stdClass();
@@ -336,8 +495,15 @@ if ($form->is_cancelled()) {
 
     // Relink using the proper entryid.
     // We need to do this as draft area didn't have an itemid associated when creating the entry.
-    $fromform = file_postupdate_standard_editor($fromform, 'text', $editoroptions,
-        $editoroptions['context'], 'mod_diary', 'prompt', $newentry->id);
+    $fromform = file_postupdate_standard_editor(
+        $fromform,
+        'text',
+        $editoroptions,
+        $editoroptions['context'],
+        'mod_diary',
+        'prompt',
+        $newentry->id
+    );
 
     $newentry->datestart = $fromform->datestart;
     $newentry->datestop = $fromform->datestop;
@@ -359,30 +525,30 @@ if ($form->is_cancelled()) {
 
     $DB->update_record('diary_prompts', $newentry);
     // 20230810 Changed based on pull request #29.
-    redirect(new moodle_url('/mod/diary/prompt_edit.php', ['id' => $cm->id, 'promptid' => $newentry->id]));
+    $saveurl = new moodle_url('/mod/diary/prompt_edit.php', ['id' => $cm->id, 'promptid' => $newentry->id]);
+    $saveurl->set_anchor('prompt-' . $newentry->id);
+    redirect($saveurl);
 }
 
 echo $OUTPUT->header();
 echo $output;
-// Need to change this to a string.
+echo '<a id="prompteditor"></a>';
 echo $OUTPUT->heading(get_string('writingpromptlable3', 'diary'));
-
 $intro = format_module_intro('diary', $diary, $cm->id);
-
 $form->display();
 
 // 20230810 Changed based on pull request #29.
-$url1 = new moodle_url($CFG->wwwroot.'/mod/diary/view.php', ['id' => $id]);
-$url2 = new moodle_url($CFG->wwwroot.'/mod/diary/prompt_edit.php', ['id' => $cm->id, 'action' => 'create', 'promptid' => 0]);
+$url1 = new moodle_url($CFG->wwwroot . '/mod/diary/view.php', ['id' => $id]);
+$url2 = new moodle_url($CFG->wwwroot . '/mod/diary/prompt_edit.php', ['id' => $cm->id, 'action' => 'create', 'promptid' => 0]);
 // 20220920 Add a Create button and a return button. 20230810 Changed due to pull request #29.
-echo '<br><a href="'.$url2->out(false).'"
+echo '<br><a href="' . $url2->out(false) . '#prompteditor"
     class="btn btn-warning"
     style="border-radius: 8px">';
 // 20230810 Changed due to pull request #29.
-echo get_string('createnewprompt', 'diary').'</a> <a href="'.$url1->out(false)
-    .'" class="btn btn-success" style="border-radius: 8px">'
-    .get_string('returnto', 'diary', $diary->name)
-    .'</a> ';
+echo get_string('createnewprompt', 'diary') . '</a> <a href="' . $url1->out(false)
+    . '" class="btn btn-success" style="border-radius: 8px">'
+    . get_string('returnto', 'diary', $diary->name)
+    . '</a> ';
 
 // Trigger prompts viewed event.
 $event = \mod_diary\event\prompts_viewed::create(

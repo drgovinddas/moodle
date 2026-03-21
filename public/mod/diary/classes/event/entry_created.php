@@ -18,12 +18,12 @@
  * The mod_diary entry created event.
  *
  * @package   mod_diary
- * @copyright 2015 David Monllao
+ * @copyright AL Rachels (drachels@drachels.com)
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace mod_diary\event;
 
-defined('MOODLE_INTERNAL') || die(); // @codingStandardsIgnoreLine
+defined('MOODLE_INTERNAL') || die(); // phpcs:ignore
 
 /**
  * The mod_diary entry created class.
@@ -34,7 +34,6 @@ defined('MOODLE_INTERNAL') || die(); // @codingStandardsIgnoreLine
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class entry_created extends \core\event\base {
-
     /**
      * Init method.
      */
@@ -69,7 +68,8 @@ class entry_created extends \core\event\base {
      * @return \moodle_url
      */
     public function get_url() {
-        return new \moodle_url('/mod/diary/edit.php',
+        return new \moodle_url(
+            '/mod/diary/edit.php',
             [
                 'id' => $this->contextinstanceid,
             ]

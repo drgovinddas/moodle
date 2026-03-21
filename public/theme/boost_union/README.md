@@ -209,23 +209,27 @@ With this setting, you can optimize the login form to fit to a greater variety o
 
 With this setting, you can make the login form slightly transparent to let the background image shine through even more.
 
-##### Login providers
+###### Login container width
 
-###### Local login
+With this setting, you can control the width of the login container. By default, the login container width is set to 500px.
 
-With this setting, you control if the local login form is shown on the login page or not. By default, the local login form is shown and users can login into the site as normal. If you disable this setting, the local login form is hidden. This allows you to just provide login buttons for external identity providers like OAuth2 or OIDC.
+##### Login layout
 
-###### Local login intro
+###### Login layout
 
-With this setting, you control if a 'Login with your Moodle account' intro is shown above the local login form or not. By default, the intro is not shown. But if you enable it, this intro may help users to understand which credentials to use in the local login form, especially if you provide more than one login method or if you have changed the order of the login methods.
+With this setting, you can choose how the login providers are displayed on the login page.
 
-###### IDP login intro
+###### Login background layout
 
-With this setting, you control if the 'Log in using your account on' intro is shown above the IDP login buttons or not. By default, the intro is shown and users will be quickly informed what the IDP buttons are about. If you disable this setting, the IDP intro is hidden. This allows you to provide a clean user login interface if you just use external identity providers like OAuth2 or OIDC.
+With this setting, you can choose the background layout for the login page.
 
 ##### Login order
 
-With these settings, you control the order of the login methods in the login form. The presented order will be defined from lowest to highest ordinal number, skipping all login methods and login form elements which are disabled in Moodle.
+With these settings, you control the order of the login providers in the login form. The presented order will be defined from lowest to highest ordinal number, skipping all login providers and login form elements which are disabled in Boost Union.
+
+##### Login providers
+
+In these section, you control if and how particilar login providers are presented on the login page.
 
 ##### Side entrance login
 
@@ -716,6 +720,20 @@ Exceptions to our main design principle
 
 As you have read in the introduction, the main design principle of Boost Union is not to change anything in the GUI until Boost Union is set as active theme and a particular feature is enabled in the theme settings. However, due to the way how Moodle core and Boost in Moodle core is built, this main design principle sometimes could not be fully satisfied:
 
+* Logo:
+  Boost Union has its own logo upload and does not use the logo from Moodle core\'s logo setting.
+  Boost Union especially allows you to upload more image formats that Moodle core allows and allows you to override the uploaded logos within its flavours.
+  Against this background, if you switch from Boost to Boost Union and had a logo shown in Boost before, this logo won't be shown until you upload it again in Boost Union directly.
+* Favicon:
+  Boost Union has its own favison upload and does not use the favicon from Moodle core\'s logo setting.
+  Boost Union especially allows you to override the uploaded favicon within its flavours.
+  Against this background, if you switch from Boost to Boost Union and had a favicon shown in Boost before, this favicon won't be shown until you upload it again in Boost Union directly.
+* Login page authentication instructions:
+  Boost Union does not output the Moodle core setting `auth_instructions` (authentication method instructions) on the login page anymore.
+  In Moodle core, this setting is shown in context of the user self-registration method.
+  However, in Boost Union with its enhanced login page layouts (tabs, accordion), the self-registration section might not be visible after page load, making the instructions hidden from view.
+  To improve the admin experience and provide a cleaner solution, Boost Union offers dedicated login instructions settings for each login method as well as generic instructions.
+  Against this background, if you switch from Boost to Boost Union and had a text configured in the Moodle core `auth_instructions` setting, this text won't be shown until you copy it to Boost Union's own login instructions.
 * Footer popover:
   As soon as you click the footer button (questionmark icon) in the bottom right corner of the screen, a popover with several links appears. However, the content of this link list is far from being well-structured and looks more like a garage sale. When implementing the settings to individually suppress each of these popover links, we had to make some code re-arrangements which result in the fact that the popover links are slightly more well-structured even if you do not enable any setting in Boost Union.
 * Clickable header and transition time in the user's menu third level:
@@ -944,6 +962,7 @@ Moodle an Hochschulen e.V. would like to thank these main contributors (in alpha
 * ELAN e.V., Farbod Zamani: Code
 * ETH Zürich, nexterday: Code
 * FernUniversität in Hagen, Daniel Poggenpohl: Code, Ideating
+* Friedrich Schiller University Jena: Funding, Ideating
 * Hochschule Hannover - University of Applied Sciences and Arts: Code, Funding, Ideating
 * Käferfreie Software, Nina Herrmann: Code
 * lern.link GmbH, Alexander Bias: Code, Peer Review, Ideating, Funding
@@ -961,9 +980,11 @@ Moodle an Hochschulen e.V. would like to thank these main contributors (in alpha
 * RWTH Aachen, Amrita Deb Dutta: Code
 * RWTH Aachen, Josha Bartsch: Code
 * RWTH Aachen, Tim Schröder: Code
+* Self-employed: Alberto Lara Hernández: Code
 * Solent University, Mark Sharp: Code
 * ssystems GmbH, Alexander Bias: Code, Peer Review, Ideating, Funding
 * ssystems GmbH, Sangyul Cha: Code
+* ssystems GmbH, berthob98: Code
 * Technische Universität Berlin, Lars Bonczek: Code
 * University of Bayreuth, Nikolai Jahreis: Code
 * University of California, San Francisco, Stefan Topfstedt: Code
