@@ -24,7 +24,7 @@
 
 namespace mod_icontent\event;
 
-defined('MOODLE_INTERNAL') || die(); // phpcs:ignore
+defined('MOODLE_INTERNAL') || die(); // @codingStandardsIgnoreLine
 
 /**
  * The mod_icontent question attempts created event class.
@@ -35,6 +35,8 @@ defined('MOODLE_INTERNAL') || die(); // phpcs:ignore
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class question_page_viewed extends \core\event\base {
+
+
     /**
      * Init method.
      *
@@ -61,7 +63,7 @@ class question_page_viewed extends \core\event\base {
      */
     public function get_description() {
         $pageid = $this->other['pageid'];
-        return "The user with id '$this->userid' viewed the question page for pageid '$pageid' the icontent with " .
+        return "The user with id '$this->userid' viewed the question page for pageid '$pageid' the icontent with ".
             "course module id '$this->contextinstanceid'.";
     }
 
@@ -71,8 +73,7 @@ class question_page_viewed extends \core\event\base {
      * @return \moodle_url
      */
     public function get_url() {
-        return new \moodle_url(
-            '/mod/icontent/view.php',
+        return new \moodle_url('/mod/icontent/view.php',
             [
                 'id' => $this->contextinstanceid,
                 'pageid' => $this->other['pageid'],

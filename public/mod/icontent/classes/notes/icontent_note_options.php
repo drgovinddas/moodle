@@ -24,7 +24,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace mod_icontent\notes;
-defined('MOODLE_INTERNAL') || die(); // phpcs:ignore
+defined('MOODLE_INTERNAL') || die(); // @codingStandardsIgnoreLine
 use mod_icontent\notes\icontent_note_options;
 use context_module;
 
@@ -36,6 +36,7 @@ use context_module;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class icontent_note_options {
+
     /**
      * Remove notes from a page. If the param $pagenoteid was passed, It will delete only the current note and their daughters.
      *
@@ -105,8 +106,7 @@ class icontent_note_options {
         $featured = null,
         $doubttutor = null,
         $likes = null,
-        $tab = null
-    ) {
+        $tab = null) {
         global $DB, $USER;
         // Get context.
         $context = context_module::instance($cmid);
@@ -175,11 +175,10 @@ class icontent_note_options {
         $featured = null,
         $doubttutor = null,
         $likes = null,
-        $tab = null
-    ) {
+        $tab = null) {
 
         global $CFG, $DB, $USER;
-        $sortparams = 'pn.path ' . $sort;
+        $sortparams = 'pn.path '.$sort;
         $page = (int) $page;
         $perpage = (int) $perpage;
         // Get context.
@@ -232,8 +231,7 @@ class icontent_note_options {
             $namefields = user_picture::fields('u', null, 'userid');
         } else {
             $userfieldsapi = \core_user\fields::for_userpic();
-            $namefields = $userfieldsapi->get_sql('u', false, '', 'userid', false)->selects;
-            ;
+            $namefields = $userfieldsapi->get_sql('u', false, '', 'userid', false)->selects;;
         }
         $sql = "SELECT pn.id,
                        pn.comment,

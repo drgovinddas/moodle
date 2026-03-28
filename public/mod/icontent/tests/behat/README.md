@@ -1,6 +1,6 @@
 # iContent Behat tests
 
-Last updated: 2026-03-19
+Last updated: 2026-03-04
 
 This folder contains iContent-specific Behat coverage focused on plugin behavior, not core Moodle qtype internals.
 
@@ -19,8 +19,7 @@ This folder contains iContent-specific Behat coverage focused on plugin behavior
   - `match`.
 - Question-management coverage in edit mode:
   - per-question remove icon visibility,
-  - remove action result for linked questions,
-  - page delete from both toolbar and TOC with related cleanup verification.
+  - remove action result for linked questions.
 - Installation-specific inventory coverage for this server:
   - additional non-core qtypes configured in `Questions Testing`,
   - full page/question mapping inventory for `Questions Testing`.
@@ -52,7 +51,6 @@ Custom iContent setup/navigation steps are defined in:
 - `behat_mod_icontent.php`
 
 These steps seed minimal iContent pages and attempts directly so scenarios remain stable and fast.
-They also cover seeded note/like data and page deletion assertions for cleanup-sensitive regressions.
 
 ## Running tests
 

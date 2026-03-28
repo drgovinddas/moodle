@@ -25,10 +25,10 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require_once(dirname(dirname(dirname(__FILE__))) . '/config.php');
-require_once(dirname(__FILE__) . '/locallib.php');
-require_once(dirname(__FILE__) . '/lib.php');
-require_once(__DIR__ . '/../../lib/questionlib.php');
+require_once(dirname(dirname(dirname(__FILE__))).'/config.php');
+require_once(dirname(__FILE__).'/locallib.php');
+require_once(dirname(__FILE__).'/lib.php');
+require_once(__DIR__ .'/../../lib/questionlib.php');
 use mod_icontent\question\icontent_question_options;
 use core_question\local\statistics\statistics_bulk_loader;
 
@@ -68,8 +68,30 @@ require_login($course, true, $cm);
 $context = context_module::instance($cm->id);
 $coursecontext = $context->get_course_context(true)->id;
 require_capability('mod/icontent:newquestion', $context);
+// Log event.
+\mod_icontent\event\question_page_viewed::create_from_question_page($icontent, $context, $pageid)->trigger();
 
-// Process POST before any page output so redirect() fires in STATE_BEFORE_HEADER.
+// Print the page header.
+$PAGE->set_url('/mod/icontent/addquestionpage.php', ['id' => $cm->id, 'pageid' => $pageid]);
+$PAGE->set_title(format_string($icontent->name) . ' - ' . format_string($currentpage->title));
+$PAGE->set_heading(format_string($course->fullname));
+$PAGE->add_body_class('icontent-addquestionpage');
+// CSS.
+$PAGE->requires->css(new moodle_url($CFG->wwwroot.'/mod/icontent/styles/font-awesome-4.6.2/css/font-awesome.min.css'));
+$hascommentplugin = \core\plugininfo\qbank::is_plugin_enabled('qbank_comment');
+if ($hascommentplugin && !empty($CFG->usecomments)) {
+    $PAGE->requires->js_call_amd('qbank_comment/comment', 'init');
+}
+$url = new moodle_url('/mod/icontent/addquestionpage.php',
+    [
+        'id' => $id,
+        'pageid' => $pageid,
+        'questioncategoryid' => $questioncategoryid,
+        'page' => $page,
+        'perpage' => $perpage,
+    ]
+);
+
 if ($action) {
     // Receives values.
     $questions = optional_param_array('question', [], PARAM_RAW);
@@ -79,29 +101,6 @@ if ($action) {
         redirect($urlredirect, get_string('msgaddquestionpage', 'mod_icontent'));
     }
 }
-
-// Log event.
-\mod_icontent\event\question_page_viewed::create_from_question_page($icontent, $context, $pageid)->trigger();
-
-// Print the page header.
-$PAGE->set_url('/mod/icontent/addquestionpage.php', ['id' => $cm->id, 'pageid' => $pageid]);
-$PAGE->set_title(format_string($icontent->name) . ' - ' . format_string($currentpage->title));
-$PAGE->set_heading(format_string($course->fullname));
-$PAGE->add_body_class('icontent-addquestionpage');
-$hascommentplugin = \core\plugininfo\qbank::is_plugin_enabled('qbank_comment');
-if ($hascommentplugin && !empty($CFG->usecomments)) {
-    $PAGE->requires->js_call_amd('qbank_comment/comment', 'init');
-}
-$url = new moodle_url(
-    '/mod/icontent/addquestionpage.php',
-    [
-        'id' => $id,
-        'pageid' => $pageid,
-        'questioncategoryid' => $questioncategoryid,
-        'page' => $page,
-        'perpage' => $perpage,
-    ]
-);
 
 // Output starts here.
 echo $OUTPUT->header();
@@ -170,27 +169,15 @@ $answerscurrentpage = icontent_checks_answers_of_currentpage($pageid, $cm->id);
 $table = new html_table();
 $table->id = "categoryquestions";
 $table->attributes = ['class' => 'icontentquestions'];
-$table->colclasses = [
-    'checkbox',
-    'qtype',
-    'questionname',
-    'actions',
-    'status',
-    'version',
-    'creatorname',
-    'comments',
-    'needschecking',
-    'facilityindex',
-    'discriminativeefficiency',
-];
+$table->colclasses = ['checkbox', 'qtype', 'questionname', 'actions', 'status', 'version', 'creatorname', 'comments', 'needschecking', 'facilityindex', 'discriminativeefficiency'];
 $selectallcheckbox = html_writer::empty_tag('input', [
     'type' => 'checkbox',
     'id' => 'idcheckallquestions',
     'title' => get_string('selectall'),
 ]);
 
-$makeheaderwithmenu = static function (string $label) use ($OUTPUT): string {
-    $makeitemcontent = static function (string $iconname, string $text) use ($OUTPUT): string {
+$makeheaderwithmenu = static function(string $label) use ($OUTPUT): string {
+    $makeitemcontent = static function(string $iconname, string $text) use ($OUTPUT): string {
         $icon = $OUTPUT->pix_icon($iconname, '', 'moodle', ['class' => 'iconsmall me-1']);
         return html_writer::span($icon . html_writer::span($text), 'd-inline-flex align-items-center');
     };
@@ -211,21 +198,12 @@ $makeheaderwithmenu = static function (string $label) use ($OUTPUT): string {
         ]
     );
 
-    $itemclass = 'dropdown-item icontent-col-action d-flex align-items-center';
-    $menuitems = '';
-    $menuitems .= html_writer::tag('li', html_writer::link('#', $moveitemcontent, [
-        'class' => $itemclass,
-        'data-action' => 'move',
-    ]));
-    $menuitems .= html_writer::tag('li', html_writer::link('#', $removeitemcontent, [
-        'class' => $itemclass,
-        'data-action' => 'remove',
-    ]));
-    $menuitems .= html_writer::tag('li', html_writer::link('#', $resizeitemcontent, [
-        'class' => $itemclass,
-        'data-action' => 'resize',
-    ]));
-    $menu = html_writer::tag('ul', $menuitems, ['class' => 'dropdown-menu']);
+    $menu = html_writer::tag('ul',
+        html_writer::tag('li', html_writer::link('#', $moveitemcontent, ['class' => 'dropdown-item icontent-col-action d-flex align-items-center', 'data-action' => 'move'])) .
+        html_writer::tag('li', html_writer::link('#', $removeitemcontent, ['class' => 'dropdown-item icontent-col-action d-flex align-items-center', 'data-action' => 'remove'])) .
+        html_writer::tag('li', html_writer::link('#', $resizeitemcontent, ['class' => 'dropdown-item icontent-col-action d-flex align-items-center', 'data-action' => 'resize'])),
+        ['class' => 'dropdown-menu']
+    );
 
     return html_writer::tag(
         'span',
@@ -250,7 +228,7 @@ $table->head  = [
 
 if ($hasquestions) {
     $hasstatisticsplugin = \core\plugininfo\qbank::is_plugin_enabled('qbank_statistics');
-    $questionids = array_map(static function ($question) {
+    $questionids = array_map(static function($question) {
         return (int) $question->qid;
     }, $questions);
 
@@ -286,10 +264,10 @@ if ($hasquestions) {
         $checkbox = html_writer::empty_tag('input', ['type' => 'checkbox',
             'name' => 'question[]',
             'value' => $question->qid,
-            'id' => 'idcheck' . $question->qid] + $checked + $disabled);
+            'id' => 'idcheck'.$question->qid] + $checked + $disabled);
         $qtypecomponent = 'qtype_' . $question->qqtype;
         $qtypename = s($question->qqtype);
-        $qtypeiconsrc = $OUTPUT->image_url('q/' . $question->qqtype, 'mod_icontent');
+        $qtypeiconsrc = $OUTPUT->image_url('q/'.$question->qqtype, 'mod_icontent');
         if (\core_component::get_component_directory($qtypecomponent)) {
             $qtypename = get_string('pluginname', $qtypecomponent);
             $qtypeiconsrc = $OUTPUT->image_url('icon', $qtypecomponent);
@@ -300,12 +278,9 @@ if ($hasquestions) {
             'alt' => $qtypename,
             'title' => $qtypename,
         ]);
-        $qname = html_writer::label($question->qname, 'idcheck' . $question->qid);
+        $qname = html_writer::label($question->qname, 'idcheck'.$question->qid);
         $idnumber = !empty($question->qbeidnumber) ? s($question->qbeidnumber) : '-';
-        $questioncell = $qname . html_writer::div(
-            'ID number: ' . $idnumber,
-            'text-muted small'
-        );
+        $questioncell = $qname . html_writer::div('ID number: ' . $idnumber, 'text-muted small');
 
         $returnurl = new moodle_url('/mod/icontent/addquestionpage.php', [
             'id' => (int)$cm->id,
@@ -333,8 +308,7 @@ if ($hasquestions) {
         $facility = $questionstats['facility'] ?? null;
         $discriminativeefficiency = $questionstats['discriminativeefficiency'] ?? null;
         if ($hasstatisticsplugin) {
-            [$needscheckingtext, $needscheckingclasses] =
-                \qbank_statistics\helper::format_discrimination_index($discriminationindex);
+            [$needscheckingtext, $needscheckingclasses] = \qbank_statistics\helper::format_discrimination_index($discriminationindex);
             $needschecking = html_writer::span($needscheckingtext, trim('badge ' . $needscheckingclasses));
             $facilitydisplay = \qbank_statistics\helper::format_percentage($facility);
             $discriminativedisplay = \qbank_statistics\helper::format_percentage($discriminativeefficiency, false);
@@ -378,8 +352,8 @@ if ($hasquestions) {
             $actions,
             $question->qvstatus,
             (int)$question->qvversion,
-            $createdby->firstname . ' ' . $createdby->lastname .
-                '<br>' . date(get_config('mod_icontent', 'dateformat'), $question->qtimecreated),
+            $createdby->firstname.' '.$createdby->lastname.
+                '<br>'.date(get_config('mod_icontent', 'dateformat'), $question->qtimecreated),
             $commentdisplay,
             $needschecking,
             $facilitydisplay,
@@ -390,9 +364,9 @@ if ($hasquestions) {
     echo html_writer::div(get_string('emptyquestionbank', 'mod_icontent'), 'alert alert-warning');
 }
 // Show elements HTML.
+echo html_writer::div(get_string('infomaxquestionperpage', 'mod_icontent'), 'alert alert-info');
 echo $answerscurrentpage ? html_writer::div(get_string('msgstatusdisplay', 'mod_icontent'), 'alert alert-warning') : null;
-echo html_writer::start_tag(
-    'form',
+echo html_writer::start_tag('form',
     [
         'action' => new moodle_url('/mod/icontent/addquestionpage.php'),
         'method' => 'GET',
@@ -409,14 +383,11 @@ echo html_writer::select($categorymenu, 'questioncategoryid', $questioncategoryi
 echo html_writer::empty_tag('input', ['type' => 'submit', 'class' => 'btn btn-secondary', 'value' => get_string('go')]);
 echo html_writer::end_div();
 echo html_writer::end_tag('form');
-echo html_writer::start_tag(
-    'form',
-    ['action' => new moodle_url(
-        '/mod/icontent/addquestionpage.php',
-        ['id' => $cm->id, 'pageid' => $pageid, 'questioncategoryid' => $questioncategoryid]
-    ),
+echo html_writer::start_tag('form',
+    ['action' => new moodle_url('/mod/icontent/addquestionpage.php',
+        ['id' => $cm->id, 'pageid' => $pageid, 'questioncategoryid' => $questioncategoryid]),
         'method' => 'POST']
-);
+    );
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => true]);
 echo html_writer::start_div('categoryquestionscontainer');
 echo html_writer::table($table);
@@ -507,8 +478,7 @@ echo $OUTPUT->paging_bar($tquestions, $page, $perpage, $url);
 echo html_writer::end_div();
 
 // 20240107 Create a link back to where we came from in case we want to cancel.
-$url2 = new moodle_url(
-    '/mod/icontent/view.php',
+$url2 = new moodle_url('/mod/icontent/view.php',
     [
         'id' => $id,
         'pageid' => $pageid,
@@ -519,14 +489,14 @@ echo '<input class="btn btn-primary"
     style="border-radius: 8px"
     name="button"
     onClick="return clClick()"
-    ' . ($hasquestions ? '' : 'disabled="disabled"') . '
+    '.($hasquestions ? '' : 'disabled="disabled"').'
     type="submit" value="'
-    . get_string('add')
-    . '"> <a href="'
-    . $url2
-    . '" class="btn btn-secondary"  style="border-radius: 8px">'
-    . get_string('cancel')
-    . '</a>';
+    .get_string('add')
+    .'"> <a href="'
+    .$url2
+    .'" class="btn btn-secondary"  style="border-radius: 8px">'
+    .get_string('cancel')
+    .'</a>';
 echo html_writer::end_tag('form');
 
 // Finish the page.

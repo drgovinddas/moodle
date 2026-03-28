@@ -82,7 +82,8 @@ require_once($CFG->dirroot . '/repository/googledocs/lib.php');
 function webservice_upload_to_googledrive(
     stdClass $filerecord,
     string $localpath,
-    stdClass $site
+    stdClass $site,
+    int $contextid = 0
 ): bool {
     global $CFG, $DB;
 
@@ -107,69 +108,62 @@ function webservice_upload_to_googledrive(
     }
     $client = new repository_googledocs\rest($systemauth);
 
-    // Build Drive folder hierarchy based on user-context draft area.
-    // For mobile uploads the context is always the user context; we don't
-    // know the course/module yet (it's set when the draft is submitted).
-    // Folder structure: root / <site shortname> / webservice_uploads / <id>_<firstname> / <itemid>
+    // ------------------------------------------------------------------
+    // Build Drive folder hierarchy.
+    // Folder structure:
+    //   root / <site (id N)> / webservice_uploads / <userid>_<firstname> / <course shortname> / <assignment name>
+    //
+    // Course and assignment are resolved ONLY from the contextid of the
+    // module (passed explicitly by the client).  No heuristic fallbacks.
     // ------------------------------------------------------------------
     $uploaduser = $DB->get_record('user', ['id' => $filerecord->userid], 'id, firstname', IGNORE_MISSING);
     $userfolder = clean_param(
         $filerecord->userid . '_' . ($uploaduser ? $uploaduser->firstname : 'user'),
         PARAM_PATH
     );
+
+    // Resolve course shortname + assignment name directly from the module context.
+    $coursename = '';
+    $assignname = '';
+    if ($contextid > 0) {
+        try {
+            $modctx = context::instance_by_id($contextid, IGNORE_MISSING);
+            if ($modctx && $modctx->contextlevel == CONTEXT_MODULE) {
+                // One query: join course_modules → assign → course to get both names at once.
+                $row = $DB->get_record_sql(
+                    "SELECT a.name AS assignname, c.shortname AS courseshortname
+                       FROM {course_modules} cm
+                       JOIN {assign} a ON a.id = cm.instance
+                       JOIN {course} c ON c.id = cm.course
+                      WHERE cm.id = :cmid",
+                    ['cmid' => $modctx->instanceid],
+                    IGNORE_MISSING
+                );
+                if ($row) {
+                    $coursename = $row->courseshortname;
+                    $assignname = $row->assignname;
+                }
+            }
+        } catch (Exception $e) {
+            // Context not found — leave coursename/assignname empty.
+        }
+    }
+
     $allfolders = [
         clean_param($site->shortname . ' (id ' . $site->id . ')', PARAM_PATH),
         'webservice_uploads',
         $userfolder,
-        clean_param((string) $filerecord->itemid . '_' . (function () use ($DB, $filerecord): string{
-            // Attempt 1: course from user's most recently modified assignment submission.
-            $sql = "SELECT c.shortname
-                      FROM {assign_submission} asub
-                      JOIN {assign} a ON a.id = asub.assignment
-                      JOIN {course} c ON c.id = a.course
-                     WHERE asub.userid = :userid
-                     ORDER BY asub.timemodified DESC
-                     LIMIT 1";
-            $row = $DB->get_record_sql($sql, ['userid' => $filerecord->userid]);
-            if ($row && !empty($row->shortname)) {
-                return $row->shortname;
-            }
-            // Attempt 2: most recently accessed course that has an assign module.
-            $sql2 = "SELECT c.shortname
-                       FROM {user_lastaccess} ula
-                       JOIN {course} c ON c.id = ula.courseid
-                      WHERE ula.userid = :userid
-                        AND EXISTS (
-                            SELECT 1 FROM {assign} a
-                            JOIN {course_modules} cm ON cm.instance = a.id
-                            JOIN {modules} m ON m.id = cm.module AND m.name = 'assign'
-                            WHERE a.course = c.id AND cm.deletioninprogress = 0
-                        )
-                      ORDER BY ula.timeaccess DESC
-                      LIMIT 1";
-            $row2 = $DB->get_record_sql($sql2, ['userid' => $filerecord->userid]);
-            if ($row2 && !empty($row2->shortname)) {
-                return $row2->shortname;
-            }
-            return '';
-        })(), PARAM_PATH),
-        // Assignment name folder.
-        clean_param((function () use ($DB, $filerecord): string{
-            $sql = "SELECT a.name
-                      FROM {assign_submission} asub
-                      JOIN {assign} a ON a.id = asub.assignment
-                     WHERE asub.userid = :userid
-                     ORDER BY asub.timemodified DESC
-                     LIMIT 1";
-            $row = $DB->get_record_sql($sql, ['userid' => $filerecord->userid]);
-            return ($row && !empty($row->name)) ? $row->name : '';
-        })(), PARAM_PATH),
+        clean_param($coursename, PARAM_PATH),
+        clean_param($assignname, PARAM_PATH),
     ];
     $cache = cache::make('repository_googledocs', 'folder');
     $parentid = 'root';
     $fullpath = 'root';
 
     foreach ($allfolders as $foldername) {
+        if (empty($foldername)) {
+            continue; // Skip empty slots (e.g. course/assign not resolved).
+        }
         $fullpath .= '/' . $foldername;
         $folderid = $cache->get($fullpath);
         if (empty($folderid)) {
@@ -362,7 +356,8 @@ foreach ($files as $file) {
         $results[] = $file;
     } else {
         // krushal gdrive upload function start
-        $gdrive_ok = webservice_upload_to_googledrive($filerecord, $file->filepath, $SITE);
+        $contextid = optional_param('contextid', 0, PARAM_INT);
+        $gdrive_ok = webservice_upload_to_googledrive($filerecord, $file->filepath, $SITE, $contextid);
         if ($gdrive_ok) {
             // File successfully stored in Google Drive as a controlled link.
             // Re-fetch the stored_file so logging has a valid object.

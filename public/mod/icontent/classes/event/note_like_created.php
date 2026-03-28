@@ -24,7 +24,7 @@
 
 namespace mod_icontent\event;
 
-defined('MOODLE_INTERNAL') || die(); // phpcs:ignore
+defined('MOODLE_INTERNAL') || die(); // @codingStandardsIgnoreLine
 
 /**
  * The mod_icontent note like created event class.
@@ -35,6 +35,7 @@ defined('MOODLE_INTERNAL') || die(); // phpcs:ignore
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class note_like_created extends \core\event\base {
+
     /**
      * Init method.
      *
@@ -61,7 +62,7 @@ class note_like_created extends \core\event\base {
      * @return string
      */
     public function get_description() {
-        return "The user with id '$this->userid' created the note like with id '$this->objectid' for the icontent with " .
+        return "The user with id '$this->userid' created the note like with id '$this->objectid' for the icontent with ".
             "course module id '$this->contextinstanceid'.";
     }
 
@@ -71,8 +72,7 @@ class note_like_created extends \core\event\base {
      * @return \moodle_url
      */
     public function get_url() {
-        return new \moodle_url(
-            '/mod/icontent/view.php',
+        return new \moodle_url('/mod/icontent/view.php',
             [
                 'id' => $this->contextinstanceid,
                 'pageid' => $this->other['pageid'],

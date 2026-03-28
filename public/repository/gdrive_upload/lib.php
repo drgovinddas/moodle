@@ -155,12 +155,21 @@ class repository_gdrive_upload extends repository {
         // ----------------------------------------------------------------
         // 2. Get the Google Docs repository instance + system OAuth client.
         // ----------------------------------------------------------------
-        $gdrepos = repository::get_instances(['type' => 'googledocs']);
-        if (empty($gdrepos)) {
+        // Bypass UI capability checks since users do not need the view capability
+        // to have their assignment automatically uploaded via the system account.
+        $gdrepoid = $DB->get_field_sql(
+            "SELECT i.id
+               FROM {repository_instances} i
+               JOIN {repository} r ON r.id = i.typeid
+              WHERE r.type = 'googledocs'
+           ORDER BY i.id ASC",
+            [], IGNORE_MULTIPLE);
+
+        if (empty($gdrepoid)) {
             throw new repository_exception(get_string('nogoogledocsrepo', 'repository_gdrive_upload'));
         }
         /** @var repository_googledocs $gdrepo */
-        $gdrepo = reset($gdrepos);
+        $gdrepo = repository::get_instance($gdrepoid);
 
         // Retrieve the OAuth 2 issuer configured for the Google Docs plugin.
         $issuerid = get_config('googledocs', 'issuerid');
@@ -193,69 +202,34 @@ class repository_gdrive_upload extends repository {
             PARAM_PATH
         );
 
-        // Course shortname — we have ctx_id so can resolve it reliably.
+        // ------------------------------------------------------------------
+        // Resolve course shortname + assignment name in ONE query, directly
+        // from the module context passed by the client (ctx_id POST param).
+        // No heuristic fallbacks — if contextid is absent or not a module
+        // context, both folder names will be empty strings.
+        // ------------------------------------------------------------------
         $coursename = '';
-        if ($contextid) {
-            try {
-                $targetcontext = context::instance_by_id($contextid, IGNORE_MISSING);
-                if ($targetcontext) {
-                    // Scan parent contexts for CONTEXT_COURSE level.
-                    $contextlist = array_reverse($targetcontext->get_parent_contexts(true));
-                    foreach ($contextlist as $ctx) {
-                        if ($ctx->contextlevel == CONTEXT_COURSE && $ctx->instanceid) {
-                            $courserow = $DB->get_record('course', ['id' => $ctx->instanceid], 'shortname', IGNORE_MISSING);
-                            if ($courserow) {
-                                $coursename = $courserow->shortname;
-                            }
-                            break;
-                        }
-                    }
-                }
-            } catch (Exception $e) {
-                $coursename = '';
-            }
-        }
-        // Fallback: look up via most recent assign submission for this user.
-        if ($coursename === '') {
-            $sql = "SELECT c.shortname
-                      FROM {assign_submission} asub
-                      JOIN {assign} a ON a.id = asub.assignment
-                      JOIN {course} c ON c.id = a.course
-                     WHERE asub.userid = :userid
-                     ORDER BY asub.timemodified DESC
-                     LIMIT 1";
-            $row = $DB->get_record_sql($sql, ['userid' => $USER->id]);
-            if ($row && !empty($row->shortname)) {
-                $coursename = $row->shortname;
-            }
-        }
-
-        // Assignment name — look up from module context instanceid if available.
         $assignname = '';
-        if (!empty($contextid)) {
+        if ($contextid > 0) {
             try {
-                $ctx = context::instance_by_id($contextid, IGNORE_MISSING);
-                if ($ctx && $ctx->contextlevel == CONTEXT_MODULE) {
-                    $arow = $DB->get_record('assign', ['id' => $ctx->instanceid], 'name', IGNORE_MISSING);
-                    if ($arow) {
-                        $assignname = $arow->name;
+                $modctx = context::instance_by_id($contextid, IGNORE_MISSING);
+                if ($modctx && $modctx->contextlevel == CONTEXT_MODULE) {
+                    $row = $DB->get_record_sql(
+                        "SELECT a.name AS assignname, c.shortname AS courseshortname
+                           FROM {course_modules} cm
+                           JOIN {assign} a ON a.id = cm.instance
+                           JOIN {course} c ON c.id = cm.course
+                          WHERE cm.id = :cmid",
+                        ['cmid' => $modctx->instanceid],
+                        IGNORE_MISSING
+                    );
+                    if ($row) {
+                        $coursename = $row->courseshortname;
+                        $assignname = $row->assignname;
                     }
                 }
             } catch (Exception $e) {
-                $assignname = '';
-            }
-        }
-        // Fallback: most recent assignment submission for this user.
-        if ($assignname === '') {
-            $arow2 = $DB->get_record_sql(
-                "SELECT a.name FROM {assign_submission} asub
-                   JOIN {assign} a ON a.id = asub.assignment
-                  WHERE asub.userid = :userid
-                  ORDER BY asub.timemodified DESC LIMIT 1",
-                ['userid' => $USER->id]
-            );
-            if ($arow2) {
-                $assignname = $arow2->name;
+                // Context not found — leave folders empty.
             }
         }
 
@@ -263,7 +237,7 @@ class repository_gdrive_upload extends repository {
             clean_param($SITE->shortname . ' (id ' . $SITE->id . ')', PARAM_PATH),
             'webservice_uploads',
             $userfolder,
-            clean_param($itemid . ($coursename !== '' ? '_' . $coursename : ''), PARAM_PATH),
+            clean_param($coursename, PARAM_PATH),
             clean_param($assignname, PARAM_PATH),
         ];
 
@@ -274,6 +248,9 @@ class repository_gdrive_upload extends repository {
         $parentid = 'root';
         $fullpath = 'root';
         foreach ($allfolders as $foldername) {
+            if (empty($foldername)) {
+                continue; // Skip empty slots (e.g. course/assign not resolved).
+            }
             $fullpath .= '/' . $foldername;
             $folderid  = $cache->get($fullpath);
 
