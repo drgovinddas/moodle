@@ -22,7 +22,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 use mod_diary\local\results;
-defined('MOODLE_INTERNAL') || die(); // @codingStandardsIgnoreLine
+defined('MOODLE_INTERNAL') || die(); // phpcs:ignore
 
 /**
  * Define the complete diary structure for restore, with file and id annotations.
@@ -32,7 +32,6 @@ defined('MOODLE_INTERNAL') || die(); // @codingStandardsIgnoreLine
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class restore_diary_activity_structure_step extends restore_activity_structure_step {
-
     /**
      * Define the structure of the restore workflow.
      *
@@ -44,11 +43,12 @@ class restore_diary_activity_structure_step extends restore_activity_structure_s
 
         $paths[] = new restore_path_element('diary', '/activity/diary');
 
+        $paths[] = new restore_path_element('diary_prompt', '/activity/diary/prompts/prompt');
+
         if ($userinfo) {
             $paths[] = new restore_path_element('diary_entry', '/activity/diary/entries/entry');
             $paths[] = new restore_path_element('diary_entry_rating', '/activity/diary/entries/entry/ratings/rating');
             $paths[] = new restore_path_element('diary_entry_tag', '/activity/diary/entriestags/tag');
-            $paths[] = new restore_path_element('diary_prompt', '/activity/diary/prompts/prompt');
         }
 
         // Return the paths wrapped into standard activity structure.
@@ -105,6 +105,8 @@ class restore_diary_activity_structure_step extends restore_activity_structure_s
         unset($diaryprompt->id);
 
         $diaryprompt->diaryid = $this->get_new_parentid('diary'); // Get the ID of the diary activity this prompt belongs to.
+        $diaryprompt->datestart = $this->apply_date_offset($diaryprompt->datestart);
+        $diaryprompt->datestop = $this->apply_date_offset($diaryprompt->datestop);
 
         $newid = $DB->insert_record('diary_prompts', $diaryprompt); // Create a new prompt record ID.
         $this->set_mapping('diary_prompt', $oldid, $newid); // Map the new prompt ID to the old prompt ID.
@@ -134,7 +136,7 @@ class restore_diary_activity_structure_step extends restore_activity_structure_s
         } else {
             $diaryentry->promptid = $oldpromptid;
         }
-        $diaryentry->timemcreated = $this->apply_date_offset($diaryentry->timecreated);
+        $diaryentry->timecreated = $this->apply_date_offset($diaryentry->timecreated);
         $diaryentry->timemodified = $this->apply_date_offset($diaryentry->timemodified);
         $diaryentry->timemarked = $this->apply_date_offset($diaryentry->timemarked);
         $diaryentry->userid = $this->get_mappingid('user', $diaryentry->userid);

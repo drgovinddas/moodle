@@ -22,7 +22,7 @@
  * @copyright 2019 AL Rachels <drachels@drachels.com>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-defined('MOODLE_INTERNAL') || die(); // @codingStandardsIgnoreLine
+defined('MOODLE_INTERNAL') || die(); // phpcs:ignore
 
 /**
  * mod_diary data generator class.
@@ -33,7 +33,6 @@ defined('MOODLE_INTERNAL') || die(); // @codingStandardsIgnoreLine
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mod_diary_generator extends testing_module_generator {
-
     /**
      *
      * @var int keep track of how many diarys have been created.
@@ -58,7 +57,7 @@ class mod_diary_generator extends testing_module_generator {
      * @param array $options
      * @return stdClass mod_diary_structure
      */
-    public function create_instance($record = null, array $options = null) {
+    public function create_instance($record = null, $options = null) {
         $record = (object) (array) $record;
 
         if (! isset($record->name)) {
@@ -74,7 +73,7 @@ class mod_diary_generator extends testing_module_generator {
             $record->grade = 100;
         }
 
-        $this->diarycount ++;
+        $this->diarycount++;
 
         return parent::create_instance($record, (array) $options);
     }

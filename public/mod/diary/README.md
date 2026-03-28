@@ -6,15 +6,16 @@ activity from notebook, netbook, android, iPhone, iPod or any other device
 which can access the Moodle site. 
 
 - Moodle tracker component: https://github.com/drachels/moodle-mod_diary/issues
-- Documentation: https://docs.moodle.org/401/en/Diary
+- Documentation: https://docs.moodle.org/405/en/Diary
 - Source Code: https://github.com/drachels/moodle-mod_diary
+- Release run sheet: mod/diary/RELEASE_RUN_SHEET.md
 - License: http://www.gnu.org/licenses/gpl-2.0.txt
 
 ## Install from git
 - Navigate to Moodle root folder.
 - **git clone git://github.com/drachels/moodle-mod_diary.git mod/diary**
 - **cd diary
-- **git checkout MOODLE_XY_STABLE** (where XY is the moodle version, e.g: MOODLE_30_STABLE, MOODLE_28_STABLE...)
+- **git checkout MOODLE_XY_STABLE** (where XY is the moodle version, e.g: MOODLE_377_STABLE, MOODLE_379_STABLE...)
 - Click the 'Notifications' link on the frontpage administration block or **php admin/cli/upgrade.php** if you have access to a command line interpreter.
 
 ## Install from a compressed file

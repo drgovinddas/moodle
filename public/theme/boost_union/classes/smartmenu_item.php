@@ -84,6 +84,22 @@ class smartmenu_item {
     const TYPEMAILTO = 5;
 
     /**
+     * Represents the type of a static element with placeholders.
+     * Unlike the regular static type, items of this type are not cached because their content is variable (user/course/page
+     * context specific). Placeholders in the title and URL will be replaced with actual values at render time.
+     * @var int
+     */
+    const TYPESTATICWITHPLACEHOLDERS = 6;
+
+    /**
+     * Represents the type of a heading element with placeholders.
+     * Unlike the regular heading type, items of this type are not cached because their content is variable (user/course/page
+     * context specific). Placeholders in the title will be replaced with actual values at render time.
+     * @var int
+     */
+    const TYPEHEADINGWITHPLACEHOLDERS = 7;
+
+    /**
      * Represents the completion status of an item where the status is 'enrolled'.
      * @var int
      */
@@ -118,6 +134,24 @@ class smartmenu_item {
      * @var int
      */
     const RANGE_FUTURE = 3;
+
+    /**
+     * Show all courses in the dynamic menu item list.
+     * @var int
+     */
+    const STARREDCOURSES_ALL = 0;
+
+    /**
+     * Show only starred courses in the dynamic menu item list (and use server-side cache invalidation).
+     * @var int
+     */
+    const STARREDCOURSES_ONLY_SERVER = 1;
+
+    /**
+     * Show only starred courses in the dynamic menu item list (and use client-side cache invalidation).
+     * @var int
+     */
+    const STARREDCOURSES_ONLY_CLIENT = 2;
 
     /**
      * Hide the item title an all viewport.
@@ -366,6 +400,8 @@ class smartmenu_item {
         $this->cache->delete_menu($this->item->id);
         // Delete the cached data of current items menu.
         $this->menucache->delete_menu($this->item->menu);
+        // Invalidate shared smartmenus cache keys.
+        smartmenu::invalidate_shared_cache($this->menucache);
     }
 
     /**
@@ -666,6 +702,21 @@ class smartmenu_item {
     }
 
     /**
+     * Generate a heading item with placeholders replaced in the title.
+     *
+     * @return array The node data.
+     */
+    protected function generate_heading_with_placeholders(): array {
+        return $this->generate_node_data(
+            $this->replace_placeholders($this->item->title), // Title with placeholders replaced.
+            '#', // URL.
+            null, // Default key.
+            $this->item->tooltip, // Tooltip.
+            'heading'
+        );
+    }
+
+    /**
      * Generate a node data for a divider item.
      *
      * @return array The node data.
@@ -683,7 +734,7 @@ class smartmenu_item {
     /**
      * Generate the item as static menu item, Send the custom URL to core\url to make this work with relative URL.
      *
-     * @return string
+     * @return array The node data.
      */
     protected function generate_static_item() {
 
@@ -692,6 +743,24 @@ class smartmenu_item {
         return $this->generate_node_data(
             $this->item->title, // Title.
             $staticurl, // URL.
+            null, // Default key.
+            $this->item->tooltip,
+            // Tooltip.
+        );
+    }
+
+    /**
+     * Generate a static item with placeholders replaced in title and URL.
+     *
+     * @return array The node data.
+     */
+    protected function generate_static_item_with_placeholders(): array {
+
+        $staticurl = new \core\url($this->replace_placeholders($this->item->url));
+
+        return $this->generate_node_data(
+            $this->replace_placeholders($this->item->title), // Title with placeholders replaced.
+            $staticurl, // URL with placeholders replaced.
             null, // Default key.
             $this->item->tooltip,
             // Tooltip.
@@ -750,6 +819,9 @@ class smartmenu_item {
 
         // Daterange based courses filter.
         $this->get_daterange_sql($query);
+
+        // Starred courses based courses filter.
+        $this->get_starredcourses_sql($query);
 
         // Custom field based courses filter.
         $this->get_customfield_sql($query);
@@ -919,6 +991,58 @@ class smartmenu_item {
     }
 
     /**
+     * Replace all supported placeholders in the given string with their current context values.
+     *
+     * Supported placeholders:
+     * - {courseid}        : The current course's internal ID.
+     * - {coursefullname}  : The current course's full name.
+     * - {courseshortname} : The current course's shortname.
+     * - {editingtoggle}   : 'on' or 'off', the value needed to toggle editing mode.
+     * - {userid}          : The logged-in user's internal ID.
+     * - {userusername}    : The logged-in user's username.
+     * - {userfullname}    : The logged-in user's full name.
+     * - {pagecontextid}   : The current page's context ID.
+     * - {pagepath}        : The current page's URL path.
+     * - {sesskey}         : The current session key (for use in secured URLs).
+     *
+     * @param string $text The text containing placeholders.
+     * @return string The text with all placeholders replaced by their current context values.
+     */
+    protected function replace_placeholders(string $text): string {
+        global $USER, $COURSE, $PAGE;
+
+        // Define the supported placeholders and their corresponding replacement values.
+        $placeholders = [
+            'courseid'        => isset($COURSE->id) ? $COURSE->id : '',
+            'coursefullname'  => isset($COURSE->fullname) ? format_string($COURSE->fullname) : '',
+            'courseshortname' => isset($COURSE->shortname) ? $COURSE->shortname : '',
+            'editingtoggle'   => $PAGE->user_is_editing() ? 'off' : 'on',
+            'userid'          => isset($USER->id) ? $USER->id : '',
+            'userusername'    => isset($USER->username) ? $USER->username : '',
+            'userfullname'    => isset($USER->id) ? fullname($USER) : '',
+            'pagecontextid'   => is_object($PAGE->context) ? $PAGE->context->id : '',
+            'pagepath'        => is_object($PAGE->url) ? $PAGE->url->out_as_local_url() : '',
+            'sesskey'         => sesskey(),
+        ];
+
+        // For Behat tests, use some fixed values to ensure deterministic test results.
+        if (defined('BEHAT_SITE_RUNNING')) {
+            $placeholders['courseid'] = '42';
+            $placeholders['userid'] = '3';
+            $placeholders['pagecontextid'] = '99';
+            $placeholders['sesskey'] = 'behat0000000000000000000000000000';
+        }
+
+        // Replace each placeholder in the text with its corresponding value.
+        foreach ($placeholders as $search => $replace) {
+            $text = str_replace('{' . $search . '}', $replace, $text);
+        }
+
+        // Return the text with placeholders replaced.
+        return $text;
+    }
+
+    /**
      * Given some text and an ideal length, this function truncates the text based on words count.
      *
      * @param string $text text to be shortened
@@ -1068,7 +1192,7 @@ class smartmenu_item {
      * @return bool Returns false if the item's date range is empty.
      */
     protected function get_daterange_sql(&$query) {
-        global $DB, $USER;
+        global $DB;
 
         if (empty($this->item->daterange)) {
             return false;
@@ -1097,6 +1221,46 @@ class smartmenu_item {
 
         $query->where[] = $sql ? '(' . implode(' OR ', $sql) . ')' : '';
         $query->params += $params;
+    }
+
+    /**
+     * Generates the SQL statement to only show user-starred courses.
+     *
+     * @param stdclass $query The database query object.
+     * @return bool Returns false if the starred-courses filter is not enabled.
+     */
+    protected function get_starredcourses_sql(&$query) {
+        global $USER;
+
+        // Check if the filter for starred courses is enabled and valid.
+        if (
+            !property_exists($this->item, 'starredcourses') ||
+            !in_array((int) $this->item->starredcourses, [
+                self::STARREDCOURSES_ONLY_SERVER,
+                self::STARREDCOURSES_ONLY_CLIENT,
+            ])
+        ) {
+            return false;
+        }
+
+        // Add a condition to the query to fetch only those courses that the user has marked as favourite on the server side.
+        $query->where[] = "EXISTS (
+            SELECT 1
+              FROM {favourite} f
+              JOIN {context} favctx ON favctx.id = f.contextid
+             WHERE f.userid = :favuserid
+               AND f.component = :favcomponent
+               AND f.itemtype = :favitemtype
+               AND f.itemid = c.id
+               AND favctx.contextlevel = :favcontextlevel
+               AND favctx.instanceid = c.id
+        )";
+        $query->params += [
+            'favuserid' => $USER->id,
+            'favcomponent' => 'core_course',
+            'favitemtype' => 'courses',
+            'favcontextlevel' => CONTEXT_COURSE,
+        ];
     }
 
     /**
@@ -1244,9 +1408,11 @@ class smartmenu_item {
         // Add menu item class.
         $types = [
             self::TYPESTATIC => 'static',
+            self::TYPESTATICWITHPLACEHOLDERS => 'static',
             self::TYPEDYNAMIC => 'dynamic',
             self::TYPEMAILTO => 'mailto',
             self::TYPEHEADING => 'heading',
+            self::TYPEHEADINGWITHPLACEHOLDERS => 'heading',
             self::TYPEDOCS => 'docs',
             self::TYPEDIVIDER => 'divider',
         ];
@@ -1266,14 +1432,19 @@ class smartmenu_item {
             case self::TYPESTATIC:
                 $static = $this->generate_static_item();
                 $result = [$static]; // Return the result as recursive array for merge with dynamic items.
-                $type = 'static';
                 $cacheable = true;
+                break;
+
+            case self::TYPESTATICWITHPLACEHOLDERS:
+                $static = $this->generate_static_item_with_placeholders();
+                $result = [$static];
+                // Must not be cached because title and URL contain user/course/page context dependent values.
+                $cacheable = false;
                 break;
 
             case self::TYPEMAILTO:
                 $mailto = $this->generate_mailto_item();
                 $result = [$mailto];
-                $type = 'mailto';
                 $cacheable = true;
                 break;
 
@@ -1286,7 +1457,6 @@ class smartmenu_item {
                 }
 
                 $result = [$docs]; // Return the result as recursive array useful to merge with dynamic items.
-                $type = 'docs';
 
                 // Make this node non cacheable as its link will change throughout the individual Moodle pages.
                 $cacheable = false;
@@ -1295,22 +1465,31 @@ class smartmenu_item {
 
             case self::TYPEDYNAMIC:
                 $result = $this->generate_dynamic_item();
-                $type = 'dynamic';
-                $cacheable = true;
+                // If the starred courses server-side cache invalidation mode is enabled, disable the cache for dynamic items.
+                // And keep the cache for all other modes.
+                $cacheable = !(
+                    isset($this->item->starredcourses) &&
+                    (int) $this->item->starredcourses === self::STARREDCOURSES_ONLY_SERVER
+                );
                 break;
 
             case self::TYPEDIVIDER:
                 $divider = $this->generate_divider();
                 $result = [$divider]; // Return the result as recursive array useful to merge with dynamic items.
-                $type = 'divider';
                 $cacheable = true;
+                break;
+
+            case self::TYPEHEADINGWITHPLACEHOLDERS:
+                $heading = $this->generate_heading_with_placeholders();
+                $result = [$heading];
+                // Must not be cached because title contains user/course/page context dependent values.
+                $cacheable = false;
                 break;
 
             case self::TYPEHEADING:
             default:
                 $heading = $this->generate_heading();
                 $result = [$heading]; // Return the result as recursive array useful to merge with dynamic items.
-                $type = 'heading';
                 $cacheable = true;
         endswitch;
 
@@ -1522,6 +1701,17 @@ class smartmenu_item {
             if (isset($data[$fieldid])) {
                 $data = $data[$fieldid];
                 $data->instance_form_definition($mform);
+
+                // Check if the element was actually added to the form.
+                // When a custom field is not visible in course settings, it won't be added.
+                // In this case, getElement() returns a PEAR_Error instead of a form element.
+                // This happened before with the customfield_semester | visibleincoursesettings setting
+                // of customfield_semester.
+                // See https://github.com/moodle-an-hochschulen/moodle-theme_boost_union/issues/1164 for details.
+                if (!$mform->elementExists("customfield_" . $shortname)) {
+                    continue;
+                }
+
                 $elem = $mform->getElement("customfield_" . $shortname);
                 // If this field is a textarea, we'll remove the element and re-add
                 // it in a group as textareas can't be conditionally hidden due to a limitation in Moodle core.
@@ -1586,8 +1776,12 @@ class smartmenu_item {
     public static function get_types(?int $type = null) {
         $types = [
                 self::TYPESTATIC => get_string('smartmenusmenuitemtypestatic', 'theme_boost_union'),
+                self::TYPESTATICWITHPLACEHOLDERS =>
+                        get_string('smartmenusmenuitemtypestaticwithplaceholders', 'theme_boost_union'),
                 self::TYPEMAILTO => get_string('smartmenusmenuitemtypemailto', 'theme_boost_union'),
                 self::TYPEHEADING => get_string('smartmenusmenuitemtypeheading', 'theme_boost_union'),
+                self::TYPEHEADINGWITHPLACEHOLDERS =>
+                        get_string('smartmenusmenuitemtypeheadingwithplaceholders', 'theme_boost_union'),
                 self::TYPEDOCS => get_string('smartmenusmenuitemtypedocs', 'theme_boost_union'),
                 self::TYPEDYNAMIC => get_string('smartmenusmenuitemtypedynamiccourses', 'theme_boost_union'),
                 self::TYPEDIVIDER => get_string('smartmenusmenuitemtypedivider', 'theme_boost_union'),
@@ -1654,6 +1848,23 @@ class smartmenu_item {
                 get_string('smartmenusdynamiccoursesdaterangepresent', 'theme_boost_union'),
             self::RANGE_FUTURE =>
                 get_string('smartmenusdynamiccoursesdaterangefuture', 'theme_boost_union'),
+        ];
+    }
+
+    /**
+     * Return the options for the starredcourses setting.
+     *
+     * @return array
+     * @throws \coding_exception
+     */
+    public static function get_starredcourses_options(): array {
+        return [
+            self::STARREDCOURSES_ALL =>
+                get_string('smartmenusdynamiccoursesstarredcoursesall', 'theme_boost_union'),
+            self::STARREDCOURSES_ONLY_SERVER =>
+                get_string('smartmenusdynamiccoursesstarredcoursesonly', 'theme_boost_union'),
+            self::STARREDCOURSES_ONLY_CLIENT =>
+                get_string('smartmenusdynamiccoursesstarredcoursesonlyclient', 'theme_boost_union'),
         ];
     }
 
@@ -1760,6 +1971,7 @@ class smartmenu_item {
         $record->enrolmentrole = json_encode($formdata->enrolmentrole);
         $record->completionstatus = json_encode($formdata->completionstatus);
         $record->daterange = json_encode($formdata->daterange);
+        $record->starredcourses = ($formdata->starredcourses) ?? self::STARREDCOURSES_ALL;
 
         $coursehandler = \core_course\customfield\course_handler::create();
         $customfields = [];
@@ -1814,6 +2026,7 @@ class smartmenu_item {
 
             // Delete the cached data of its menu. Menu will recreate with this item.
             $menucache->delete_menu($formdata->menu);
+            smartmenu::invalidate_shared_cache($menucache);
             // Purge the current item cache for all users.
             $cache->delete_menu($formdata->id);
 
@@ -1838,6 +2051,7 @@ class smartmenu_item {
 
             // Delete the cached data of its menu. Menu will recreate with this item.
             $menucache->delete_menu($formdata->menu);
+            smartmenu::invalidate_shared_cache($menucache);
         }
 
         // Save the item image files to the file directory.

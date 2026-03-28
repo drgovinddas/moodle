@@ -667,11 +667,8 @@ function theme_boost_union_get_random_loginbackgroundimage_number() {
     static $number = null;
 
     if ($number == null) {
-        // Get all files for loginbackgroundimages.
-        $files = theme_boost_union_get_loginbackgroundimage_files();
-
-        // Get count of array elements.
-        $filecount = count($files);
+        // Get the count of loginbackgroundimage files.
+        $filecount = theme_boost_union_get_loginbackgroundimage_filecount();
 
         // We only return a number if images are uploaded to the loginbackgroundimage file area.
         if ($filecount > 0) {
@@ -707,9 +704,46 @@ function theme_boost_union_get_random_loginbackgroundimage_class() {
 }
 
 /**
+ * Return the count of files in the loginbackgroundimage file area.
+ *
+ * This is a performant alternative to loading all file records when only the count is needed
+ * (e.g., for random number generation at login time). It supports an unlimited number of images.
+ *
+ * @return int
+ * @throws dml_exception
+ */
+function theme_boost_union_get_loginbackgroundimage_filecount() {
+    global $DB;
+
+    // Static variable to remember the count for subsequent calls of this function.
+    static $count = null;
+
+    if ($count === null) {
+        // Get the system context.
+        $systemcontext = \context_system::instance();
+
+        // Count only actual files (excluding directory entries) in the filearea.
+        $count = $DB->count_records_select(
+            'files',
+            'contextid = :contextid AND component = :component AND filearea = :filearea AND filename != :dot',
+            [
+                'contextid' => $systemcontext->id,
+                'component' => 'theme_boost_union',
+                'filearea' => 'loginbackgroundimage',
+                'dot' => '.',
+            ]
+        );
+    }
+
+    return $count;
+}
+
+/**
  * Return the files from the loginbackgroundimage file area.
- * This function always loads the files from the filearea which is not really performant.
- * However, we accept this at the moment as it is only invoked on the login page.
+ *
+ * This function loads all files from the filearea and is intended for use during theme compilation
+ * (SCSS generation), where all files are needed. For per-request use (e.g., random image selection),
+ * prefer theme_boost_union_get_loginbackgroundimage_filecount() to avoid loading all file records.
  *
  * @return array|null
  * @throws coding_exception
@@ -894,50 +928,74 @@ function theme_boost_union_get_loginbackgroundimage_scss() {
 /**
  * Get the text that should be displayed for the randomly displayed background image on the login page.
  *
+ * This function fetches only the single selected file record from the database instead of all files,
+ * which keeps it efficient even with a large number of uploaded login background images.
+ *
  * @return array (of two strings, holding the text and the text color)
  * @throws coding_exception
  * @throws dml_exception
  */
 function theme_boost_union_get_loginbackgroundimage_text() {
+    global $DB;
+
     // Get the random number.
     $number = theme_boost_union_get_random_loginbackgroundimage_number();
 
     // Only search for the text if there's a background image.
     if ($number != null) {
-        // Get the files from the filearea loginbackgroundimage.
-        $files = theme_boost_union_get_loginbackgroundimage_files();
-        // Get the file for the selected random number.
-        $file = array_slice($files, ($number - 1), 1, false);
-        // Get the filename.
-        $filename = array_pop($file)->get_filename();
+        // Get the system context.
+        $systemcontext = \context_system::instance();
 
-        // Get the config for loginbackgroundimagetext and make an array out of the lines.
-        $lines = explode("\n", get_config('theme_boost_union', 'loginbackgroundimagetext'));
+        // Fetch only the single file record at position $number using the same ordering as
+        // theme_boost_union_get_loginbackgroundimage_files() (i.e., sorted by itemid).
+        $sql = "SELECT f.filename
+                  FROM {files} f
+                 WHERE f.contextid = :contextid
+                       AND f.component = :component
+                       AND f.filearea = :filearea
+                       AND f.filename != :dot
+                 ORDER BY f.itemid";
+        $params = [
+            'contextid' => $systemcontext->id,
+            'component' => 'theme_boost_union',
+            'filearea' => 'loginbackgroundimage',
+            'dot' => '.',
+        ];
+        $filerecords = $DB->get_records_sql($sql, $params, $number - 1, 1);
+        $filerecord = reset($filerecords);
 
-        // Process the lines.
-        foreach ($lines as $line) {
-            $settings = explode("|", $line);
-            // If the line does not have three items, skip it.
-            if (count($settings) != 3) {
-                continue;
-            }
-            // Compare the filenames for a match.
-            if (strcmp($filename, trim($settings[0])) == 0) {
-                // Trim the second parameter as we need it more than once.
-                $settings[2] = trim($settings[2]);
+        // Only proceed if we got a file record.
+        if ($filerecord) {
+            $filename = $filerecord->filename;
 
-                // If the color value is not acceptable, replace it with dark.
-                if ($settings[2] != 'dark' && $settings[2] != 'light') {
-                    $settings[2] = 'dark';
+            // Get the config for loginbackgroundimagetext and make an array out of the lines.
+            $lines = explode("\n", get_config('theme_boost_union', 'loginbackgroundimagetext'));
+
+            // Process the lines.
+            foreach ($lines as $line) {
+                $settings = explode("|", $line);
+                // If the line does not have three items, skip it.
+                if (count($settings) != 3) {
+                    continue;
                 }
+                // Compare the filenames for a match.
+                if (strcmp($filename, trim($settings[0])) == 0) {
+                    // Trim the second parameter as we need it more than once.
+                    $settings[2] = trim($settings[2]);
 
-                // Return the text + text color that belongs to the randomly selected image.
-                return [format_string(trim($settings[1])), $settings[2]];
+                    // If the color value is not acceptable, replace it with dark.
+                    if ($settings[2] != 'dark' && $settings[2] != 'light') {
+                        $settings[2] = 'dark';
+                    }
+
+                    // Return the text + text color that belongs to the randomly selected image.
+                    return [format_string(trim($settings[1])), $settings[2]];
+                }
             }
         }
     }
 
-    return '';
+    return ['', ''];
 }
 
 /**
@@ -1482,10 +1540,14 @@ function theme_boost_union_get_additional_regions($pageregions = []) {
 /**
  * Get the defined regions for the page layout.
  *
+ * If called from the block edit form and the harden block regions feature is enabled,
+ * this function filters regions to only return those the user has capability to edit.
+ *
  * @param string $layout Pagelayout name.
  * @return array $regions
  */
 function theme_boost_union_get_block_regions($layout) {
+    global $CFG;
 
     // During the initial installation, we can't access the config table yet, so we return the default regions only.
     if (during_initial_install()) {
@@ -1501,7 +1563,20 @@ function theme_boost_union_get_block_regions($layout) {
     // Add the configured regions to the side-pre region (which is always provided by Boost core).
     $regions = array_merge(['side-pre'], $settings);
 
-    // Return.
+    // If the harden block regions feature is enabled, delegate hardening to the custom block manager implementation.
+    // We intentionally use the literal 'yes' value here instead of the
+    // THEME_BOOST_UNION_SETTING_SELECT_YES constant, as the theme's lib.php
+    // is not loaded at this early stage of the bootstrap.
+    $hardenblockregions = get_config('theme_boost_union', 'hardenblockregions');
+    if (!empty($hardenblockregions) && $hardenblockregions == 'yes') {
+        // Require the custom block manager implementation.
+        require_once($CFG->dirroot . '/theme/boost_union/classes/boostunion_block_manager.php');
+
+        // Harden the regions.
+        $regions = \theme_boost_union\boostunion_block_manager::harden_block_regions($regions, $settings);
+    }
+
+    // Return regions.
     return $regions;
 }
 
@@ -2032,63 +2107,6 @@ function theme_boost_union_get_loginpage_methods() {
             3 => 'firsttimesignup',
             4 => 'guest',
     ];
-}
-
-/**
- * Returns the SCSS code to re-order the elements of the login form, depending on the theme settings loginorder*.
- *
- * @param \core\output\theme_config $theme The theme config object.
- * @return string
- */
-function theme_boost_union_get_scss_login_order($theme) {
-    // Initialize SCSS snippet.
-    $scss = '';
-
-    // Get the login methods.
-    $loginmethods = theme_boost_union_get_loginpage_methods();
-
-    // If the default orders are unchanged.
-    $unchanged = true;
-    foreach ($loginmethods as $key => $lm) {
-        $setting = get_config('theme_boost_union', 'loginorder' . $lm);
-        if ($setting != $key) {
-            $unchanged = false;
-        }
-    }
-    if ($unchanged == true) {
-        // Hide the first login-divider (as we have added login-dividers to all orderable login methods,
-        // but do not want a divider between the page heading and the first login method).
-        $scss .= '#theme_boost_union-loginorder .theme_boost_union-loginmethod:first-of-type .login-divider { display: none; }';
-
-        // Return the SCSS code as we are done.
-        return $scss;
-    }
-
-    // Make the loginform a flexbox.
-    $scss .= '#theme_boost_union-loginorder { display: flex; flex-direction: column; }';
-
-    // Initialize a variable to detect the very first method.
-    $veryfirstmethodname = '';
-    $veryfirstmethodorder = 99; // This assumes that we will never have more than 99 login methods which should be fair.
-
-    // Iterate over all login methods.
-    foreach ($loginmethods as $lm) {
-        // Set the flexbox order for this login method.
-        $setting = get_config('theme_boost_union', 'loginorder' . $lm);
-        $scss .= '#theme_boost_union-loginorder-' . $lm . ' { order: ' . $setting . '; }';
-
-        // If no other login method has a lower order than this one.
-        if ($setting < $veryfirstmethodorder) {
-            // Remember this login method as very first method.
-            $veryfirstmethodorder = $setting;
-            $veryfirstmethodname = $lm;
-        }
-    }
-
-    // Hide the first login-divider - similar to the 'unchanged settings' case, but in this case based on the flexbox orders.
-    $scss .= '#theme_boost_union-loginorder-' . $veryfirstmethodname . ' .login-divider { display: none; }';
-
-    return $scss;
 }
 
 /**
@@ -2789,13 +2807,20 @@ function theme_boost_union_reset_hooksuppress_cache() {
  * @return bool
  */
 function theme_boost_union_is_active_theme() {
-    global $PAGE;
+    global $CFG, $PAGE;
+
+    // During PHPUnit tests or when $PAGE theme is not yet initialised,
+    // fall back to check $CFG->theme to avoid triggering theme initialisation.
+    // This will not recognize Boost Union child themes as active, but this is acceptable in this case.
+    if ((defined('PHPUNIT_TEST') && PHPUNIT_TEST) || !$PAGE->has_set_url()) {
+        return ($CFG->theme === 'boost_union');
+    }
 
     if ($PAGE->theme->name == 'boost_union' || in_array('boost_union', $PAGE->theme->parents)) {
         return true;
-    } else {
-        return false;
     }
+
+    return false;
 }
 
 /**

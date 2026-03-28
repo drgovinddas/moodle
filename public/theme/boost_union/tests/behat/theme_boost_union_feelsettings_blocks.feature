@@ -157,6 +157,32 @@ Feature: Configuring the theme_boost_union plugin for the "Blocks" tab on the "F
       | footer-center  | footer-center  |
       | header         | header         |
 
+  Scenario Outline: Setting: Use additional block regions (on the My courses page, showing sticky blocks from frontpage)
+    Given the following config values are set as admin:
+      | config                   | value          | plugin            |
+      | blockregionsformycourses | <settingvalue> | theme_boost_union |
+    And the following "blocks" exist:
+      | blockname    | contextlevel | reference | pagetypepattern | defaultregion |
+      | online_users | System       | 1         | *               | <region>      |
+    When I am on the "My courses" page logged in as "admin"
+    Then I should see "Online users" in the "#theme-block-region-<region>" "css_element"
+
+    Examples:
+      | region           | settingvalue     |
+      | outside-top      | outside-top      |
+      | outside-left     | outside-left     |
+      | outside-right    | outside-right    |
+      | outside-bottom   | outside-bottom   |
+      | footer-left      | footer-left      |
+      | footer-right     | footer-right     |
+      | footer-center    | footer-center    |
+      | offcanvas-left   | offcanvas-left   |
+      | offcanvas-right  | offcanvas-right  |
+      | offcanvas-center | offcanvas-center |
+      | content-upper    | content-upper    |
+      | content-lower    | content-lower    |
+      | header           | header           |
+
   Scenario Outline: Setting: Use additional block regions (on the admin overview page where not all regions are offered)
     Given the following config values are set as admin:
       | config               | value          | plugin            |
@@ -558,6 +584,146 @@ Feature: Configuring the theme_boost_union plugin for the "Blocks" tab on the "F
       | setting | shouldcontain      | beforeafter |
       | 1       | should contain     | before      |
       | 0       | should not contain | after       |
+
+  Scenario Outline: Setting: Harden block regions - Block edit controls are shown in allowed regions and hidden in restricted region regardless of hardening setting (Regression test).
+    Given the following config values are set as admin:
+      | config                | value                      | plugin            |
+      | blockregionsforcourse | outside-top,outside-bottom | theme_boost_union |
+      | hardenblockregions    | <hardenblockregions>       | theme_boost_union |
+    And the following "blocks" exist:
+      | blockname      | contextlevel | reference | pagetypepattern | defaultregion  |
+      | online_users   | Course       | C1        | course-view-*   | outside-top    |
+      | calendar_month | Course       | C1        | course-view-*   | outside-bottom |
+    And the following "permission overrides" exist:
+      | capability                             | permission | role           | contextlevel | reference |
+      | theme/boost_union:editregionoutsidetop | Prevent    | editingteacher | System       |           |
+    When I am on the "Course 1" "Course" page logged in as "teacher1"
+    And I turn editing mode on
+    Then I should see "Online users" in the "#theme-block-region-outside-top" "css_element"
+    And I should see "Calendar" in the "#theme-block-region-outside-bottom" "css_element"
+    And I should see "Add a block" in the "#theme-block-region-outside-bottom" "css_element"
+    And I should not see "Add a block" in the "#theme-block-region-outside-top" "css_element"
+    And ".block_online_users .action-menu" "css_element" should not exist
+    And ".block_calendar_month .action-menu" "css_element" should exist
+
+    Examples:
+      | hardenblockregions |
+      | no                 |
+      | yes                |
+
+  Scenario Outline: Setting: Harden block regions - Blocks in editable region can still be edited (Regression test)
+    Given the following config values are set as admin:
+      | config                | value                      | plugin            |
+      | blockregionsforcourse | outside-top,outside-bottom | theme_boost_union |
+      | hardenblockregions    | <hardenblockregions>       | theme_boost_union |
+    And the following "blocks" exist:
+      | blockname    | contextlevel | reference | pagetypepattern | defaultregion  |
+      | online_users | Course       | C1        | course-view-*   | outside-bottom |
+    When I am on the "Course 1" "Course" page logged in as "teacher1"
+    And I turn editing mode on
+    And I should see "Online users" in the "#theme-block-region-outside-bottom" "css_element"
+    And I configure the "Online users" block
+    And I expand all fieldsets
+    And I set the field "Region" to "Outside (top)"
+    And I click on "Save changes" "button"
+    And I reload the page
+    Then I should see "Online users" in the "#theme-block-region-outside-top" "css_element"
+    And I should not see "Online users" in the "#theme-block-region-outside-bottom" "css_element"
+
+    Examples:
+      | hardenblockregions |
+      | no                 |
+      | yes                |
+
+  @javascript
+  Scenario Outline: Setting: Harden block regions - Blocks can still be added to editable regions (Regression test)
+    Given the following config values are set as admin:
+      | config                | value                | plugin            |
+      | blockregionsforcourse | outside-top          | theme_boost_union |
+      | hardenblockregions    | <hardenblockregions> | theme_boost_union |
+    When I am on the "Course 1" "Course" page logged in as "teacher1"
+    And I turn editing mode on
+    Then I should see "Add a block" in the "#theme-block-region-outside-top" "css_element"
+    And I click on "Add a block" "link" in the "#theme-block-region-outside-top" "css_element"
+    And I click on "Calendar" "link" in the ".modal-dialog" "css_element"
+    Then I should see "Calendar" in the "#theme-block-region-outside-top" "css_element"
+
+    Examples:
+      | hardenblockregions |
+      | no                 |
+      | yes                |
+
+  Scenario Outline: Setting: Harden block regions - Restricted region is not available in block configure form (in standalone view)
+    Given the following config values are set as admin:
+      | config                | value                                   | plugin            |
+      | blockregionsforcourse | outside-top,outside-bottom,outside-left | theme_boost_union |
+      | hardenblockregions    | <hardenblockregions>                    | theme_boost_union |
+    And the following "blocks" exist:
+      | blockname    | contextlevel | reference | pagetypepattern | defaultregion  |
+      | online_users | Course       | C1        | course-view-*   | outside-bottom |
+    And the following "permission overrides" exist:
+      | capability                             | permission | role           | contextlevel | reference |
+      | theme/boost_union:editregionoutsidetop | Prevent    | editingteacher | System       |           |
+    When I am on the "Course 1" "Course" page logged in as "teacher1"
+    And I turn editing mode on
+    And I open the "Online users" blocks action menu
+    And I click on "Configure Online users block" "link" in the "Online users" "block"
+    Then the "Region" select box should contain "Outside (left)"
+    And the "Region" select box <should> contain "Outside (top)"
+
+    Examples:
+      | hardenblockregions | should     |
+      | yes                | should not |
+      | no                 | should     |
+
+  @javascript
+  Scenario Outline: Setting: Harden block regions - Restricted region is not available in block configure form (in modal view)
+    Given the following config values are set as admin:
+      | config                | value                                   | plugin            |
+      | blockregionsforcourse | outside-top,outside-bottom,outside-left | theme_boost_union |
+      | hardenblockregions    | <hardenblockregions>                    | theme_boost_union |
+    And the following "blocks" exist:
+      | blockname    | contextlevel | reference | pagetypepattern | defaultregion  |
+      | online_users | Course       | C1        | course-view-*   | outside-bottom |
+    And the following "permission overrides" exist:
+      | capability                             | permission | role           | contextlevel | reference |
+      | theme/boost_union:editregionoutsidetop | Prevent    | editingteacher | System       |           |
+    When I am on the "Course 1" "Course" page logged in as "teacher1"
+    And I turn editing mode on
+    And I open the "Online users" blocks action menu
+    And I click on "Configure Online users block" "link" in the "Online users" "block"
+    Then the "Region" select box should contain "Outside (left)"
+    And the "Region" select box <should> contain "Outside (top)"
+
+    Examples:
+      | hardenblockregions | should     |
+      | yes                | should not |
+      | no                 | should     |
+
+  @javascript
+  Scenario Outline: Setting: Harden block regions - Restricted region is not available as drag-and-drop target
+    Given the following config values are set as admin:
+      | config                | value                      | plugin            |
+      | blockregionsforcourse | outside-top,outside-bottom | theme_boost_union |
+      | hardenblockregions    | <hardenblockregions>       | theme_boost_union |
+    And the following "blocks" exist:
+      | blockname      | contextlevel | reference | pagetypepattern | defaultregion  |
+      | online_users   | Course       | C1        | course-view-*   | outside-top    |
+      | calendar_month | Course       | C1        | course-view-*   | outside-bottom |
+    And the following "permission overrides" exist:
+      | capability                             | permission | role           | contextlevel | reference |
+      | theme/boost_union:editregionoutsidetop | Prevent    | editingteacher | System       |           |
+    When I am on the "Course 1" "Course" page logged in as "teacher1"
+    And I turn editing mode on
+    Then "#block-region-outside-bottom" "css_element" should exist
+    And "#block-region-outside-top" "css_element" should exist
+    And the "class" attribute of "#block-region-outside-bottom" "css_element" should contain "yui3-dd-drop"
+    And the "class" attribute of "#block-region-outside-top" "css_element" <should> contain "yui3-dd-drop"
+
+    Examples:
+      | hardenblockregions | should     |
+      | yes                | should not |
+      | no                 | should     |
 
   @javascript
   Scenario: Notifications are shown before content-upper blocks on the homepage

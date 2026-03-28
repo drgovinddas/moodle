@@ -27,10 +27,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->dirroot.'/course/moodleform_mod.php');
-require_once(dirname(__FILE__).'/locallib.php');
-require_once($CFG->libdir.'/filelib.php');
-$PAGE->requires->js(new moodle_url($CFG->wwwroot.'/mod/icontent/js/jscolor/jscolor.js'));
+require_once($CFG->dirroot . '/course/moodleform_mod.php');
+require_once(dirname(__FILE__) . '/locallib.php');
+require_once($CFG->libdir . '/filelib.php');
+$PAGE->requires->js(new moodle_url($CFG->wwwroot . '/mod/icontent/js/jscolor/jscolor.js'));
 
 /**
  * Module instance settings form
@@ -40,19 +40,23 @@ $PAGE->requires->js(new moodle_url($CFG->wwwroot.'/mod/icontent/js/jscolor/jscol
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mod_icontent_mod_form extends moodleform_mod {
-
     /**
-     * Defines forms elements
+     * Defines forms elements.
      */
     public function definition() {
-		global $COURSE;
+        global $COURSE;
         $mform = $this->_form;
+        $icontentconfig = get_config('mod_icontent');
+        $bgcolordefault = self::format_colour_for_picker($icontentconfig->bgcolor ?? '#FCFCFC', '#FCFCFC');
+        $bordercolordefault = self::format_colour_for_picker($icontentconfig->bordercolor ?? '#E4E4E4', '#E4E4E4');
+        // Cache the plugin name.
+        $plugin = 'mod_icontent';
 
         // Adding the "general" fieldset, where all the common settings are showed.
         $mform->addElement('header', 'general', get_string('general', 'form'));
 
         // Adding the standard "name" field.
-        $mform->addElement('text', 'name', get_string('icontentname', 'icontent'), array('class'=>'input-xxlarge'));
+        $mform->addElement('text', 'name', get_string('icontentname', 'icontent'), ['class' => 'input-xxlarge']);
         if (!empty($CFG->formatstringstriptags)) {
             $mform->setType('name', PARAM_TEXT);
         } else {
@@ -64,64 +68,179 @@ class mod_icontent_mod_form extends moodleform_mod {
 
         // Adding the standard "intro" and "introformat" fields.
         $this->standard_intro_elements();
-		
-		$mform->addElement('text', 'copyright', get_string('copyright', 'icontent'), array('class'=>'input-xxlarge'));
-        $mform->setType('copyright', PARAM_RAW);
-		$mform->addHelpButton('copyright', 'copyright', 'icontent');
-		
-		// Appearance.
-        $mform->addElement('header', 'appearancehdr', get_string('appearance'));
-		
-		$filemanager_options = array();
-        $filemanager_options['accepted_types'] = array('.jpg', '.png');
-        $filemanager_options['maxbytes'] = $COURSE->maxbytes;
-        $filemanager_options['maxfiles'] = 1;
-        $filemanager_options['subdirs'] = 0;
 
-		$mform->addElement('filemanager', 'bgimage', get_string('bgimage', 'icontent'), null, $filemanager_options);
-		$mform->setType('bgimage', PARAM_INT);
-		$mform->addHelpButton('bgimage', 'bgimagehelp', 'icontent');
-		
-		$mform->addElement('text', 'bgcolor', get_string('bgcolor', 'icontent'), array('class' => 'color', 'value'=>'FCFCFC'));
-		$mform->setType('bgcolor', PARAM_TEXT);
-		$mform->addHelpButton('bgcolor', 'bgcolorhelp', 'icontent');
-		
-		$mform->addElement('text', 'bordercolor', get_string('bordercolor', 'icontent'), array('class' => 'color', 'value'=>'E4E4E4'));
-		$mform->setType('bordercolor', PARAM_TEXT);
-		$mform->addHelpButton('bordercolor', 'bordercolorhelp', 'icontent');
-		
-		$options = icontent_add_borderwidth_options();
-		$mform->addElement('select', 'borderwidth', get_string('borderwidth','icontent'), $options);
-		$mform->setType('borderwidth', PARAM_INT);
-		$mform->addHelpButton('borderwidth', 'borderwidthhelp', 'icontent');
-		$mform->setDefault('borderwidth', 1);
-		
-		$mform->addElement('text', 'maxpages', get_string('maxpages', 'icontent'), array('class'=>'x-large'));
-		$mform->setType('maxpages', PARAM_INT);
-		$mform->addHelpButton('maxpages', 'maxpageshelp', 'icontent');
-		$mform->addRule('maxpages', null, 'numeric', null, 'client');
-		$mform->addRule('maxpages', get_string('maximumdigits', 'icontent', 3), 'maxlength', 3, 'client');
-		$mform->setDefault('maxpages', 55);
-		
-		$mform->addElement('selectyesno', 'shownotesarea', get_string('shownotesarea', 'icontent'));
-		$mform->addHelpButton('shownotesarea', 'shownotesarea', 'icontent');
-		$mform->setType('shownotesarea', PARAM_INT);
-		$mform->setDefault('shownotesarea', 1);
-		
-		$mform->addElement('text', 'maxnotesperpages', get_string('maxnotesperpages', 'icontent'), array('class'=>'x-large'));
-		$mform->setType('maxnotesperpages', PARAM_INT);
-		$mform->addHelpButton('maxnotesperpages', 'maxnotesperpageshelp', 'icontent');
-		$mform->addRule('maxnotesperpages', null, 'numeric', null, 'client');
-		$mform->addRule('maxnotesperpages', get_string('maximumdigits', 'icontent', 3), 'maxlength', 3, 'client');
-		$mform->setDefault('maxnotesperpages', 15);
-		
-		$mform->addElement('selectyesno', 'progressbar', get_string('progressbar', 'icontent'));
+        // Adding a spot for the content creator to add a copyright.
+        $mform->addElement('text', 'copyright', get_string('copyright', 'icontent'), ['class' => 'input-xxlarge']);
+        $mform->setType('copyright', PARAM_RAW);
+        $mform->addHelpButton('copyright', 'copyright', 'icontent');
+
+        // 20240920 Added tags to mod_form page.
+        $mform->addElement(
+            'tags',
+            'tags',
+            get_string('tags'),
+            [
+                'itemtype' => 'icontent_pages',
+                'component' => 'mod_icontent',
+            ]
+        );
+
+        // Set up options for the filemanager setting.
+        $filemanageroptions = [];
+                $filemanageroptions['subdirs'] = 0;
+                $filemanageroptions['maxbytes'] = $COURSE->maxbytes;
+                $filemanageroptions['areamaxbytes'] = $COURSE->maxbytes;
+                $filemanageroptions['maxfiles'] = 1;
+                $filemanageroptions['accepted_types'] = ['.jpg', '.png'];
+                $filemanageroptions['return_types'] = FILE_INTERNAL | FILE_EXTERNAL;
+
+        $mform->addElement('filemanager', 'bgimage', get_string('bgimage', 'icontent'), null, $filemanageroptions);
+        $mform->setType('bgimage', PARAM_INT);
+        $mform->addHelpButton('bgimage', 'bgimagehelp', 'icontent');
+
+        // Content Pages activity setup, Availability settings.
+        $mform->addElement('header', 'availabilityhdr', get_string('availability'));
+
+        $mform->addElement(
+            'date_time_selector',
+            'timeopen',
+            get_string('icontentopentime', 'icontent'),
+            ['optional' => true, 'step' => 1]
+        );
+        $mform->addElement(
+            'date_time_selector',
+            'timeclose',
+            get_string('icontentclosetime', 'icontent'),
+            ['optional' => true, 'step' => 1]
+        );
+        // Content Pages activity password setup.
+        $mform->addElement('selectyesno', 'usepassword', get_string('usepassword', 'icontent'));
+        $mform->addHelpButton('usepassword', 'usepassword', 'icontent');
+        $mform->setDefault('usepassword', $icontentconfig->password);
+        $mform->setAdvanced('usepassword', $icontentconfig->password_adv);
+
+        $mform->addElement('passwordunmask', 'password', get_string('password', 'icontent'));
+        $mform->setDefault('password', '');
+        $mform->setAdvanced('password', $icontentconfig->password_adv);
+        $mform->setType('password', PARAM_RAW);
+        $mform->disabledIf('password', 'usepassword', 'eq', 0);
+        $mform->disabledIf('passwordunmask', 'usepassword', 'eq', 0);
+
+        // Appearance.
+        $mform->addElement('header', 'appearancehdr', get_string('appearance'));
+
+        // phpcs:ignore
+        // Setup the overall background color for each page.
+        // ...$mform->addElement('text', 'bgcolor', get_string('bgcolor', 'icontent'), ['class' => 'color', 'value' => 'FCFCFC']);.
+        // ...$mform->setType('bgcolor', PARAM_TEXT);.
+        // ...$mform->addHelpButton('bgcolor', 'bgcolorhelp', 'icontent');.
+
+        // 20240216 Modified setting for the overall background color for each page.
+        $bgattributes = ['id' => 'icontent_bgcolor_picker', 'size' => '10', 'maxlength' => '7'];
+        $name = 'bgcolor';
+        $label = get_string('bgcolor', 'icontent');
+        $mform->setType($name, PARAM_TEXT);
+        $mform->addElement('text', $name, $label, $bgattributes);
+        $mform->addHelpButton($name, $name, $plugin);
+        $mform->setDefault($name, $bgcolordefault);
+        // 20240713 Color input experiments.
+        // phpcs:ignore
+        /*
+        $mform->addElement('html', '<label for="bgcolor">Color Picker:</label>
+            <input type="color" id="bgcolor" value="#0000ff">');
+        */
+        // phpcs:ignore
+        /*
+        $mform->addElement('html', '<label for="'.$icontentconfig->bgcolor.'">Color Picker:</label>
+            <input type="color" id="'.$icontentconfig->bgcolor.'" value="#0000ff">');
+        */
+        // phpcs:ignore
+        /*
+        $mform->addElement('html', '<label for="bgcolor">Color Picker:</label>
+            <input type="text" name="text">
+            <input type="color" name="color">
+            <input type="submit" name="btn_submit" value="Submit">');
+        */
+
+        // 20240619 Modified the setting for the bordercolor.
+        $borderattributes = ['id' => 'icontent_bordercolor_picker', 'size' => '10', 'maxlength' => '7'];
+        $mform->addElement('text', 'bordercolor', get_string('bordercolor', 'icontent'), $borderattributes);
+        $mform->setType('bordercolor', PARAM_TEXT);
+        $mform->addHelpButton('bordercolor', 'bordercolorhelp', 'icontent');
+        $mform->setDefault('bordercolor', $bordercolordefault);
+
+        $mform->addElement('html', "
+            <script>
+                (function() {
+                    var normalizeHex = function(value, fallback) {
+                        var raw = (value || '').toString().trim();
+                        if (raw.charAt(0) !== '#') {
+                            raw = '#' + raw;
+                        }
+                        if (!/^#[0-9a-fA-F]{6}$/.test(raw)) {
+                            return fallback;
+                        }
+                        return raw.toUpperCase();
+                    };
+
+                    var initColorInput = function(id, fallback) {
+                        var input = document.getElementById(id);
+                        if (!input) {
+                            return;
+                        }
+                        input.value = normalizeHex(input.value, fallback);
+                        input.type = 'color';
+                        input.style.width = '60px';
+                        input.style.height = '35px';
+                        input.style.cursor = 'pointer';
+                        input.addEventListener('change', function() {
+                            input.value = normalizeHex(input.value, fallback);
+                        });
+                    };
+
+                    initColorInput('icontent_bgcolor_picker', '#FCFCFC');
+                    initColorInput('icontent_bordercolor_picker', '#E4E4E4');
+                })();
+            </script>
+        ");
+
+        // 20240619 Modified the setting for the border width.
+        $options = icontent_add_borderwidth_options();
+        $mform->addElement('select', 'borderwidth', get_string('borderwidth', 'icontent'), $options);
+        $mform->setType('borderwidth', PARAM_INT);
+        $mform->addHelpButton('borderwidth', 'borderwidthhelp', 'icontent');
+        $mform->setDefault('borderwidth', 1);
+
+        // 20240619 Modified the setting for maxpages.
+        $mform->addElement('text', 'maxpages', get_string('maxpages', 'icontent'), ['class' => 'x-large']);
+        $mform->setType('maxpages', PARAM_INT);
+        $mform->addHelpButton('maxpages', 'maxpageshelp', 'icontent');
+        $mform->addRule('maxpages', null, 'numeric', null, 'client');
+        $mform->addRule('maxpages', get_string('maximumdigits', 'icontent', 3), 'maxlength', 3, 'client');
+        $mform->setDefault('maxpages', 55);
+
+        // 20240619 Modified the setting for the show notes area.
+        $mform->addElement('selectyesno', 'shownotesarea', get_string('shownotesarea', 'icontent'));
+        $mform->addHelpButton('shownotesarea', 'shownotesarea', 'icontent');
+        $mform->setType('shownotesarea', PARAM_INT);
+        $mform->setDefault('shownotesarea', 1);
+
+        // 20240619 Modified the setting for the maxnotesperpage.
+        $mform->addElement('text', 'maxnotesperpages', get_string('maxnotesperpages', 'icontent'), ['class' => 'x-large']);
+        $mform->setType('maxnotesperpages', PARAM_INT);
+        $mform->addHelpButton('maxnotesperpages', 'maxnotesperpageshelp', 'icontent');
+        $mform->addRule('maxnotesperpages', null, 'numeric', null, 'client');
+        $mform->addRule('maxnotesperpages', get_string('maximumdigits', 'icontent', 3), 'maxlength', 3, 'client');
+        $mform->setDefault('maxnotesperpages', 15);
+
+        // 20240619 Modified the setting for showing the progress bar.
+        $mform->addElement('selectyesno', 'progressbar', get_string('progressbar', 'icontent'));
         $mform->addHelpButton('progressbar', 'progressbar', 'icontent');
         $mform->setType('progressbar', PARAM_INT);
         $mform->setDefault('progressbar', 1);
-		
-		// Grade.
-    	$this->standard_grading_coursemodule_elements();
+
+        // Show the standard Grade elements.
+        $this->standard_grading_coursemodule_elements();
 
         // Add standard elements, common to all modules.
         $this->standard_coursemodule_elements();
@@ -130,13 +249,50 @@ class mod_icontent_mod_form extends moodleform_mod {
         $this->add_action_buttons();
     }
 
-	function data_preprocessing(&$default_values) {
-			
-			if ($this->current->instance) {
-				$draftitemid = file_get_submitted_draft_itemid('bgimage');
-				
-				file_save_draft_area_files($default_values['bgimage'], $this->context->id, 'mod_icontent', 'icontent',
-				0, array('subdirs' => 0, 'maxbytes' => 0, 'maxfiles' => 1));
-	        }
+    /**
+     * Defines form pre-processing elements.
+     *
+     * @param array $defaultvalues
+     */
+    public function data_preprocessing(&$defaultvalues) {
+        if ($this->current->instance) {
+            $draftitemid = file_get_submitted_draft_itemid('bgimage');
+            file_save_draft_area_files(
+                $defaultvalues['bgimage'],
+                $this->context->id,
+                'mod_icontent',
+                'icontent',
+                0,
+                [
+                    'subdirs' => 0,
+                    'maxbytes' => 0,
+                    'maxfiles' => 1,
+                ]
+            );
         }
+    }
+
+    /**
+     * Normalize a colour value for HTML5 color inputs (#RRGGBB).
+     *
+     * @param string|null $value Raw configured value.
+     * @param string $fallback Fallback hex colour.
+     * @return string
+     */
+    private static function format_colour_for_picker(?string $value, string $fallback): string {
+        $colour = trim((string)$value);
+        if ($colour === '') {
+            return strtoupper($fallback);
+        }
+
+        if ($colour[0] !== '#') {
+            $colour = '#' . $colour;
+        }
+
+        if (!preg_match('/^#[0-9a-fA-F]{6}$/', $colour)) {
+            return strtoupper($fallback);
+        }
+
+        return strtoupper($colour);
+    }
 }

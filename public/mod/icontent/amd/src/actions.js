@@ -19,9 +19,12 @@
  * @author     Johannes Burk & Vincent Schneider 2017
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-define(['jquery','jqueryui', 'mod_icontent/cookiehandler'], function($, jqui, c) {
+define(['jquery', 'jqueryui', 'mod_icontent/cookiehandler'], function($, jqui, c) {
     // List of the named functions
     // Save note tab type 'note'
+    /**
+     *
+     */
     function onSaveNoteClick() {
         // Validates input data
         if (!$("#idcommentnote").val().trim()) {
@@ -30,33 +33,37 @@ define(['jquery','jqueryui', 'mod_icontent/cookiehandler'], function($, jqui, c)
         }
         var $this = $(this);
         var data = {
-            "action" : "savereturnpagenotes",
-            "id" : $(this).attr('data-cmid'),
-            "pageid" : $(this).attr('data-pageid'),
-            "sesskey" : $(this).attr('data-sesskey'),
-            "comment" : $("#idcommentnote").val(),
-            "tab" : "note",
-            "private" : $("#idprivate").is(":checked") ? 1 : 0,
-            "featured" : $("#idfeatured").is(":checked") ? 1 : 0,
-            "doubttutor" : 0,
+            "action": "savereturnpagenotes",
+            "id": $(this).attr('data-cmid'),
+            "pageid": $(this).attr('data-pageid'),
+            "sesskey": $(this).attr('data-sesskey'),
+            "comment": $("#idcommentnote").val(),
+            "tab": "note",
+            "private": $("#idprivate").is(":checked") ? 1 : 0,
+            "featured": $("#idfeatured").is(":checked") ? 1 : 0,
+            "doubttutor": 0,
         };
         showIconLoad($this);
         data = "&" + $.param(data);
 
         $.ajax({
-            type : "POST",
-            dataType : "json",
-            url : "ajax.php",
-            data : data,
-            success : function(data) {
+            type: "POST",
+            dataType: "json",
+            url: "ajax.php",
+            data: data,
+            success: function(data) {
                 $("#idpagenotesnote").html(data.notes);
                 $("#idcommentnote").val("");
                 $("#messagenotes").text(data.totalnotes);
                 removeIconLoad($this);
             }
         }); // EndAJAX
+        return false;
     }
     // Save note tab type 'doubts'
+    /**
+     *
+     */
     function onSaveDoubtClick() {
         // Validates input data
         if (!$("#idcommentdoubt").val().trim()) {
@@ -65,33 +72,38 @@ define(['jquery','jqueryui', 'mod_icontent/cookiehandler'], function($, jqui, c)
         }
         var $this = $(this);
         var data = {
-            "action" : "savereturnpagenotes",
-            "id" : $(this).attr('data-cmid'),
-            "pageid" : $(this).attr('data-pageid'),
-            "sesskey" : $(this).attr('data-sesskey'),
-            "comment" : $("#idcommentdoubt").val(),
-            "tab" : "doubt",
-            "doubttutor" : $("#iddoubttutor").is(":checked") ? 1 : 0,
-            "private" : 0,
-            "featured" : 0,
+            "action": "savereturnpagenotes",
+            "id": $(this).attr('data-cmid'),
+            "pageid": $(this).attr('data-pageid'),
+            "sesskey": $(this).attr('data-sesskey'),
+            "comment": $("#idcommentdoubt").val(),
+            "tab": "doubt",
+            "doubttutor": $("#iddoubttutor").is(":checked") ? 1 : 0,
+            "private": 0,
+            "featured": 0,
         };
         showIconLoad($this);
         data = "&" + $.param(data);
         $.ajax({
-            type : "POST",
-            dataType : "json",
-            url : "ajax.php",
-            data : data,
-            success : function(data) {
+            type: "POST",
+            dataType: "json",
+            url: "ajax.php",
+            data: data,
+            success: function(data) {
                 $("#idpagenotesdoubt").html(data.notes);
                 $("#idcommentdoubt").val("");
                 $("#messagedoubt").text(data.totalnotes);
                 removeIconLoad($this);
             }
         }); // End AJAX
+        return false;
     }
     // Show loading icon
-    function showIconLoad($this){
+    /**
+     *
+     * @param {jQuery} $this
+     */
+    function showIconLoad($this) {
         $this.hide();
         // Loading
         $(".icontent-page")
@@ -104,7 +116,11 @@ define(['jquery','jqueryui', 'mod_icontent/cookiehandler'], function($, jqui, c)
             .css('opacity', '0.5');
     }
     // Hide loading icon
-    function removeIconLoad($this){
+    /**
+     *
+     * @param {jQuery} $this
+     */
+    function removeIconLoad($this) {
         $this.show();
         // Loading
         $(".icontent-page")
@@ -114,23 +130,26 @@ define(['jquery','jqueryui', 'mod_icontent/cookiehandler'], function($, jqui, c)
         $this.removeAttr('disabled');
     }
     // Like note
+    /**
+     *
+     */
     function onLikeNoteClick() {
         var $like = $(this).children("span");
         var data = {
-            "action" : "likenote",
-            "id" : $(this).attr('data-cmid'),
-            "pagenoteid" : $(this).attr('data-pagenoteid'),
-            "sesskey" : $(this).attr('data-sesskey'),
+            "action": "likenote",
+            "id": $(this).attr('data-cmid'),
+            "pagenoteid": $(this).attr('data-pagenoteid'),
+            "sesskey": $(this).attr('data-sesskey'),
         };
 
         data = "&" + $.param(data);
 
         $.ajax({
-            type : "POST",
-            dataType : "json",
-            url : "ajax.php",
-            data : data,
-            success : function(data) {
+            type: "POST",
+            dataType: "json",
+            url: "ajax.php",
+            data: data,
+            success: function(data) {
                 $like.text(data.likes);
             }
         });
@@ -138,7 +157,11 @@ define(['jquery','jqueryui', 'mod_icontent/cookiehandler'], function($, jqui, c)
     }
 
     // Cancels editing annotation
-    function onEditNoteCancelClick(event){
+    /**
+     *
+     * @param {Event} event
+     */
+    function onEditNoteCancelClick(event) {
         var textcomment = event.data.lastcomment;
         var $notecomment = $(this).parent('.buttonscomment').parent('.notecomment');
 
@@ -146,7 +169,11 @@ define(['jquery','jqueryui', 'mod_icontent/cookiehandler'], function($, jqui, c)
     }
 
     // Save editing annotation
-    function onEditNoteSaveClick(){
+    /**
+     * @param {Event} event
+     */
+    function onEditNoteSaveClick(event) {
+        event.preventDefault();
         var $notecomment = $(this).parent('.buttonscomment').parent('.notecomment');
         var textnotecomment = $notecomment.children('.textnotecomment').val();
         // Validates input data
@@ -156,29 +183,33 @@ define(['jquery','jqueryui', 'mod_icontent/cookiehandler'], function($, jqui, c)
         }
 
         var data = {
-            "action" : "editnote",
-            "id" : $notecomment.attr('data-cmid'),
-            "pagenoteid" : $notecomment.attr('data-pagenoteid'),
-            "sesskey" : $notecomment.attr('data-sesskey'),
-            "comment" : textnotecomment,
+            "action": "editnote",
+            "id": $notecomment.attr('data-cmid'),
+            "pagenoteid": $notecomment.attr('data-pagenoteid'),
+            "sesskey": $notecomment.attr('data-sesskey'),
+            "comment": textnotecomment,
         };
 
         data = "&" + $.param(data);
-        $(this).prop("disabled", true );
+        $(this).prop("disabled", true);
         $.ajax({
-            type : "POST",
-            dataType : "json",
-            url : "ajax.php",
-            data : data,
-            success : function(data) {
+            type: "POST",
+            dataType: "json",
+            url: "ajax.php",
+            data: data,
+            success: function(data) {
                 $notecomment.text(data.comment);
             }
         });
         // End AJAX
+        return false;
     }
 
     // Edit annotations
-    function onEditNoteClick(){
+    /**
+     *
+     */
+    function onEditNoteClick() {
         // Capture comment
         var $notecomment = $(this).parent('.notefooter').parent('.noterowicontent').children('.notecomment');
         var textcomment = $notecomment.text();
@@ -194,11 +225,13 @@ define(['jquery','jqueryui', 'mod_icontent/cookiehandler'], function($, jqui, c)
                     .append(
                         $('<button />')
                             .addClass('btnnotesave')
+                            .attr('type', 'button')
                             .html('<i class="fa fa-floppy-o"></i>')
                     )
                     .append(
                         $('<button />')
                             .addClass('btnnotecancel')
+                            .attr('type', 'button')
                             .html('<i class="fa fa-times"></i>')
                     )
             );
@@ -211,7 +244,10 @@ define(['jquery','jqueryui', 'mod_icontent/cookiehandler'], function($, jqui, c)
     }
 
     // Cancel annotation reply
-    function onReplyNoteCancelClick(){
+    /**
+     *
+     */
+    function onReplyNoteCancelClick() {
         var $notecomment = $(this).parent('.buttonscomment').parent('.notecomment');
 
         $notecomment.children('.replynotecomment').remove();
@@ -220,7 +256,11 @@ define(['jquery','jqueryui', 'mod_icontent/cookiehandler'], function($, jqui, c)
     }
 
     // Save annotation reply
-    function onReplyNoteSaveClick(){
+    /**
+     * @param {Event} event
+     */
+    function onReplyNoteSaveClick(event) {
+        event.preventDefault();
 
         var $notecomment = $(this).parent('.buttonscomment').parent('.notecomment');
         var textnotecomment = $notecomment.children('.replynotecomment').val();
@@ -232,36 +272,40 @@ define(['jquery','jqueryui', 'mod_icontent/cookiehandler'], function($, jqui, c)
         }
 
         var data = {
-            "action" : "replynote",
-            "id" : $notecomment.attr('data-cmid'),
-            "parent" : $notecomment.attr('data-pagenoteid'),
-            "sesskey" : $notecomment.attr('data-sesskey'),
-            "comment" : textnotecomment,
+            "action": "replynote",
+            "id": $notecomment.attr('data-cmid'),
+            "parent": $notecomment.attr('data-pagenoteid'),
+            "sesskey": $notecomment.attr('data-sesskey'),
+            "comment": textnotecomment,
         };
 
         data = "&" + $.param(data);
-        $(this).prop("disabled", true );
+        $(this).prop("disabled", true);
 
         $.ajax({
-            type : "POST",
-            dataType : "json",
-            url : "ajax.php",
-            data : data,
-            success : function(data) {
-                $("#message"+data.tab).text(data.totalnotes);
-                $("#pnote"+ parseInt(data.parent)).after(data.reply);
+            type: "POST",
+            dataType: "json",
+            url: "ajax.php",
+            data: data,
+            success: function(data) {
+                $("#message" + data.tab).text(data.totalnotes);
+                $("#pnote" + parseInt(data.parent)).after(data.reply);
                 $notecomment.children('.replynotecomment').remove();
                 $notecomment.children('.buttonscomment').remove();
             }
         });
         // End AJAX
+        return false;
     }
     // Create form to reply notes
-    function onReplyNoteClick(){
+    /**
+     *
+     */
+    function onReplyNoteClick() {
 
         var $notecomment = $(this).parent('.notefooter').parent('.noterowicontent').children('.notecomment');
 
-        if(!$notecomment.children('.replynotecomment').length){
+        if (!$notecomment.children('.replynotecomment').length) {
             // Closes answer field
             $('.replynotecomment').remove();
             $('.buttonscomment').remove();
@@ -279,11 +323,13 @@ define(['jquery','jqueryui', 'mod_icontent/cookiehandler'], function($, jqui, c)
                         .append(
                             $('<button />')
                                 .addClass('btnnotereplysave')
+                                .attr('type', 'button')
                                 .html('<i class="fa fa-floppy-o"></i>')
                         )
                         .append(
                             $('<button />')
                                 .addClass('btnnotereplycancel')
+                                .attr('type', 'button')
                                 .html('<i class="fa fa-times"></i>')
                         )
                 );
@@ -298,7 +344,10 @@ define(['jquery','jqueryui', 'mod_icontent/cookiehandler'], function($, jqui, c)
     }
 
     // Switch high contrast
-    function onToggleHightContrastClick(){
+    /**
+     *
+     */
+    function onToggleHightContrastClick() {
         if (c.cookie('highcontrast') == "yes") {
             c.cookie("highcontrast", null, {
                 path: '/'
@@ -309,28 +358,37 @@ define(['jquery','jqueryui', 'mod_icontent/cookiehandler'], function($, jqui, c)
                 expires: 7,
                 path: '/'
             });
-            $(".fulltextpage").addClass("highcontrast").css({"background-color":"#000000", "background-image": "none"});
+            $(".fulltextpage").addClass("highcontrast").css({"background-color": "#000000", "background-image": "none"});
         }
     }
 
     // Save attemp
-    function onSaveAttempAnswers(){
+    /**
+     *
+     */
+    function onSaveAttempAnswers() {
+        if (window.tinyMCE && typeof window.tinyMCE.triggerSave === 'function') {
+            window.tinyMCE.triggerSave();
+        } else if (window.tinymce && typeof window.tinymce.triggerSave === 'function') {
+            window.tinymce.triggerSave();
+        }
+
         var formdata = $(this).serialize();
-        var cmid = parseInt($( "#idhfieldcmid").val());
-        var sesskey = $( "#idhfieldsesskey").val();
+        var cmid = parseInt($("#idhfieldcmid").val());
+        var sesskey = $("#idhfieldsesskey").val();
         var data = {
-            "action" : "saveattempt",
-            "id" : cmid,
-            "sesskey" : sesskey,
-            "formdata" : formdata,
+            "action": "saveattempt",
+            "id": cmid,
+            "sesskey": sesskey,
+            "formdata": formdata,
         };
-        $('.btn-sendanswers').prop("disabled", true ); // Disable button
+        $('.btn-sendanswers').prop("disabled", true); // Disable button
         $.ajax({
-            type : "POST",
-            dataType : "json",
-            url : "ajax.php",
-            data : data,
-            success : function(data) {
+            type: "POST",
+            dataType: "json",
+            url: "ajax.php",
+            data: data,
+            success: function(data) {
                 $("#idquestionsarea").html(data.grid);
             }
         });// End AJAX
@@ -338,27 +396,37 @@ define(['jquery','jqueryui', 'mod_icontent/cookiehandler'], function($, jqui, c)
         return false;
     }
     // Toggle elements UI
-    function onTogleElementClick(event){
+    /**
+     *
+     * @param {Event} event
+     */
+    function onTogleElementClick(event) {
         var $idtogle = event.data.idtogle;
         var options = {};
-        $($idtogle).toggle( 'fade', options, 500 );
-        $(this).toggleClass( "closed", 500 );
+        $($idtogle).toggle('fade', options, 500);
+        $(this).toggleClass("closed", 500);
         // Add icon fa-caret-down or fa-caret-right
-        if($(this).hasClass('closed')){
+        if ($(this).hasClass('closed')) {
             $(this).children('i').removeClass("fa-caret-down").addClass("fa-caret-right");
-        }else{
+        } else {
             $(this).children('i').removeClass("fa-caret-right").addClass("fa-caret-down");
         }
     }
     // Read more state on
-    function onReadMoreStateOnClick(){
+    /**
+     *
+     */
+    function onReadMoreStateOnClick() {
         $(this).hide();
         $('.suspension-points').hide();
         $('.read-more-target').show('fade');
         $('.read-more-state-off').show();
     }
     // Read more state off
-    function onReadMoreStateOffClick(){
+    /**
+     *
+     */
+    function onReadMoreStateOffClick() {
         $(this).hide();
         $('.read-more-target').hide('fade');
         $('.suspension-points').show();
@@ -366,7 +434,7 @@ define(['jquery','jqueryui', 'mod_icontent/cookiehandler'], function($, jqui, c)
     }
     return {
         init: function() {
-            var pageid =  $("#idicontentpages");
+            var pageid = $("#idicontentpages");
             pageid.on('click', '#idbtnsavenote', onSaveNoteClick);
             pageid.on('click', '#idbtnsavedoubt', onSaveDoubtClick);
             pageid.on('click', '#idtitlenotes', {idtogle: '#idfulltab'}, onTogleElementClick);

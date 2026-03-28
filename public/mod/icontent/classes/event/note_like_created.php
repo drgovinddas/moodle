@@ -23,7 +23,8 @@
  */
 
 namespace mod_icontent\event;
-defined('MOODLE_INTERNAL') || die();
+
+defined('MOODLE_INTERNAL') || die(); // phpcs:ignore
 
 /**
  * The mod_icontent note like created event class.
@@ -35,26 +36,23 @@ defined('MOODLE_INTERNAL') || die();
  */
 class note_like_created extends \core\event\base {
     /**
-     * Create instance of event.
+     * Init method.
      *
-     * @since Moodle 3.0
-     *
-     * @param \stdClass $icontent
-     * @param \context_module $context
-     * @param \stdClass $notelike
-     * @return note_like_created
+     * @return void
      */
-    public static function create_from_note_like(\stdClass $icontent, \context_module $context, \stdClass $notelike) {
-        $data = array(
-            'context' => $context,
-            'objectid' => $notelike->id,
-            'other' => array('pageid'=>$notelike->pageid),
-        );
-        /** @var note_like_created $event */
-        $event = self::create($data);
-        $event->add_record_snapshot('icontent', $icontent);
-        $event->add_record_snapshot('icontent_pages_notes_like', $notelike);
-        return $event;
+    protected function init() {
+        $this->data['crud'] = 'c';
+        $this->data['edulevel'] = self::LEVEL_PARTICIPATING;
+        $this->data['objecttable'] = 'icontent_pages_notes_like';
+    }
+
+    /**
+     * Return localised event name.
+     *
+     * @return string
+     */
+    public static function get_name() {
+        return get_string('eventnotelikecreated', 'mod_icontent');
     }
 
     /**
@@ -68,45 +66,40 @@ class note_like_created extends \core\event\base {
     }
 
     /**
-     * Return the legacy event log data.
-     *
-     * @return array|null
-     */
-    protected function get_legacy_logdata() {
-        return array($this->courseid, 'icontent', 'add note like', 'view.php?id=' . $this->contextinstanceid . '&pageid=' .
-            $this->other['pageid'], $this->objectid, $this->contextinstanceid);
-    }
-
-    /**
-     * Return localised event name.
-     *
-     * @return string
-     */
-    public static function get_name() {
-        return get_string('eventnotelikecreated', 'mod_icontent');
-    }
-
-    /**
      * Get URL related to the action.
      *
      * @return \moodle_url
      */
     public function get_url() {
-        return new \moodle_url('/mod/icontent/view.php', array(
-            'id' => $this->contextinstanceid,
-            'pageid' => $this->other['pageid']
-        ));
-    }
-    
-    /**
-     * Init method.
-     *
-     * @return void
-     */
-    protected function init() {
-        $this->data['crud'] = 'c';
-        $this->data['edulevel'] = self::LEVEL_PARTICIPATING;
-        $this->data['objecttable'] = 'icontent_pages_notes_like';
+        return new \moodle_url(
+            '/mod/icontent/view.php',
+            [
+                'id' => $this->contextinstanceid,
+                'pageid' => $this->other['pageid'],
+            ]
+        );
     }
 
+    /**
+     * Create instance of event.
+     *
+     * @since Moodle 3.0
+     *
+     * @param \stdClass $icontent
+     * @param \context_module $context
+     * @param \stdClass $notelike
+     * @return note_like_created
+     */
+    public static function create_from_note_like(\stdClass $icontent, \context_module $context, \stdClass $notelike) {
+        $data = [
+            'context' => $context,
+            'objectid' => $notelike->id,
+            'other' => ['pageid' => $notelike->pageid],
+        ];
+        /** @var note_like_created $event */
+        $event = self::create($data);
+        $event->add_record_snapshot('icontent', $icontent);
+        $event->add_record_snapshot('icontent_pages_notes_like', $notelike);
+        return $event;
+    }
 }

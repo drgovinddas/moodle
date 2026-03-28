@@ -178,6 +178,14 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         // (with 2 or 3 digits) or a viewport width number (from 0 to 100). Additionally the field can be left blank.
         $smallwidthoremptyregex = '/^((\d{1,2}|100)%)|((\d{1,2}|100)vw)|(\d{2,3}px)|(^(?!.*\S))$/';
 
+        // Prepare login instruction position options.
+        $logininstructionpositionoptions = [
+            THEME_BOOST_UNION_SETTING_LOGININSTRUCTIONPOSITION_BETWEEN =>
+                    get_string('logininstructionposition_between', 'theme_boost_union'),
+            THEME_BOOST_UNION_SETTING_LOGININSTRUCTIONPOSITION_BELOW =>
+                    get_string('logininstructionposition_below', 'theme_boost_union'),
+        ];
+
         // Prepare custom course fields options.
         $coursehandler = \core_course\customfield\course_handler::create();
         $coursefields = $coursehandler->get_fields();
@@ -933,7 +941,7 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             $description,
             'loginbackgroundimage',
             0,
-            ['maxfiles' => 25, 'accepted_types' => 'web_image']
+            ['maxfiles' => -1, 'accepted_types' => 'web_image']
         );
         $setting->set_updatedcallback('theme_reset_all_caches');
         $tab->add($setting);
@@ -1010,17 +1018,54 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $setting = new admin_setting_configselect($name, $title, $description, THEME_BOOST_UNION_SETTING_SELECT_NO, $yesnooption);
         $tab->add($setting);
 
-        // Heading: Login providers.
-        $name = 'theme_boost_union/loginprovidersheading';
-        $title = get_string('loginprovidersheading', 'theme_boost_union', null, true);
-        $notificationurl = new core\url('/admin/settings.php', ['section' => 'manageauths']);
-        $notificationsettingname = get_string('showloginform', 'core_auth');
+        // Heading: Login layout.
+        $name = 'theme_boost_union/loginlayoutheading';
+        $title = get_string('loginlayoutheading', 'theme_boost_union', null, true);
+        $setting = new admin_setting_heading($name, $title, null);
+        $tab->add($setting);
+
+        // Setting: Login layout.
+        $name = 'theme_boost_union/loginlayout';
+        $title = get_string('loginlayoutsetting', 'theme_boost_union', null, true);
+        $description = get_string('loginlayoutsetting_desc', 'theme_boost_union', null, true);
+        $loginlayoutoptions = [
+            THEME_BOOST_UNION_SETTING_LOGINLAYOUT_VERTICAL => get_string('loginlayoutvertical', 'theme_boost_union'),
+            THEME_BOOST_UNION_SETTING_LOGINLAYOUT_TABS => get_string('loginlayouttabs', 'theme_boost_union'),
+            THEME_BOOST_UNION_SETTING_LOGINLAYOUT_ACCORDION => get_string('loginlayoutaccordion', 'theme_boost_union'),
+        ];
+        $setting = new admin_setting_configselect($name, $title, $description, 'vertical', $loginlayoutoptions);
+        $setting->set_updatedcallback('theme_reset_all_caches');
+        $tab->add($setting);
+
+        // Setting: Login container width.
+        $name = 'theme_boost_union/logincontainerwidth';
+        $title = get_string('logincontainerwidthsetting', 'theme_boost_union', null, true);
+        $description = get_string('logincontainerwidthsetting_desc', 'theme_boost_union', null, true) . '<br />' .
+                 get_string('logincontainerwidthsetting_note', 'theme_boost_union', null, true);
+        $default = '500px';
+        $setting = new admin_setting_configtext($name, $title, $description, $default, $widthregex, 6);
+        $setting->set_updatedcallback('theme_reset_all_caches');
+        $tab->add($setting);
+
+        // Setting: Enhanced tabs layout behaviour.
+        $name = 'theme_boost_union/loginenhancedtabslayout';
+        $title = get_string('loginenhancedtabslayoutsetting', 'theme_boost_union', null, true);
+        $description = get_string('loginenhancedtabslayoutsetting_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_configselect($name, $title, $description, THEME_BOOST_UNION_SETTING_SELECT_NO, $yesnooption);
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginenhancedtabslayout',
+            'theme_boost_union/loginlayout',
+            'neq',
+            THEME_BOOST_UNION_SETTING_LOGINLAYOUT_TABS
+        );
+
+        // Heading: Login instructions.
+        $name = 'theme_boost_union/logininstructionsheading';
+        $title = get_string('logininstructionsheading', 'theme_boost_union', null, true);
+        $notificationurl = new core\url('/admin/search.php', ['query' => 'auth_instructions']);
         $notification = new \core\output\notification(
-            get_string(
-                'loginprovidersheading_desc',
-                'theme_boost_union',
-                ['settingname' => $notificationsettingname, 'url' => $notificationurl->out()]
-            ),
+            get_string('logininstructionsheading_desc', 'theme_boost_union', $notificationurl->out()),
             \core\output\notification::NOTIFY_INFO
         );
         $notification->set_show_closebutton(false);
@@ -1028,11 +1073,80 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $setting = new admin_setting_heading($name, $title, $description);
         $tab->add($setting);
 
+        // Setting: Instructions above login provider list.
+        $name = 'theme_boost_union/logininstructionsabove';
+        $title = get_string('logininstructionsabove', 'theme_boost_union', null, true);
+        $description = get_string('logininstructionsabove_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_confightmleditor($name, $title, $description, '');
+        $tab->add($setting);
+
+        // Setting: Instructions below login provider list.
+        $name = 'theme_boost_union/logininstructionsbelow';
+        $title = get_string('logininstructionsbelow', 'theme_boost_union', null, true);
+        $description = get_string('logininstructionsbelow_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_confightmleditor($name, $title, $description, '');
+        $tab->add($setting);
+
+        // Heading: Login order.
+        $name = 'theme_boost_union/loginorderheading';
+        $title = get_string('loginorderheading', 'theme_boost_union', null, true);
+        $description = get_string('loginorderheading_desc', 'theme_boost_union', null, true) . '<br />';
+        $setting = new admin_setting_heading($name, $title, $description);
+        $tab->add($setting);
+
+        // Create the login order settings without code duplication.
+        $loginmethods = theme_boost_union_get_loginpage_methods();
+        $loginmethodsoptions = [];
+        foreach ($loginmethods as $key => $lm) {
+            $loginmethodsoptions[$key] = $key;
+        }
+        foreach ($loginmethods as $key => $lm) {
+            $name = 'theme_boost_union/loginorder' . $lm;
+            $title = get_string('loginorder' . $lm . 'setting', 'theme_boost_union', null, true);
+            $setting = new admin_setting_configselect($name, $title, null, $key, $loginmethodsoptions);
+            $setting->set_updatedcallback('theme_reset_all_caches');
+            $tab->add($setting);
+        }
+
+        // Setting: Primary login method (for tabs and accordion layouts).
+        $name = 'theme_boost_union/primarylogin';
+        $title = get_string('primaryloginsetting', 'theme_boost_union', null, true);
+        $description = get_string('primaryloginsetting_desc', 'theme_boost_union', null, true);
+        $primaryloginoptions = ['none' => get_string('none')];
+        foreach ($loginmethods as $key => $lm) {
+            $primaryloginoptions[$lm] = get_string('loginorder' . $lm . 'setting', 'theme_boost_union', null, true);
+        }
+        $setting = new admin_setting_configselect($name, $title, $description, 'none', $primaryloginoptions);
+        $setting->set_updatedcallback('theme_reset_all_caches');
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/primarylogin',
+            'theme_boost_union/loginlayout',
+            'eq',
+            'vertical'
+        );
+
+        // Heading: Login provider: Local.
+        $name = 'theme_boost_union/loginproviderlocalheading';
+        $title = get_string('loginproviderlocalheading', 'theme_boost_union', null, true);
+        $setting = new admin_setting_heading($name, $title, null);
+        $tab->add($setting);
+
         // Setting: Local login.
         $name = 'theme_boost_union/loginlocalloginenable';
         $title = get_string('loginlocalloginenablesetting', 'theme_boost_union', null, true);
-        $localloginurl = new core\url('/theme/boost_union/locallogin.php');
         $description = get_string('loginlocalloginenablesetting_desc', 'theme_boost_union', null, true);
+        $locallogincorenoteurl = new core\url('/admin/settings.php', ['section' => 'manageauths']);
+        $locallogincorenotesettingname = get_string('showloginform', 'core_auth');
+        $locallogincorenote = new \core\output\notification(get_string(
+            'loginlocalloginenablesetting_core',
+            'theme_boost_union',
+            ['settingname' => $locallogincorenotesettingname, 'url' => $locallogincorenoteurl->out()],
+            true
+        ), \core\output\notification::NOTIFY_INFO);
+        $locallogincorenote->set_show_closebutton(false);
+        $description .= $OUTPUT->render($locallogincorenote);
+        $localloginurl = new core\url('/theme/boost_union/locallogin.php');
         $localloginnotification = new \core\output\notification(get_string(
             'loginlocalloginenablesetting_note',
             'theme_boost_union',
@@ -1062,34 +1176,514 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             THEME_BOOST_UNION_SETTING_SELECT_YES
         );
 
-        // Setting: IDP login intro.
-        $name = 'theme_boost_union/loginidpshowintro';
-        $title = get_string('loginidpshowintrosetting', 'theme_boost_union', null, true);
-        $description = get_string('loginidpshowintrosetting_desc', 'theme_boost_union', get_string('potentialidps', 'auth'), true);
+        // Setting: Local login intro text.
+        $name = 'theme_boost_union/loginlocalintrotext';
+        $title = get_string('loginlocalintrotextsetting', 'theme_boost_union', null, true);
+        $description = get_string(
+            'loginlocalintrotextsetting_desc',
+            'theme_boost_union',
+            get_string('loginlocalintro', 'theme_boost_union'),
+            true
+        );
+        $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginlocalintrotext',
+            'theme_boost_union/loginlocalloginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+        $page->hide_if(
+            'theme_boost_union/loginlocalintrotext',
+            'theme_boost_union/loginlocalshowintro',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Setting: Local login label (visible when tab or accordion layout is enabled).
+        $name = 'theme_boost_union/loginlocalloginlabel';
+        $title = get_string('loginlocalloginlabelsetting', 'theme_boost_union', null, true);
+        $description = get_string('loginlocalloginlabelsetting_desc', 'theme_boost_union', null, true);
+        $default = get_string('loginlocalloginlabelsetting_default', 'theme_boost_union');
+        $setting = new admin_setting_configtext($name, $title, $description, $default, PARAM_TEXT);
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginlocalloginlabel',
+            'theme_boost_union/loginlayout',
+            'eq',
+            'vertical'
+        );
+
+        // Setting: Local login instruction.
+        $name = 'theme_boost_union/loginlocalshowinstruction';
+        $title = get_string('loginlocalshowinstruction', 'theme_boost_union', null, true);
+        $description = get_string('loginlocalshowinstruction_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_configselect($name, $title, $description, THEME_BOOST_UNION_SETTING_SELECT_NO, $yesnooption);
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginlocalshowinstruction',
+            'theme_boost_union/loginlocalloginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Setting: Local login instruction content.
+        $name = 'theme_boost_union/loginlocalinstructioncontent';
+        $title = get_string('loginlocalinstructioncontent', 'theme_boost_union', null, true);
+        $description = get_string('loginlocalinstructioncontent_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_confightmleditor($name, $title, $description, '');
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginlocalinstructioncontent',
+            'theme_boost_union/loginlocalloginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+        $page->hide_if(
+            'theme_boost_union/loginlocalinstructioncontent',
+            'theme_boost_union/loginlocalshowinstruction',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Setting: Local login instruction position.
+        $name = 'theme_boost_union/loginlocalinstructionposition';
+        $title = get_string('loginlocalinstructionposition', 'theme_boost_union', null, true);
+        $description = get_string('loginlocalinstructionposition_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_configselect(
+            $name,
+            $title,
+            $description,
+            THEME_BOOST_UNION_SETTING_LOGININSTRUCTIONPOSITION_BETWEEN,
+            $logininstructionpositionoptions
+        );
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginlocalinstructionposition',
+            'theme_boost_union/loginlocalloginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+        $page->hide_if(
+            'theme_boost_union/loginlocalinstructionposition',
+            'theme_boost_union/loginlocalshowinstruction',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Heading: Login provider: IDP.
+        $name = 'theme_boost_union/loginprovideridpheading';
+        $title = get_string('loginprovideridpheading', 'theme_boost_union', null, true);
+        $setting = new admin_setting_heading($name, $title, null);
+        $tab->add($setting);
+
+        // Setting: IDP login.
+        $name = 'theme_boost_union/loginidploginenable';
+        $title = get_string('loginidploginenablesetting', 'theme_boost_union', null, true);
+        $authurl = new core\url('/admin/settings.php', ['section' => 'manageauths']);
+        $description = get_string('loginidploginenablesetting_desc', 'theme_boost_union', null, true);
+        $idplogincorenoteurl = new core\url('/admin/settings.php', ['section' => 'manageauths']);
+        $idplogincorenote = new \core\output\notification(get_string(
+            'loginidploginenablesetting_core',
+            'theme_boost_union',
+            ['url' => $idplogincorenoteurl->out()],
+            true
+        ), \core\output\notification::NOTIFY_INFO);
+        $idplogincorenote->set_show_closebutton(false);
+        $description .= $OUTPUT->render($idplogincorenote);
         $setting = new admin_setting_configselect($name, $title, $description, THEME_BOOST_UNION_SETTING_SELECT_YES, $yesnooption);
         $tab->add($setting);
 
-        // Heading: Login order.
-        $name = 'theme_boost_union/loginorderheading';
-        $title = get_string('loginorderheading', 'theme_boost_union', null, true);
-        $description = get_string('loginorderheading_desc', 'theme_boost_union', null, true) . '<br /><br />' .
-                get_string('loginorderheading_note', 'theme_boost_union', null, true);
-        $setting = new admin_setting_heading($name, $title, $description);
+        // Setting: IDP login intro.
+        $name = 'theme_boost_union/loginidpshowintro';
+        $title = get_string('loginidpshowintrosetting', 'theme_boost_union', null, true);
+        $description = get_string(
+            'loginidpshowintrosetting_desc',
+            'theme_boost_union',
+            get_string('potentialidps', 'auth'),
+            true
+        );
+        $setting = new admin_setting_configselect($name, $title, $description, THEME_BOOST_UNION_SETTING_SELECT_YES, $yesnooption);
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginidpshowintro',
+            'theme_boost_union/loginidploginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Setting: IDP login intro text.
+        $name = 'theme_boost_union/loginidpintrotext';
+        $title = get_string('loginidpintrotextsetting', 'theme_boost_union', null, true);
+        $description = get_string(
+            'loginidpintrotextsetting_desc',
+            'theme_boost_union',
+            get_string('potentialidps', 'auth'),
+            true
+        );
+        $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginidpintrotext',
+            'theme_boost_union/loginidploginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+        $page->hide_if(
+            'theme_boost_union/loginidpintrotext',
+            'theme_boost_union/loginidpshowintro',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Setting: IDP login label (visible when tab or accordion layout is enabled).
+        $name = 'theme_boost_union/loginidploginlabel';
+        $title = get_string('loginidploginlabelsetting', 'theme_boost_union', null, true);
+        $description = get_string('loginidploginlabelsetting_desc', 'theme_boost_union', null, true);
+        $default = get_string('loginidploginlabelsetting_default', 'theme_boost_union');
+        $setting = new admin_setting_configtext($name, $title, $description, $default, PARAM_TEXT);
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginidploginlabel',
+            'theme_boost_union/loginlayout',
+            'eq',
+            'vertical'
+        );
+
+        // Setting: IDP login instruction.
+        $name = 'theme_boost_union/loginidpshowinstruction';
+        $title = get_string('loginidpshowinstruction', 'theme_boost_union', null, true);
+        $description = get_string('loginidpshowinstruction_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_configselect($name, $title, $description, THEME_BOOST_UNION_SETTING_SELECT_NO, $yesnooption);
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginidpshowinstruction',
+            'theme_boost_union/loginidploginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Setting: IDP login instruction content.
+        $name = 'theme_boost_union/loginidpinstructioncontent';
+        $title = get_string('loginidpinstructioncontent', 'theme_boost_union', null, true);
+        $description = get_string('loginidpinstructioncontent_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_confightmleditor($name, $title, $description, '');
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginidpinstructioncontent',
+            'theme_boost_union/loginidploginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+        $page->hide_if(
+            'theme_boost_union/loginidpinstructioncontent',
+            'theme_boost_union/loginidpshowinstruction',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Setting: IDP login instruction position.
+        $name = 'theme_boost_union/loginidpinstructionposition';
+        $title = get_string('loginidpinstructionposition', 'theme_boost_union', null, true);
+        $description = get_string('loginidpinstructionposition_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_configselect(
+            $name,
+            $title,
+            $description,
+            THEME_BOOST_UNION_SETTING_LOGININSTRUCTIONPOSITION_BETWEEN,
+            $logininstructionpositionoptions
+        );
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginidpinstructionposition',
+            'theme_boost_union/loginidploginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+        $page->hide_if(
+            'theme_boost_union/loginidpinstructionposition',
+            'theme_boost_union/loginidpshowinstruction',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Heading: Login provider: Self registration.
+        $name = 'theme_boost_union/loginproviderselfregistrationheading';
+        $title = get_string('loginproviderselfregistrationheading', 'theme_boost_union', null, true);
+        $setting = new admin_setting_heading($name, $title, null);
         $tab->add($setting);
 
-        // Create the login order settings without code duplication.
-        $loginmethods = theme_boost_union_get_loginpage_methods();
-        $loginmethodsoptions = [];
-        foreach ($loginmethods as $key => $lm) {
-            $loginmethodsoptions[$key] = $key;
-        }
-        foreach ($loginmethods as $key => $lm) {
-            $name = 'theme_boost_union/loginorder' . $lm;
-            $title = get_string('loginorder' . $lm . 'setting', 'theme_boost_union', null, true);
-            $setting = new admin_setting_configselect($name, $title, null, $key, $loginmethodsoptions);
-            $setting->set_updatedcallback('theme_reset_all_caches');
-            $tab->add($setting);
-        }
+        // Setting: Self registration.
+        $name = 'theme_boost_union/loginselfregistrationenable';
+        $title = get_string('loginselfregistrationenablesetting', 'theme_boost_union', null, true);
+        $registerauthurl = new core\url('/admin/settings.php', ['section' => 'manageauths']);
+        $description = get_string(
+            'loginselfregistrationenablesetting_desc',
+            'theme_boost_union',
+            ['url' => $registerauthurl->out()],
+            true
+        );
+        $setting = new admin_setting_configselect($name, $title, $description, THEME_BOOST_UNION_SETTING_SELECT_YES, $yesnooption);
+        $tab->add($setting);
+
+        // Setting: Self registration intro.
+        $name = 'theme_boost_union/loginselfregistrationshowintro';
+        $title = get_string('loginselfregistrationshowintrosetting', 'theme_boost_union', null, true);
+        $description = get_string(
+            'loginselfregistrationshowintrosetting_desc',
+            'theme_boost_union',
+            get_string('firsttime', 'core'),
+            true
+        );
+        $selfregistrationlogincorenoteurl = new core\url('/admin/settings.php', ['section' => 'manageauths']);
+        $selfregistrationlogincorenotesettingname = get_string('selfregistration', 'auth');
+        $selfregistrationlogincorenote = new \core\output\notification(get_string(
+            'loginselfregistrationenablesetting_core',
+            'theme_boost_union',
+            ['settingname' => $selfregistrationlogincorenotesettingname, 'url' => $selfregistrationlogincorenoteurl->out()],
+            true
+        ), \core\output\notification::NOTIFY_INFO);
+        $selfregistrationlogincorenote->set_show_closebutton(false);
+        $description .= $OUTPUT->render($selfregistrationlogincorenote);
+        $setting = new admin_setting_configselect($name, $title, $description, THEME_BOOST_UNION_SETTING_SELECT_YES, $yesnooption);
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginselfregistrationshowintro',
+            'theme_boost_union/loginselfregistrationenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Setting: Self registration intro text.
+        $name = 'theme_boost_union/loginselfregistrationintrotext';
+        $title = get_string('loginselfregistrationintrotextsetting', 'theme_boost_union', null, true);
+        $description = get_string(
+            'loginselfregistrationintrotextsetting_desc',
+            'theme_boost_union',
+            get_string('firsttime', 'core'),
+            true
+        );
+        $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginselfregistrationintrotext',
+            'theme_boost_union/loginselfregistrationenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+        $page->hide_if(
+            'theme_boost_union/loginselfregistrationintrotext',
+            'theme_boost_union/loginselfregistrationshowintro',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Setting: Self registration label (visible when tab or accordion layout is enabled).
+        $name = 'theme_boost_union/loginselfregistrationloginlabel';
+        $title = get_string('loginselfregistrationloginlabelsetting', 'theme_boost_union', null, true);
+        $description = get_string('loginselfregistrationloginlabelsetting_desc', 'theme_boost_union', null, true);
+        $default = get_string('loginselfregistrationloginlabelsetting_default', 'theme_boost_union');
+        $setting = new admin_setting_configtext($name, $title, $description, $default, PARAM_TEXT);
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginselfregistrationloginlabel',
+            'theme_boost_union/loginlayout',
+            'eq',
+            'vertical'
+        );
+
+        // Setting: Self registration instruction.
+        $name = 'theme_boost_union/loginselfregistrationshowinstruction';
+        $title = get_string('loginselfregistrationshowinstruction', 'theme_boost_union', null, true);
+        $description = get_string('loginselfregistrationshowinstruction_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_configselect($name, $title, $description, THEME_BOOST_UNION_SETTING_SELECT_NO, $yesnooption);
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginselfregistrationshowinstruction',
+            'theme_boost_union/loginselfregistrationenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Setting: Self registration instruction content.
+        $name = 'theme_boost_union/loginselfregistrationinstructioncontent';
+        $title = get_string('loginselfregistrationinstructioncontent', 'theme_boost_union', null, true);
+        $description = get_string('loginselfregistrationinstructioncontent_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_confightmleditor($name, $title, $description, '');
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginselfregistrationinstructioncontent',
+            'theme_boost_union/loginselfregistrationenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+        $page->hide_if(
+            'theme_boost_union/loginselfregistrationinstructioncontent',
+            'theme_boost_union/loginselfregistrationshowinstruction',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Setting: Self registration instruction position.
+        $name = 'theme_boost_union/loginselfregistrationinstructionposition';
+        $title = get_string('loginselfregistrationinstructionposition', 'theme_boost_union', null, true);
+        $description = get_string('loginselfregistrationinstructionposition_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_configselect(
+            $name,
+            $title,
+            $description,
+            THEME_BOOST_UNION_SETTING_LOGININSTRUCTIONPOSITION_BETWEEN,
+            $logininstructionpositionoptions
+        );
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginselfregistrationinstructionposition',
+            'theme_boost_union/loginselfregistrationenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+        $page->hide_if(
+            'theme_boost_union/loginselfregistrationinstructionposition',
+            'theme_boost_union/loginselfregistrationshowinstruction',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Heading: Login provider: Guest.
+        $name = 'theme_boost_union/loginproviderguestheading';
+        $title = get_string('loginproviderguestheading', 'theme_boost_union', null, true);
+        $setting = new admin_setting_heading($name, $title, null);
+        $tab->add($setting);
+
+        // Setting: Guest login.
+        $name = 'theme_boost_union/loginguestloginenable';
+        $title = get_string('loginguestloginenablesetting', 'theme_boost_union', null, true);
+        $description = get_string('loginguestloginenablesetting_desc', 'theme_boost_union', null, true);
+        $guestlogincorenoteurl = new core\url('/admin/settings.php', ['section' => 'manageauths']);
+        $guestlogincorenotesettingname = get_string('guestloginbutton', 'auth');
+        $guestlogincorenote = new \core\output\notification(get_string(
+            'loginguestloginenablesetting_core',
+            'theme_boost_union',
+            ['settingname' => $guestlogincorenotesettingname, 'url' => $guestlogincorenoteurl->out()],
+            true
+        ), \core\output\notification::NOTIFY_INFO);
+        $guestlogincorenote->set_show_closebutton(false);
+        $description .= $OUTPUT->render($guestlogincorenote);
+        $setting = new admin_setting_configselect($name, $title, $description, THEME_BOOST_UNION_SETTING_SELECT_YES, $yesnooption);
+        $tab->add($setting);
+
+        // Setting: Guest login intro.
+        $name = 'theme_boost_union/loginguestshowintro';
+        $title = get_string('loginguestshowintrosetting', 'theme_boost_union', null, true);
+        $description = get_string(
+            'loginguestshowintrosetting_desc',
+            'theme_boost_union',
+            get_string('someallowguest', 'core'),
+            true
+        );
+        $setting = new admin_setting_configselect($name, $title, $description, THEME_BOOST_UNION_SETTING_SELECT_YES, $yesnooption);
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginguestshowintro',
+            'theme_boost_union/loginguestloginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Setting: Guest login intro text.
+        $name = 'theme_boost_union/loginguestintrotext';
+        $title = get_string('loginguestintrotextsetting', 'theme_boost_union', null, true);
+        $description = get_string(
+            'loginguestintrotextsetting_desc',
+            'theme_boost_union',
+            get_string('someallowguest', 'core'),
+            true
+        );
+        $setting = new admin_setting_configtext($name, $title, $description, '', PARAM_TEXT);
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginguestintrotext',
+            'theme_boost_union/loginguestloginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+        $page->hide_if(
+            'theme_boost_union/loginguestintrotext',
+            'theme_boost_union/loginguestshowintro',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Setting: Guest login label (visible when tab or accordion layout is enabled).
+        $name = 'theme_boost_union/loginguestloginlabel';
+        $title = get_string('loginguestloginlabelsetting', 'theme_boost_union', null, true);
+        $description = get_string('loginguestloginlabelsetting_desc', 'theme_boost_union', null, true);
+        $default = get_string('loginguestloginlabelsetting_default', 'theme_boost_union');
+        $setting = new admin_setting_configtext($name, $title, $description, $default, PARAM_TEXT);
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginguestloginlabel',
+            'theme_boost_union/loginlayout',
+            'eq',
+            'vertical'
+        );
+
+        // Setting: Guest login instruction.
+        $name = 'theme_boost_union/loginguestshowinstruction';
+        $title = get_string('loginguestshowinstruction', 'theme_boost_union', null, true);
+        $description = get_string('loginguestshowinstruction_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_configselect($name, $title, $description, THEME_BOOST_UNION_SETTING_SELECT_NO, $yesnooption);
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginguestshowinstruction',
+            'theme_boost_union/loginguestloginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Setting: Guest login instruction content.
+        $name = 'theme_boost_union/loginguestinstructioncontent';
+        $title = get_string('loginguestinstructioncontent', 'theme_boost_union', null, true);
+        $description = get_string('loginguestinstructioncontent_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_confightmleditor($name, $title, $description, '');
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginguestinstructioncontent',
+            'theme_boost_union/loginguestloginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+        $page->hide_if(
+            'theme_boost_union/loginguestinstructioncontent',
+            'theme_boost_union/loginguestshowinstruction',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Setting: Guest login instruction position.
+        $name = 'theme_boost_union/loginguestinstructionposition';
+        $title = get_string('loginguestinstructionposition', 'theme_boost_union', null, true);
+        $description = get_string('loginguestinstructionposition_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_configselect(
+            $name,
+            $title,
+            $description,
+            THEME_BOOST_UNION_SETTING_LOGININSTRUCTIONPOSITION_BETWEEN,
+            $logininstructionpositionoptions
+        );
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginguestinstructionposition',
+            'theme_boost_union/loginguestloginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+        $page->hide_if(
+            'theme_boost_union/loginguestinstructionposition',
+            'theme_boost_union/loginguestshowinstruction',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
 
         // Heading: Side entrance login.
         $name = 'theme_boost_union/sideentranceloginheading';
@@ -2551,10 +3145,12 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
 
         // Prepare hide nodes options.
         $hidenodesoptions = [
-                THEME_BOOST_UNION_SETTING_HIDENODESPRIMARYNAVIGATION_HOME => get_string('home'),
-                THEME_BOOST_UNION_SETTING_HIDENODESPRIMARYNAVIGATION_MYHOME => get_string('myhome'),
-                THEME_BOOST_UNION_SETTING_HIDENODESPRIMARYNAVIGATION_MYCOURSES => get_string('mycourses'),
-                THEME_BOOST_UNION_SETTING_HIDENODESPRIMARYNAVIGATION_SITEADMIN => get_string('administrationsite'),
+            THEME_BOOST_UNION_SETTING_HIDENODESPRIMARYNAVIGATION_HOME => get_string('home'),
+            THEME_BOOST_UNION_SETTING_HIDENODESPRIMARYNAVIGATION_MYHOME => get_string('myhome'),
+            THEME_BOOST_UNION_SETTING_HIDENODESPRIMARYNAVIGATION_MYCOURSES => get_string('mycourses'),
+            THEME_BOOST_UNION_SETTING_HIDENODESPRIMARYNAVIGATION_SITEADMIN => get_string('administrationsite'),
+            THEME_BOOST_UNION_SETTING_HIDENODESPRIMARYNAVIGATION_CALENDAR => get_string('calendar', 'calendar') .
+                    ' (' . get_string('hidenodesprimarynavigationonlyguest', 'theme_boost_union') . ')',
         ];
 
         // Setting: Hide nodes in primary navigation.
@@ -2796,6 +3392,8 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             'offcanvas-right' => $regionstr['region-offcanvas-right'],
             'offcanvas-center' => $regionstr['region-offcanvas-center'],
         ];
+        // Prepare list of layouts which only support sticky blocks.
+        $stickyonlylayouts = [];
         // Build list of page layouts and map the regions to each page layout.
         $pagelayouts = [
             'standard' => $partialregions,
@@ -2811,14 +3409,42 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $pagelayouts['mydashboard'] = array_filter($allavailableregions, function ($key) {
             return ($key != 'content-upper' && $key != 'content-lower') ? true : false;
         }, ARRAY_FILTER_USE_KEY);
+        // For the mycourses layout, use all available regions as well,
+        // but add it to the list of layouts which only support sticky blocks as well.
+        $pagelayouts['mycourses'] = $allavailableregions;
+        $stickyonlylayouts[] = 'mycourses';
         // Create admin setting for each page layout.
         foreach ($pagelayouts as $layout => $regions) {
             $name = 'theme_boost_union/blockregionsfor' . $layout;
             $title = get_string('blockregionsforlayout', 'theme_boost_union', $layout, true);
             $description = get_string('blockregionsforlayout_desc', 'theme_boost_union', $layout, true);
+            // If this layout only supports sticky blocks, add a notification to the description.
+            if (in_array($layout, $stickyonlylayouts)) {
+                $notificationurl = 'https://docs.moodle.org/en/Block_settings#Making_a_block_sticky_throughout_the_whole_site';
+                $notification = new \core\output\notification(
+                    get_string('blockregionsstickyonly', 'theme_boost_union', $notificationurl),
+                    \core\output\notification::NOTIFY_INFO
+                );
+                $notification->set_show_closebutton(false);
+                $description .= '<br />' . $OUTPUT->render($notification);
+            }
             $setting = new admin_setting_configmulticheckbox($name, $title, $description, [], $regions);
             $tab->add($setting);
         }
+
+        // Heading: Block Manager.
+        $name = 'theme_boost_union/blockmanagerheading';
+        $title = get_string('blockmanagerheading', 'theme_boost_union', null, true);
+        $description = get_string('blockmanagerheading_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_heading($name, $title, $description);
+        $tab->add($setting);
+
+        // Setting: Harden block regions.
+        $name = 'theme_boost_union/hardenblockregions';
+        $title = get_string('hardenblockregions', 'theme_boost_union', null, true);
+        $description = get_string('hardenblockregions_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_configselect($name, $title, $description, THEME_BOOST_UNION_SETTING_SELECT_NO, $yesnooption);
+        $tab->add($setting);
 
         // Heading: Outside regions.
         $name = 'theme_boost_union/outsideregionsheading';

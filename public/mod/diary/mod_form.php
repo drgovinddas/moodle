@@ -25,6 +25,7 @@ defined('MOODLE_INTERNAL') || die();
 use mod_diary\local\diarystats;
 
 require_once($CFG->dirroot . '/course/moodleform_mod.php');
+require_once($CFG->dirroot . '/rating/lib.php');
 
 /**
  * Diary settings form.
@@ -34,6 +35,9 @@ require_once($CFG->dirroot . '/course/moodleform_mod.php');
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mod_diary_mod_form extends moodleform_mod {
+    /** Threshold above which Count of ratings + Point warning applies. */
+    /** @var int */
+    const COUNT_RATINGS_POINT_WARNING_THRESHOLD = 10;
 
     /** Settings for adding repeated form elements. */
     /** @var int */
@@ -68,7 +72,7 @@ class mod_diary_mod_form extends moodleform_mod {
      */
     protected function plugin_constant($name) {
         $plugin = $this->plugin_name();
-        return constant($plugin.'::'.$name);
+        return constant($plugin . '::' . $name);
     }
 
     /**
@@ -77,7 +81,7 @@ class mod_diary_mod_form extends moodleform_mod {
      * @return void
      */
     public function definition() {
-        global $COURSE, $PAGE;
+        global $COURSE, $PAGE, $CFG;
         // Cache the plugin name.
         $plugin = 'mod_diary';
         $diaryconfig = get_config('mod_diary');
@@ -87,8 +91,8 @@ class mod_diary_mod_form extends moodleform_mod {
         $PAGE->requires->js_call_amd("$plugin/form", 'init', $params);
 
         // 20210706 Cache options for form elements to input text.
-        $shorttextoptions = ['size' => 3,  'style' => 'width: auto'];
-        $mediumtextoptions = ['size' => 5,  'style' => 'width: auto'];
+        $shorttextoptions = ['size' => 3, 'style' => 'width: auto'];
+        $mediumtextoptions = ['size' => 5, 'style' => 'width: auto'];
         $longtextoptions = ['size' => 10, 'style' => 'width: auto'];
 
         // 20210706 Cache options for show/hide elements.
@@ -118,10 +122,10 @@ class mod_diary_mod_form extends moodleform_mod {
         if ($COURSE->format == 'weeks') {
             $options = [];
             $options[0] = get_string('alwaysopen', 'diary');
-            for ($i = 1; $i <= 13; $i ++) {
+            for ($i = 1; $i <= 13; $i++) {
                 $options[$i] = get_string('numdays', '', $i);
             }
-            for ($i = 2; $i <= 16; $i ++) {
+            for ($i = 2; $i <= 16; $i++) {
                 $days = $i * 7;
                 $options[$days] = get_string('numweeks', '', $i);
             }
@@ -134,7 +138,10 @@ class mod_diary_mod_form extends moodleform_mod {
             $mform->setDefault('days', '0');
         }
 
-        $mform->addElement('date_time_selector', 'timeopen', get_string('diaryopentime', 'diary'),
+        $mform->addElement(
+            'date_time_selector',
+            'timeopen',
+            get_string('diaryopentime', 'diary'),
             [
                 'optional' => true,
                 'step' => 1,
@@ -142,7 +149,10 @@ class mod_diary_mod_form extends moodleform_mod {
         );
         $mform->addHelpButton('timeopen', 'diaryopentime', 'diary');
 
-        $mform->addElement('date_time_selector', 'timeclose', get_string('diaryclosetime', 'diary'),
+        $mform->addElement(
+            'date_time_selector',
+            'timeclose',
+            get_string('diaryclosetime', 'diary'),
             [
                 'optional' => true,
                 'step' => 1,
@@ -157,6 +167,14 @@ class mod_diary_mod_form extends moodleform_mod {
         $mform->addHelpButton($name, $name, $plugin);
         $mform->setType($name, PARAM_INT);
         $mform->setDefault($name, $diaryconfig->editall);
+
+        // 20241113 Added Delete entry, enable/disable setting.
+        $name = 'deleteentry';
+        $label = get_string('deleteentries', $plugin);
+        $mform->addElement('selectyesno', $name, $label);
+        $mform->addHelpButton($name, $name, $plugin);
+        $mform->setType($name, PARAM_INT);
+        $mform->setDefault($name, $diaryconfig->deleteentries);
 
         // 20201119 Added Edit dates, enable/disable setting. 20230925 Modified to use site default.
         $name = 'editdates';
@@ -209,21 +227,42 @@ class mod_diary_mod_form extends moodleform_mod {
         $mform->setType($name, PARAM_INT);
         $mform->setDefault($name, $diaryconfig->enabletitles);
 
-        // 20230204 Added enable/disable setting for teacheremail.
-        $name = 'teacheremail';
+        // 20250301 Added heading for submission options section.
+        $name = 'submissionsettingshdr';
+        $label = get_string('submissionsettings', 'diary');
+        $mform->addElement('header', $name, $label);
+        $mform->setExpanded($name, true);
+
+        // 20250301 Added enable/disable setting for email upon submitting an entry.
+        $name = 'submissionemail';
         $label = get_string($name, $plugin);
         $mform->addElement('selectyesno', $name, $label);
         $mform->addHelpButton($name, $name, $plugin);
         $mform->setType($name, PARAM_INT);
+        $mform->setDefault($name, 0);
+
+        // 20230204 Added enable/disable setting for teacheremail.
+        $options = [];
+        $options['0'] = 'Delay';
+        $options['1'] = 'Now';
+
+        // 20230204 Added enable/disable setting for teacheremail.
+        $name = 'teacheremail';
+        $label = get_string($name, $plugin);
+        $mform->addElement('select', $name, $label, $options);
+        $mform->addHelpButton($name, $name, $plugin);
+        $mform->setType($name, PARAM_INT);
         $mform->setDefault($name, $diaryconfig->teacheremail);
+        $mform->disabledIf($name, 'submissionemail', 'eq', 0);
 
         // 20230204 Added enable/disable setting for studentemail.
         $name = 'studentemail';
         $label = get_string($name, $plugin);
-        $mform->addElement('selectyesno', $name, $label);
+        $mform->addElement('select', $name, $label, $options);
         $mform->addHelpButton($name, $name, $plugin);
         $mform->setType($name, PARAM_INT);
         $mform->setDefault($name, $diaryconfig->studentemail);
+        $mform->disabledIf($name, 'submissionemail', 'eq', 0);
 
         // 20210704 Added heading for autorating options section.
         $name = 'autorating';
@@ -405,8 +444,55 @@ class mod_diary_mod_form extends moodleform_mod {
 
         // Add the rest of the common settings.
         $this->standard_grading_coursemodule_elements();
+
+        // Warn about Count of ratings with Point maximum grade >10.
+        $name = 'countofratingswarning';
+        $warningdata = (object) [
+            'threshold' => self::COUNT_RATINGS_POINT_WARNING_THRESHOLD,
+            'pointdefault' => $CFG->gradepointdefault ?? '',
+            'pointmax' => $CFG->gradepointmax ?? '',
+        ];
+        $warning = '<div class="alert alert-warning">'
+            . get_string('countofratingspointwarning', 'diary', $warningdata)
+            . '</div>';
+        $mform->addElement('static', $name, '', $warning);
+        $mform->hideIf($name, 'assessed', 'neq', RATING_AGGREGATE_COUNT);
+        $mform->hideIf($name, 'scale[modgrade_type]', 'neq', 'point');
+        $mform->hideIf($name, 'scale[modgrade_point]', 'in', '|0|1|2|3|4|5|6|7|8|9|10');
+
         $this->standard_coursemodule_elements();
         $this->add_action_buttons();
+    }
+
+    /**
+     * Validate submitted form data.
+     *
+     * @param array $data
+     * @param array $files
+     * @return array
+     */
+    public function validation($data, $files) {
+        $errors = parent::validation($data, $files);
+
+        $assessed = $data['assessed'] ?? 0;
+        $gradetype = $data['scale']['modgrade_type'] ?? '';
+        $gradepoint = $data['scale']['modgrade_point'] ?? '';
+
+        if (
+            (int)$assessed === RATING_AGGREGATE_COUNT
+            && $gradetype === 'point'
+            && $gradepoint !== ''
+            && is_numeric($gradepoint)
+            && (float)$gradepoint > self::COUNT_RATINGS_POINT_WARNING_THRESHOLD
+        ) {
+            $errors['scale[modgrade_point]'] = get_string(
+                'countofratingspointvalidation',
+                'diary',
+                (object)['threshold' => self::COUNT_RATINGS_POINT_WARNING_THRESHOLD]
+            );
+        }
+
+        return $errors;
     }
 
     /**
@@ -415,7 +501,7 @@ class mod_diary_mod_form extends moodleform_mod {
      * @param array $courseid
      * @return array $options
      */
-    protected function get_errorcmid_options($courseid=0) {
+    protected function get_errorcmid_options($courseid = 0) {
         $options = ['0' => ''];
         $modinfo = get_fast_modinfo($courseid);
         foreach ($modinfo->cms as $cmid => $cm) {
@@ -439,7 +525,7 @@ class mod_diary_mod_form extends moodleform_mod {
             return $this->get_default_value($name, $default);
         } else {
             // Moodle <= 3.9.
-            return get_user_preferences($this->plugin_name().'_'.$name, $default);
+            return get_user_preferences($this->plugin_name() . '_' . $name, $default);
         }
     }
 
@@ -455,7 +541,6 @@ class mod_diary_mod_form extends moodleform_mod {
         $options['2'] = get_string('words', $plugin);
         $options['3'] = get_string('sentences', $plugin);
         $options['4'] = get_string('paragraphs', $plugin);
-        // $options['5'] = get_string('files', $plugin); // @codingStandardsIgnoreLine
         return $options;
     }
 
@@ -487,304 +572,5 @@ class mod_diary_mod_form extends moodleform_mod {
      */
     protected function get_ignorebreaks_options($plugin) {
         return [0 => get_string('phraseignorebreaksno', $plugin), 1 => get_string('phraseignorebreaksyes', $plugin)];
-    }
-
-}
-
-/**
- * Standard base class for typing and submitting Diary Prompts.
- *
- * @package   mod_diary
- * @copyright 2019 AL Rachels <drachels@drachels.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-class mod_diary_prompt_form extends moodleform {
-
-    /**
-     * Define the Diary Prompts input form called from prompt_edit.php.
-     */
-    public function definition() {
-        global $CFG, $DB;
-
-        $mform = $this->_form;
-
-        // 20201119 Get the, Edit entry dates, setting for this Diary activity.
-        $mform->addElement('hidden', 'diaryid');
-        $mform->setType('diaryid', PARAM_INT);
-
-        // 20210613 Retrieve customdata info for use.
-        $promptid = $this->_customdata['editoroptions']['promptid'];
-
-        $timeclose = $this->_customdata['editoroptions']['timeclose'];
-        $editall = $this->_customdata['editoroptions']['editall'];
-        $editdates = $this->_customdata['editoroptions']['editdates'];
-
-        $plugin = 'mod_diary';
-        $ratingoptions = diarystats::get_rating_options($plugin);
-        // 20220920 Cache options for form elements to input text.
-        $shorttextoptions = ['size' => 3, 'style' => 'width: auto'];
-        $mediumtextoptions = ['size' => 5, 'style' => 'width: auto'];
-        $longtextoptions = ['size' => 10, 'style' => 'width: auto'];
-
-        $mform->addElement('date_time_selector', 'datestart', get_string('datestart', 'mod_diary', $promptid));
-        $mform->setType('datestart', PARAM_INT);
-
-        $mform->addElement('date_time_selector', 'datestop', get_string('datestop', 'mod_diary', $promptid));
-        $mform->setType('stopdate', PARAM_INT);
-
-        $mform->addElement('editor',
-                           'text_editor',
-                           format_text(get_string('prompt', 'mod_diary'),
-                           null,
-                           $this->_customdata['editoroptions']),
-                           'wrap="virtual" rows="5"');
-        $mform->setType('text_editor', PARAM_RAW);
-        $mform->addRule('text_editor', null, 'required', null, 'client');
-
-        // Diary prompt background colour setting.
-        $name = 'promptbgc';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, $ratingoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setType($name, PARAM_NOTAGS);
-
-        // 20220923 Added minimum character count setting.
-        $name = 'minchar';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, $shorttextoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setType($name, PARAM_INT);
-
-        // 20220923 Added maximum character count setting.
-        $name = 'maxchar';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, $mediumtextoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setType($name, PARAM_INT);
-
-        // 20220923 Added a selector to set error percent of each minimum or maximum character penalty.
-        $name = 'minmaxcharpercent';
-        $label = get_string($name, $plugin);
-        $mform->addElement('select', $name, $label, $ratingoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-
-        // 20220923 Added minimum word count setting.
-        $name = 'minword';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, $shorttextoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setType($name, PARAM_INT);
-
-        // 20220923 Added maximum word count setting.
-        $name = 'maxword';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, $mediumtextoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setType($name, PARAM_INT);
-
-        // 20220923 Added a selector to set error percent of each minimum or maximum word penalty.
-        $name = 'minmaxwordpercent';
-        $label = get_string($name, $plugin);
-        $mform->addElement('select', $name, $label, $ratingoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-
-        // 20220923 Added minimum sentence count setting.
-        $name = 'minsentence';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, $shorttextoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setType($name, PARAM_INT);
-
-        // 20220923 Added maximum sentence count setting.
-        $name = 'maxsentence';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, $mediumtextoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setType($name, PARAM_INT);
-
-        // 20220923 Added a selector to set error percent of each minimum or maximum sentence penalty.
-        $name = 'minmaxsentencepercent';
-        $label = get_string($name, $plugin);
-        $mform->addElement('select', $name, $label, $ratingoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-
-        // 20220923 Added minimum paragraph count setting.
-        $name = 'minparagraph';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, $shorttextoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setType($name, PARAM_INT);
-
-        // 20220923 Added maximum paragraph count setting.
-        $name = 'maxparagraph';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, $mediumtextoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setType($name, PARAM_INT);
-
-        // 20220923 Added a selector to set error percent of each minimum or maximum paragraph penalty.
-        $name = 'minmaxparagraphpercent';
-        $label = get_string($name, $plugin);
-        $mform->addElement('select', $name, $label, $ratingoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-
-        $mform->addElement('hidden', 'id');
-        $mform->setType('id', PARAM_INT);
-        $mform->addElement('hidden', 'firstkey');
-        $mform->setType('firstkey', PARAM_INT);
-        $mform->addElement('hidden', 'entryid');
-        $mform->setType('entryid', PARAM_INT);
-
-        $mform->addElement('hidden', 'promptid');
-        $mform->setType('promptid', PARAM_INT);
-
-        $this->add_action_buttons();
-    }
-}
-/**
- * Standard base class for editing a Diary Prompt.
- *
- * @package   mod_diary
- * @copyright 2019 AL Rachels <drachels@drachels.com>
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- */
-class mod_diary_prompt_edit_form extends moodleform {
-
-    /**
-     * Define the Diary Prompts input form called from prompt_edit.php.
-     */
-    public function definition() {
-        global $CFG, $DB;
-
-        $mform = $this->_form;
-
-        // 20220923 Get the, Edit entry dates, setting for this Diary activity.
-        $mform->addElement('hidden', 'diaryid');
-        $mform->setType('diaryid', PARAM_INT);
-
-        $plugin = 'mod_diary';
-        $ratingoptions = diarystats::get_rating_options($plugin);
-        // 20220923 Cache options for form elements to input text.
-        $shorttextoptions = ['size' => 3, 'style' => 'width: auto'];
-        $mediumtextoptions = ['size' => 5, 'style' => 'width: auto'];
-        $longtextoptions = ['size' => 10, 'style' => 'width: auto'];
-
-        $name = 'datestart';
-        $label = get_string($name, $plugin);
-        $mform->addElement('date_time_selector', $name, $label);
-        $mform->setType($name, PARAM_INT);
-
-        $name = 'datestop';
-        $label = get_string($name, $plugin);
-        $mform->addElement('date_time_selector', $name, $label);
-        $mform->setType($name, PARAM_INT);
-
-        $name = 'text_editor';
-        $label = get_string($name, $plugin);
-
-        $mform->addElement('editor', $name,
-                           format_text($label,
-                           $promptformat = FORMAT_MOODLE,
-                           $options = null,
-                           $courseiddonotuse = null),
-                           'wrap="virtual" rows="3"');
-        $mform->setType($name, PARAM_RAW);
-        $mform->addRule($name, null, 'required', null, 'client');
-
-        // Diary prompt background colour setting.
-        $name = 'promptbgc';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, $ratingoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setType($name, PARAM_NOTAGS);
-
-        // 20220923 Added minimum character count setting.
-        $name = 'minchar';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, $shorttextoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setType($name, PARAM_INT);
-
-        // 20220923 Added maximum character count setting.
-        $name = 'maxchar';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, $mediumtextoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setType($name, PARAM_INT);
-
-        // 20220923 Added a selector to set error percent of each minimum or maximum character penalty.
-        $name = 'minmaxcharpercent';
-        $label = get_string($name, $plugin);
-        $mform->addElement('select', $name, $label, $ratingoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-
-        // 20220923 Added minimum word count setting.
-        $name = 'minword';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, $shorttextoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setType($name, PARAM_INT);
-
-        // 20220923 Added maximum word count setting.
-        $name = 'maxword';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, $mediumtextoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setType($name, PARAM_INT);
-
-        // 20220923 Added a selector to set error percent of each minimum or maximum word penalty.
-        $name = 'minmaxwordpercent';
-        $label = get_string($name, $plugin);
-        $mform->addElement('select', $name, $label, $ratingoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-
-        // 20220923 Added minimum sentence count setting.
-        $name = 'minsentence';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, $shorttextoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setType($name, PARAM_INT);
-
-        // 20220923 Added maximum sentence count setting.
-        $name = 'maxsentence';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, $mediumtextoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setType($name, PARAM_INT);
-
-        // 20220923 Added a selector to set error percent of each minimum or maximum sentence penalty.
-        $name = 'minmaxsentencepercent';
-        $label = get_string($name, $plugin);
-        $mform->addElement('select', $name, $label, $ratingoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-
-        // 20220923 Added minimum paragraph count setting.
-        $name = 'minparagraph';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, $shorttextoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setType($name, PARAM_INT);
-
-        // 20220923 Added maximum paragraph count setting.
-        $name = 'maxparagraph';
-        $label = get_string($name, $plugin);
-        $mform->addElement('text', $name, $label, $mediumtextoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setType($name, PARAM_INT);
-
-        // 20220923 Added a selector to set error percent of each minimum or maximum paragraph penalty.
-        $name = 'minmaxparagraphpercent';
-        $label = get_string($name, $plugin);
-        $mform->addElement('select', $name, $label, $ratingoptions);
-        $mform->addHelpButton($name, $name, $plugin);
-
-        $mform->addElement('hidden', 'id');
-        $mform->setType('id', PARAM_INT);
-        $mform->addElement('hidden', 'firstkey');
-        $mform->setType('firstkey', PARAM_INT);
-        $mform->addElement('hidden', 'prompt');
-        $mform->setType('prompt', PARAM_INT);
-
-        $this->add_action_buttons();
     }
 }

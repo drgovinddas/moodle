@@ -15,24 +15,19 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This file keeps track of upgrades to the icontent module
+ * This file keeps track of upgrades to the icontent module.
  *
- * Sometimes, changes between versions involve alterations to database
- * structures and other major things that may break installations. The upgrade
- * function in this file will attempt to perform all the necessary actions to
- * upgrade your older installation to the current version. If there's something
- * it cannot do itself, it will tell you what you need to do.  The commands in
- * here will all be database-neutral, using the functions defined in DLL libraries.
  *
  * @package    mod_icontent
  * @copyright  2016 Leo Renis Santos
+ * @copyright  2024 onwards AL Rachels drachels@drachels.com
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
+defined('MOODLE_INTERNAL') || die(); // phpcs:ignore
 
 /**
- * Execute icontent upgrade from the given old version
+ * Execute icontent upgrade from the given old version.
  *
  * @param int $oldversion
  * @return bool
@@ -42,34 +37,7 @@ function xmldb_icontent_upgrade($oldversion) {
 
     $dbman = $DB->get_manager(); // Loads ddl manager and xmldb classes.
 
-    /*
-     * And upgrade begins here. For each one, you'll need one
-     * block of code similar to the next one. Please, delete
-     * this comment lines once this file start handling proper
-     * upgrade code.
-     *
-     * if ($oldversion < YYYYMMDD00) { //New version in version.php
-     * }
-     *
-     * Lines below (this included)  MUST BE DELETED once you get the first version
-     * of your module ready to be installed. They are here only
-     * for demonstrative purposes and to show how the icontent
-     * iself has been upgraded.
-     *
-     * For each upgrade block, the file icontent/version.php
-     * needs to be updated . Such change allows Moodle to know
-     * that this file has to be processed.
-     *
-     * To know more about how to write correct DB upgrade scripts it's
-     * highly recommended to read information available at:
-     *   http://docs.moodle.org/en/Development:XMLDB_Documentation
-     * and to play with the XMLDB Editor (in the admin menu) and its
-     * PHP generation posibilities.
-     *
-     * First example, some fields were added to install.xml on 2007/04/01
-     */
     if ($oldversion < 2007040100) {
-
         // Define field course to be added to icontent.
         $table = new xmldb_table('icontent');
         $field = new xmldb_field('course', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0', 'id');
@@ -90,8 +58,16 @@ function xmldb_icontent_upgrade($oldversion) {
 
         // Define field introformat to be added to icontent.
         $table = new xmldb_table('icontent');
-        $field = new xmldb_field('introformat', XMLDB_TYPE_INTEGER, '4', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0',
-            'intro');
+        $field = new xmldb_field(
+            'introformat',
+            XMLDB_TYPE_INTEGER,
+            '4',
+            XMLDB_UNSIGNED,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'intro'
+        );
 
         // Add field introformat.
         if (!$dbman->field_exists($table, $field)) {
@@ -103,15 +79,19 @@ function xmldb_icontent_upgrade($oldversion) {
         upgrade_mod_savepoint(true, 2007040100, 'icontent');
     }
 
-    // Second example, some hours later, the same day 2007/04/01
-    // ... two more fields and one index were added to install.xml (note the micro increment
-    // ... "01" in the last two digits of the version).
     if ($oldversion < 2007040101) {
-
         // Define field timecreated to be added to icontent.
         $table = new xmldb_table('icontent');
-        $field = new xmldb_field('timecreated', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0',
-            'introformat');
+        $field = new xmldb_field(
+            'timecreated',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            XMLDB_UNSIGNED,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'introformat'
+        );
 
         // Add field timecreated.
         if (!$dbman->field_exists($table, $field)) {
@@ -120,8 +100,16 @@ function xmldb_icontent_upgrade($oldversion) {
 
         // Define field timemodified to be added to icontent.
         $table = new xmldb_table('icontent');
-        $field = new xmldb_field('timemodified', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0',
-            'timecreated');
+        $field = new xmldb_field(
+            'timemodified',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            XMLDB_UNSIGNED,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'timecreated'
+        );
 
         // Add field timemodified.
         if (!$dbman->field_exists($table, $field)) {
@@ -130,7 +118,7 @@ function xmldb_icontent_upgrade($oldversion) {
 
         // Define index course (not unique) to be added to icontent.
         $table = new xmldb_table('icontent');
-        $index = new xmldb_index('courseindex', XMLDB_INDEX_NOTUNIQUE, array('course'));
+        $index = new xmldb_index('courseindex', XMLDB_INDEX_NOTUNIQUE, ['course']);
 
         // Add index to course field.
         if (!$dbman->index_exists($table, $index)) {
@@ -143,24 +131,91 @@ function xmldb_icontent_upgrade($oldversion) {
 
     // Third example, the next day, 2007/04/02 (with the trailing 00),
     // some actions were performed to install.php related with the module.
-    if ($oldversion < 2007040200) {
+    // 1.0.7.2 Adding five new fields.
+    if ($oldversion < 2024082700) {
+        // Define field usepassword to be added to icontent.
+        $table = new xmldb_table('icontent');
+        $field = new xmldb_field('usepassword', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0', 'introformat');
 
-        // Insert code here to perform some actions (same as in install.php).
+        // Conditionally launch add field usepassword.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
 
-        upgrade_mod_savepoint(true, 2007040200, 'icontent');
+        // Define field password to be added to icontent.
+        $table = new xmldb_table('icontent');
+        $field = new xmldb_field('password', XMLDB_TYPE_CHAR, '32', null, XMLDB_NOTNULL, null, null, 'usepassword');
+
+        // Conditionally launch add field password.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define field timeopen to be added to icontent.
+        $table = new xmldb_table('icontent');
+        $field = new xmldb_field('timeopen', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'timemodified');
+
+        // Conditionally launch add field timeopen.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define field timeclose to be added to icontent.
+        $table = new xmldb_table('icontent');
+        $field = new xmldb_field('timeclose', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'timeopen');
+
+        // Conditionally launch add field timeclose.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define field viewaftertimeclose to be added to icontent.
+        $table = new xmldb_table('icontent');
+        $field = new xmldb_field('viewaftertimeclose', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0', 'timeclose');
+
+        // Conditionally launch add field viewaftertimeclose.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2024082700, 'icontent');
     }
 
-    /*
-     * And that's all. Please, examine and understand the 3 example blocks above. Also
-     * it's interesting to look how other modules are using this script. Remember that
-     * the basic idea is to have "blocks" of code (each one being executed only once,
-     * when the module version (version.php) is updated.
-     *
-     * Lines above (this included) MUST BE DELETED once you get the first version of
-     * yout module working. Each time you need to modify something in the module (DB
-     * related, you'll raise the version and add one upgrade block here.
-     *
-     * Finally, return of upgrade result (true, all went good) to Moodle.
-     */
+    if ($oldversion < 2026030200) {
+        $table = new xmldb_table('icontent_question_attempts');
+
+        $field = new xmldb_field('reviewercomment', XMLDB_TYPE_TEXT, null, null, null, null, null, 'answertext');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        $field = new xmldb_field(
+            'reviewercommentformat',
+            XMLDB_TYPE_INTEGER,
+            '4',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '1',
+            'reviewercomment'
+        );
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026030200, 'icontent');
+    }
+
+    if ($oldversion < 2026031808) {
+        $table = new xmldb_table('icontent_pages');
+        $field = new xmldb_field('titlecolor', XMLDB_TYPE_CHAR, '20', null, null, null, null, 'showtitle');
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026031808, 'icontent');
+    }
+
     return true;
 }

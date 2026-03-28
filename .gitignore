@@ -1,4 +1,4 @@
-# This file specifies intentionally untracked files that all Moodle git
+1# This file specifies intentionally untracked files that all Moodle git
 # repositories should ignore. It is recommended not to modify this file in your
 # local clone. Instead, use .git/info/exclude and add new records there as
 # needed.
@@ -60,3 +60,8 @@ phpcs.xml
 jsconfig.json
 UPGRADING-CURRENT.md
 .phpunit.cache
+*.sql
+*.zip
+git_data.zip
+db.sql
+
