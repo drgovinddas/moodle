@@ -45,8 +45,8 @@ $string['whatsapptoken_desc'] = 'The authentication token for your WhatsApp busi
 
 // AI Assistant settings
 $string['aisetting'] = 'AI Assistant Settings';
-$string['openaikey'] = 'OpenAI API Key';
-$string['openaikey_desc'] = 'Required for the /ask bot command. Enter your OpenAI API Key to allow the bot to answer student questions.';
+$string['openaikey'] = 'Gemini API Key';
+$string['openaikey_desc'] = 'Required for the /ask bot command. Enter your Gemini API Key to allow the bot to answer student questions.';
 
 // User preferences
 $string['telegramchatid'] = 'Telegram Chat ID';
