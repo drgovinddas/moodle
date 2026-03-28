@@ -35,4 +35,3 @@ $tagareas = [
         'callbackfile' => '/mod/icontent/locallib.php',
     ],
 ];
-

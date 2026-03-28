@@ -19,16 +19,53 @@
  *
  * @package    mod_icontent
  * @category   test
+ * @copyright  2024 bdecent GmbH <https://bdecent.de>
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
+// NOTE: no MOODLE_INTERNAL test here, this file may be required by behat before including /config.php.
 require_once(__DIR__ . '/../../../../lib/behat/behat_base.php');
+use Behat\Mink\Exception\ExpectationException;
+// phpcs:disable moodle.Files.LineLength.MaxExceeded
 
 /**
  * iContent Behat context.
  */
 class behat_mod_icontent extends behat_base {
+    /** @var array<string, array<string, mixed>> page deletion state captured before a delete action. */
+    protected array $trackedpagedeletions = [];
+
+    /**
+     * Convert simple page names to URLs for steps like
+     * 'When I am on the "[page name]" page'.
+     *
+     * @param string $page
+     * @return moodle_url
+     */
+    protected function resolve_page_url(string $page): moodle_url {
+        switch (strtolower($page)) {
+            default:
+                throw new Exception('Unrecognised icontent page type "' . $page . '".');
+        }
+    }
+
+    /**
+     * Convert page instance names to URLs for steps like
+     * 'When I am on the "[identifier]" "[page type]" page'.
+     *
+     * @param string $type
+     * @param string $identifier
+     * @return moodle_url
+     */
+    protected function resolve_page_instance_url(string $type, string $identifier): moodle_url {
+        switch (strtolower($type)) {
+            case 'view':
+                return new moodle_url('/mod/icontent/view.php', ['id' => $this->get_icontent_cm_by_name($identifier)->id]);
+
+            default:
+                throw new Exception('Unrecognised icontent page type "' . $type . '".');
+        }
+    }
 
     /**
      * Resolve an iContent course module by activity name.
@@ -70,9 +107,108 @@ class behat_mod_icontent extends behat_base {
     }
 
     /**
+     * Build a stable key for tracked page state.
+     *
+     * @param string $activityname
+     * @param string $pagetitle
+     * @return string
+     */
+    protected function get_page_state_key(string $activityname, string $pagetitle): string {
+        return $activityname . '::' . $pagetitle;
+    }
+
+    /**
+     * Escape a string for XPath literal use.
+     *
+     * @param string $text
+     * @return string
+     */
+    protected function xpath_literal(string $text): string {
+        if (strpos($text, "'") === false) {
+            return "'" . $text . "'";
+        }
+
+        if (strpos($text, '"') === false) {
+            return '"' . $text . '"';
+        }
+
+        $parts = explode("'", $text);
+        return "concat('" . implode("', \"'\", '", $parts) . "')";
+    }
+
+    /**
+     * Capture page-linked records before triggering a delete action.
+     *
+     * @param string $activityname
+     * @param string $pagetitle
+     * @return array<string, mixed>
+     */
+    protected function capture_page_delete_state(string $activityname, string $pagetitle): array {
+        global $DB;
+
+        $page = $this->get_icontent_page_by_title($activityname, $pagetitle);
+        $state = [
+            'pageid' => (int)$page->id,
+            'mappingids' => array_map('intval', $DB->get_fieldset_select('icontent_pages_questions', 'id', 'pageid = ?', [$page->id])),
+            'noteids' => array_map('intval', $DB->get_fieldset_select('icontent_pages_notes', 'id', 'pageid = ?', [$page->id])),
+        ];
+
+        $this->trackedpagedeletions[$this->get_page_state_key($activityname, $pagetitle)] = $state;
+        return $state;
+    }
+
+    /**
+     * Get previously captured delete state for a page.
+     *
+     * @param string $activityname
+     * @param string $pagetitle
+     * @return array<string, mixed>
+     */
+    protected function get_tracked_page_delete_state(string $activityname, string $pagetitle): array {
+        $key = $this->get_page_state_key($activityname, $pagetitle);
+        if (!array_key_exists($key, $this->trackedpagedeletions)) {
+            throw new ExpectationException(
+                'No tracked delete state found for iContent page "' . $pagetitle . '" in activity "' . $activityname . '".',
+                $this->getSession()
+            );
+        }
+
+        return $this->trackedpagedeletions[$key];
+    }
+
+    /**
+     * Open a page delete confirmation link by XPath, then confirm it.
+     *
+     * @param string $xpath
+     * @param string $description
+     * @return void
+     */
+    protected function click_delete_link_and_confirm(string $xpath, string $description): void {
+        $page = $this->getSession()->getPage();
+        $link = $page->find('xpath', $xpath);
+
+        if (!$link) {
+            throw new ExpectationException('Could not find delete link for ' . $description . '.', $this->getSession());
+        }
+
+        $link->click();
+
+        $confirmlink = $this->getSession()->getPage()->find(
+            'xpath',
+            "//a[contains(@href, '/mod/icontent/delete.php') and contains(@href, 'confirm=1')]"
+        );
+
+        if (!$confirmlink) {
+            throw new ExpectationException('Could not find confirmation link for ' . $description . '.', $this->getSession());
+        }
+
+        $confirmlink->click();
+    }
+
+    /**
      * Create a simple iContent page for a named activity.
      *
-     * @Given /^the icontent "(?P<activity_string>(?:[^"\\]|\\.)*)" has a page titled "(?P<title_string>(?:[^"\\]|\\.)*)" with content "(?P<content_string>(?:[^"\\]|\\.)*)"$/
+     * @Given /^the icontent "(?P<activity>[^"]*)" has a page titled "(?P<title>[^"]*)" with content "(?P<content>[^"]*)"$/
      *
      * @param string $activity
      * @param string $title
@@ -119,6 +255,56 @@ class behat_mod_icontent extends behat_base {
     }
 
     /**
+     * Add a note plus a like for an iContent page.
+     *
+     * @Given /^the icontent "(?P<activity>[^"]*)" page "(?P<pagetitle>[^"]*)" has a note "(?P<comment>[^"]*)" by "(?P<username>[^"]*)" liked by "(?P<likeusername>[^"]*)"$/
+     *
+     * @param string $activity
+     * @param string $pagetitle
+     * @param string $comment
+     * @param string $username
+     * @param string $likeusername
+     */
+    public function the_icontent_page_has_a_note_liked_by(
+        string $activity,
+        string $pagetitle,
+        string $comment,
+        string $username,
+        string $likeusername
+    ): void {
+        global $DB;
+
+        $cm = $this->get_icontent_cm_by_name($activity);
+        $page = $this->get_icontent_page_by_title($activity, $pagetitle);
+        $user = $DB->get_record('user', ['username' => $username], '*', MUST_EXIST);
+        $likeuser = $DB->get_record('user', ['username' => $likeusername], '*', MUST_EXIST);
+        $timecreated = time();
+
+        $noteid = $DB->insert_record('icontent_pages_notes', (object)[
+            'pageid' => $page->id,
+            'userid' => $user->id,
+            'cmid' => $cm->id,
+            'comment' => $comment,
+            'timecreated' => $timecreated,
+            'timemodified' => $timecreated,
+            'tab' => 'note',
+            'path' => '0',
+            'parent' => 0,
+            'private' => 0,
+            'featured' => 0,
+            'doubttutor' => 0,
+        ], true);
+
+        $DB->insert_record('icontent_pages_notes_like', (object)[
+            'pagenoteid' => $noteid,
+            'userid' => $likeuser->id,
+            'cmid' => $cm->id,
+            'timemodified' => $timecreated,
+            'visible' => 1,
+        ]);
+    }
+
+    /**
      * Navigate to the iContent manual review page by activity name.
      *
      * @Given /^I am on the "(?P<activity_string>(?:[^"\\]|\\.)*)" icontent manual review page$/
@@ -134,7 +320,7 @@ class behat_mod_icontent extends behat_base {
     /**
      * Link an existing question to an iContent page and create an evaluated attempt with reviewer comment.
      *
-     * @Given /^the icontent "(?P<activity_string>(?:[^"\\]|\\.)*)" page "(?P<pagetitle_string>(?:[^"\\]|\\.)*)" links question "(?P<questionname_string>(?:[^"\\]|\\.)*)" and has an evaluated attempt for "(?P<username_string>(?:[^"\\]|\\.)*)" with answer "(?P<answer_string>(?:[^"\\]|\\.)*)" and teacher comment "(?P<comment_string>(?:[^"\\]|\\.)*)"$/
+     * @Given /^the icontent "(?P<activity>[^"]*)" page "(?P<pagetitle>[^"]*)" links question "(?P<questionname>[^"]*)" and has an evaluated attempt for "(?P<username>[^"]*)" with answer "(?P<answer>[^"]*)" and teacher comment "(?P<comment>[^"]*)"$/
      *
      * @param string $activity
      * @param string $pagetitle
@@ -198,7 +384,7 @@ class behat_mod_icontent extends behat_base {
     /**
      * Link an existing question to an iContent page and create a pending manual-review attempt.
      *
-     * @Given /^the icontent "(?P<activity_string>(?:[^"\\]|\\.)*)" page "(?P<pagetitle_string>(?:[^"\\]|\\.)*)" links question "(?P<questionname_string>(?:[^"\\]|\\.)*)" and has a pending attempt for "(?P<username_string>(?:[^"\\]|\\.)*)" with answer "(?P<answer_string>(?:[^"\\]|\\.)*)"$/
+     * @Given /^the icontent "(?P<activity>[^"]*)" page "(?P<pagetitle>[^"]*)" links question "(?P<questionname>[^"]*)" and has a pending attempt for "(?P<username>[^"]*)" with answer "(?P<answer>[^"]*)"$/
      *
      * @param string $activity
      * @param string $pagetitle
@@ -260,7 +446,7 @@ class behat_mod_icontent extends behat_base {
     /**
      * Link an existing question to an iContent page and create an auto-graded attempt.
      *
-     * @Given /^the icontent "(?P<activity_string>(?:[^"\\]|\\.)*)" page "(?P<pagetitle_string>(?:[^"\\]|\\.)*)" links question "(?P<questionname_string>(?:[^"\\]|\\.)*)" and has a graded attempt for "(?P<username_string>(?:[^"\\]|\\.)*)" with answer "(?P<answer_string>(?:[^"\\]|\\.)*)"$/
+     * @Given /^the icontent "(?P<activity>[^"]*)" page "(?P<pagetitle>[^"]*)" links question "(?P<questionname>[^"]*)" and has a graded attempt for "(?P<username>[^"]*)" with answer "(?P<answer>[^"]*)"$/
      *
      * @param string $activity
      * @param string $pagetitle
@@ -322,7 +508,7 @@ class behat_mod_icontent extends behat_base {
     /**
      * Link an existing question to an iContent page without creating attempts.
      *
-     * @Given /^the icontent "(?P<activity_string>(?:[^"\\]|\\.)*)" page "(?P<pagetitle_string>(?:[^"\\]|\\.)*)" links question "(?P<questionname_string>(?:[^"\\]|\\.)*)"$/
+     * @Given /^the icontent "([^"]*)" page "([^"]*)" links question "([^"]*)"$/
      *
      * @param string $activity
      * @param string $pagetitle
@@ -365,7 +551,7 @@ class behat_mod_icontent extends behat_base {
     /**
      * Remove a linked question from an iContent page as the current user.
      *
-     * @When /^I remove question "(?P<questionname_string>(?:[^"\\]|\\.)*)" from page "(?P<pagetitle_string>(?:[^"\\]|\\.)*)" in icontent "(?P<activity_string>(?:[^"\\]|\\.)*)"$/
+     * @When /^I remove question "([^"]*)" from page "([^"]*)" in icontent "([^"]*)"$/
      *
      * @param string $questionname
      * @param string $pagetitle
@@ -388,20 +574,72 @@ class behat_mod_icontent extends behat_base {
             'cmid' => $cm->id,
         ], '*', MUST_EXIST);
 
-        $url = new moodle_url('/mod/icontent/view.php', [
-            'id' => $cm->id,
-            'pageid' => $page->id,
-            'removeqpid' => $mapping->id,
-            'sesskey' => sesskey(),
-        ]);
-
+        $url = new moodle_url('/mod/icontent/view.php', ['id' => $cm->id, 'pageid' => $page->id]);
         $this->getSession()->visit($this->locate_path($url->out_as_local_url(false)));
+
+        $link = $this->getSession()->getPage()->find(
+            'xpath',
+            "//a[contains(@href, '/mod/icontent/view.php') and contains(@href, 'removeqpid={$mapping->id}') ]"
+        );
+
+        if (!$link) {
+            throw new ExpectationException(
+                'Could not find remove-question link for mapping id ' . $mapping->id . '.',
+                $this->getSession()
+            );
+        }
+
+        $link->click();
+    }
+
+    /**
+     * Delete a page from the in-page toolbar and confirm the deletion.
+     *
+     * @When /^I delete page "([^"]*)" from the toolbar in icontent "([^"]*)"$/
+     *
+     * @param string $pagetitle
+     * @param string $activity
+     */
+    public function i_delete_page_from_the_toolbar_in_icontent(string $pagetitle, string $activity): void {
+        $cm = $this->get_icontent_cm_by_name($activity);
+        $page = $this->get_icontent_page_by_title($activity, $pagetitle);
+        $this->capture_page_delete_state($activity, $pagetitle);
+
+        $url = new moodle_url('/mod/icontent/view.php', ['id' => $cm->id, 'pageid' => $page->id]);
+        $this->getSession()->visit($this->locate_path($url->out_as_local_url(false)));
+
+        $this->click_delete_link_and_confirm(
+            "//div[contains(@class, 'toolbarpage')]//a[contains(@class, 'icon-deletepage')]",
+            'toolbar page delete for "' . $pagetitle . '"'
+        );
+    }
+
+    /**
+     * Delete a page from the TOC actions list and confirm the deletion.
+     *
+     * @When /^I delete page "([^"]*)" from the TOC in icontent "([^"]*)"$/
+     *
+     * @param string $pagetitle
+     * @param string $activity
+     */
+    public function i_delete_page_from_the_toc_in_icontent(string $pagetitle, string $activity): void {
+        $cm = $this->get_icontent_cm_by_name($activity);
+        $this->capture_page_delete_state($activity, $pagetitle);
+
+        $url = new moodle_url('/mod/icontent/view.php', ['id' => $cm->id]);
+        $this->getSession()->visit($this->locate_path($url->out_as_local_url(false)));
+
+        $pagetitleliteral = $this->xpath_literal(trim($pagetitle));
+        $this->click_delete_link_and_confirm(
+            "//div[contains(@class, 'block_icontent_toc')]//li[.//a[contains(@class, 'load-page') and normalize-space(.) = {$pagetitleliteral}]]//div[contains(@class, 'action-list')]//a[contains(@href, '/mod/icontent/delete.php')]",
+            'TOC page delete for "' . $pagetitle . '"'
+        );
     }
 
     /**
      * Assert that an iContent activity includes at least one linked question of a given qtype.
      *
-     * @Then /^the icontent "(?P<activity_string>(?:[^"\\]|\\.)*)" should include question type "(?P<qtype_string>(?:[^"\\]|\\.)*)"$/
+     * @Then /^the icontent "(?P<activity_string>[^"]*)" should include question type "(?P<qtype_string>[^"]*)"$/
      *
      * @param string $activity
      * @param string $qtype
@@ -429,7 +667,7 @@ class behat_mod_icontent extends behat_base {
     /**
      * Assert that an iContent activity includes a specific page/question/qtype mapping.
      *
-     * @Then /^the icontent "(?P<activity_string>(?:[^"\\]|\\.)*)" should include page "(?P<pagetitle_string>(?:[^"\\]|\\.)*)" with question "(?P<questionname_string>(?:[^"\\]|\\.)*)" of type "(?P<qtype_string>(?:[^"\\]|\\.)*)"$/
+     * @Then /^the icontent "([^"]*)" should include page "([^"]*)" with question "([^"]*)" of type "([^"]*)"$/
      *
      * @param string $activity
      * @param string $pagetitle
@@ -468,7 +706,7 @@ class behat_mod_icontent extends behat_base {
     /**
      * Assert that an iContent activity does not include a specific page/question mapping.
      *
-     * @Then /^the icontent "(?P<activity_string>(?:[^"\\]|\\.)*)" should not include page "(?P<pagetitle_string>(?:[^"\\]|\\.)*)" with question "(?P<questionname_string>(?:[^"\\]|\\.)*)"$/
+     * @Then /^the icontent "([^"]*)" should not include page "([^"]*)" with question "([^"]*)"$/
      *
      * @param string $activity
      * @param string $pagetitle
@@ -500,4 +738,72 @@ class behat_mod_icontent extends behat_base {
             );
         }
     }
+
+    /**
+     * Assert that a deleted page and its related records were removed.
+     *
+     * @Then /^the icontent "([^"]*)" page "([^"]*)" should be fully deleted$/
+     *
+     * @param string $activity
+     * @param string $pagetitle
+     */
+    public function the_icontent_page_should_be_fully_deleted(string $activity, string $pagetitle): void {
+        global $DB;
+
+        $cm = $this->get_icontent_cm_by_name($activity);
+        $icontent = $DB->get_record('icontent', ['id' => $cm->instance], '*', MUST_EXIST);
+        $state = $this->get_tracked_page_delete_state($activity, $pagetitle);
+        $pageid = (int)$state['pageid'];
+
+        if ($DB->record_exists('icontent_pages', ['id' => $pageid])) {
+            throw new ExpectationException(
+                'Deleted page record still exists for iContent page "' . $pagetitle . '".',
+                $this->getSession()
+            );
+        }
+
+        if ($DB->record_exists('icontent_pages', ['icontentid' => $icontent->id, 'title' => $pagetitle])) {
+            throw new ExpectationException(
+                'Page title "' . $pagetitle . '" still exists in iContent activity "' . $activity . '".',
+                $this->getSession()
+            );
+        }
+
+        if ($DB->record_exists('icontent_pages_questions', ['pageid' => $pageid])) {
+            throw new ExpectationException(
+                'Question links still exist for deleted iContent page "' . $pagetitle . '".',
+                $this->getSession()
+            );
+        }
+
+        if ($DB->record_exists('icontent_pages_notes', ['pageid' => $pageid])) {
+            throw new ExpectationException(
+                'Notes still exist for deleted iContent page "' . $pagetitle . '".',
+                $this->getSession()
+            );
+        }
+
+        $mappingids = $state['mappingids'];
+        if (!empty($mappingids)) {
+            [$insql, $params] = $DB->get_in_or_equal($mappingids);
+            if ($DB->record_exists_select('icontent_question_attempts', 'pagesquestionsid ' . $insql, $params)) {
+                throw new ExpectationException(
+                    'Question attempts still exist for deleted iContent page "' . $pagetitle . '".',
+                    $this->getSession()
+                );
+            }
+        }
+
+        $noteids = $state['noteids'];
+        if (!empty($noteids)) {
+            [$insql, $params] = $DB->get_in_or_equal($noteids);
+            if ($DB->record_exists_select('icontent_pages_notes_like', 'pagenoteid ' . $insql, $params)) {
+                throw new ExpectationException(
+                    'Note likes still exist for deleted iContent page "' . $pagetitle . '".',
+                    $this->getSession()
+                );
+            }
+        }
+    }
 }
+// phpcs:enable moodle.Files.LineLength.MaxExceeded

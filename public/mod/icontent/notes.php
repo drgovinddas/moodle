@@ -22,8 +22,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require(dirname(__FILE__).'/../../config.php');
-require_once(dirname(__FILE__).'/locallib.php');
+require(dirname(__FILE__) . '/../../config.php');
+require_once(dirname(__FILE__) . '/locallib.php');
 use mod_icontent\notes\icontent_note_options;
 
 $id = required_param('id', PARAM_INT);      // Course Module ID.
@@ -46,7 +46,7 @@ $context = context_module::instance($cm->id);
 require_capability('mod/icontent:viewnotes', $context);
 $urlparams = ['id' => $cm->id, 'action' => $action];
 // Page setting.
-switch ($action){
+switch ($action) {
     case 'featured':
         $urlparams += ['featured' => $featured];
         $strheading = get_string('highlighted', 'mod_icontent');
@@ -66,24 +66,28 @@ $PAGE->set_title($icontent->name);
 $PAGE->set_heading($course->fullname);
 echo $OUTPUT->header();
 echo $OUTPUT->heading($icontent->name);
-echo $OUTPUT->heading(get_string('mylistcomments', 'mod_icontent').' '. strtolower($strheading), 3);
+echo $OUTPUT->heading(get_string('mylistcomments', 'mod_icontent') . ' ' . strtolower($strheading), 3);
 $url = new moodle_url('/mod/icontent/notes.php', $urlparams + ['page' => $page, 'perpage' => $perpage]);
 // Get sort value.
 $sort = icontent_check_value_sort($sort);
 // Get users attempts.
-$notesusers = icontent_note_options::icontent_get_notes_users_instance($cm->id,
+$notesusers = icontent_note_options::icontent_get_notes_users_instance(
+    $cm->id,
     $sort,
     $page,
     $perpage,
     $private,
     $featured,
     $doubttutor,
-    $likes);
-$tnotesusers = icontent_note_options::icontent_count_notes_users_instance($cm->id,
+    $likes
+);
+$tnotesusers = icontent_note_options::icontent_count_notes_users_instance(
+    $cm->id,
     $private,
     $featured,
     $doubttutor,
-    $likes);
+    $likes
+);
 
 // Make table questions.
 $table = new html_table();
@@ -96,16 +100,19 @@ if ($notesusers) {
         $user = clone $notesuser;
         $user->id = $notesuser->userid;
         $picture = $OUTPUT->user_picture($user, ['size' => 35, 'class' => 'img-thumbnail pull-left']);
-        $linkfirstname = html_writer::link(new moodle_url('/user/view.php', [
+        $linkfirstname = html_writer::link(
+            new moodle_url('/user/view.php', [
             'id' => $notesuser->userid,
             'course' => $course->id,
             ]),
-        $notesuser->firstname.' '.$notesuser->lastname, [
+            $notesuser->firstname . ' ' . $notesuser->lastname,
+            [
             'title' => $notesuser->firstname,
             'class' => 'lkfullname',
-            ]);
+            ]
+        );
         // Set data.
-        $table->data[] = [$picture. $linkfirstname, $notesuser->comment];
+        $table->data[] = [$picture . $linkfirstname, $notesuser->comment];
     }
 } else {
     echo html_writer::div(get_string('norecordsfound', 'mod_icontent'), 'alert alert-warning');

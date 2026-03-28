@@ -224,17 +224,22 @@ if ($timenow > $timestart) {
     // This echo gets render before the top of the slide. It prints on every slide.
 
     if ($timenow < $timefinish) {
+        $showpagingbars = count($pages) > 1;
         // Decide whether or not to show upper navigation buttons.
-        if (count($pages) > 10) {
-            echo icontent_simple_paging_button_bar($pages, $cm->id, $startwithpage);
-        } else {
-            echo icontent_full_paging_button_bar($pages, $cm->id, $startwithpage);
+        if ($showpagingbars) {
+            if (count($pages) > 10) {
+                echo icontent_simple_paging_button_bar($pages, $cm->id, $startwithpage);
+            } else {
+                echo icontent_full_paging_button_bar($pages, $cm->id, $startwithpage);
+            }
         }
         // Add all the content into a box.
         echo $OUTPUT->box_start('icontent-page', 'idicontentpages');
         echo $showpage->fullpageicontent;
         echo $OUTPUT->box_end();
-        echo icontent_simple_paging_button_bar($pages, $cm->id, $startwithpage);
+        if ($showpagingbars) {
+            echo icontent_simple_paging_button_bar($pages, $cm->id, $startwithpage);
+        }
     } else {
         // Show message when activity period has ended.
         echo '<div class="editend"><strong>' . get_string('activityended', 'icontent') . ': ';

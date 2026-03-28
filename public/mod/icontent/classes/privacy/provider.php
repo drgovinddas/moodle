@@ -23,7 +23,7 @@
  */
 namespace mod_icontent\privacy;
 
-defined('MOODLE_INTERNAL') || die(); // @codingStandardsIgnoreLine
+defined('MOODLE_INTERNAL') || die(); // phpcs:ignore
 
 use core_privacy\local\metadata\collection;
 use core_privacy\local\request\approved_contextlist;
@@ -43,10 +43,10 @@ require_once($CFG->dirroot . '/mod/icontent/lib.php');
  * @copyright 2019 AL Rachels <drachels@drachels.com>
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class provider implements \core_privacy\local\metadata\provider,
-                          \core_privacy\local\request\plugin\provider,
-                          \core_privacy\local\request\core_userlist_provider {
-
+class provider implements
+    \core_privacy\local\metadata\provider,
+    \core_privacy\local\request\core_userlist_provider,
+    \core_privacy\local\request\plugin\provider {
     /**
      * Provides meta data that is stored about a user with mod_icontent.
      * The acutal student data is in the, mod_icontent_pages_notes table.
@@ -196,9 +196,9 @@ class provider implements \core_privacy\local\metadata\provider,
                                 OR g.id IS NOT NULL
                 ';
 
-        $contextlist->add_from_sql($sql, $params);
+                $contextlist->add_from_sql($sql, $params);
 
-        return $contextlist;
+                return $contextlist;
     }
 
     /**
@@ -220,9 +220,9 @@ class provider implements \core_privacy\local\metadata\provider,
             return; // Checklist module not installed.
         }
 
-                if (!$cm = get_coursemodule_from_id('icontent', $context->instanceid)) {
-                        return;
-                }
+        if (!$cm = get_coursemodule_from_id('icontent', $context->instanceid)) {
+                return;
+        }
 
                 $params = ['cmid' => $cm->id];
 
@@ -263,14 +263,34 @@ class provider implements \core_privacy\local\metadata\provider,
                 continue;
             }
 
-            $notes = $DB->get_records('icontent_pages_notes', ['cmid' => $cm->id, 'userid' => $userid], 'timecreated DESC');
-            $likes = $DB->get_records('icontent_pages_notes_like', ['cmid' => $cm->id, 'userid' => $userid], 'timemodified DESC');
-            $displayed = $DB->get_records('icontent_pages_displayed', ['cmid' => $cm->id, 'userid' => $userid], 'timecreated DESC');
-            $attempts = $DB->get_records('icontent_question_attempts', ['cmid' => $cm->id, 'userid' => $userid], 'timecreated DESC');
-            $grades = $DB->get_records('icontent_grades', ['cmid' => $cm->id, 'userid' => $userid], 'timemodified DESC');
+            $notes = $DB->get_records(
+                'icontent_pages_notes',
+                ['cmid' => $cm->id, 'userid' => $userid],
+                'timecreated DESC'
+            );
+            $likes = $DB->get_records(
+                'icontent_pages_notes_like',
+                ['cmid' => $cm->id, 'userid' => $userid],
+                'timemodified DESC'
+            );
+            $displayed = $DB->get_records(
+                'icontent_pages_displayed',
+                ['cmid' => $cm->id, 'userid' => $userid],
+                'timecreated DESC'
+            );
+            $attempts = $DB->get_records(
+                'icontent_question_attempts',
+                ['cmid' => $cm->id, 'userid' => $userid],
+                'timecreated DESC'
+            );
+            $grades = $DB->get_records(
+                'icontent_grades',
+                ['cmid' => $cm->id, 'userid' => $userid],
+                'timemodified DESC'
+            );
 
             $export = (object) [
-                'notes' => array_map(static function($note) {
+                'notes' => array_map(static function ($note) {
                     return (object) [
                         'pageid' => $note->pageid,
                         'comment' => strip_tags($note->comment),
@@ -284,20 +304,20 @@ class provider implements \core_privacy\local\metadata\provider,
                         'timemodified' => $note->timemodified ? transform::datetime($note->timemodified) : '',
                     ];
                 }, array_values($notes)),
-                'likes' => array_map(static function($like) {
+                'likes' => array_map(static function ($like) {
                     return (object) [
                         'pagenoteid' => $like->pagenoteid,
                         'timemodified' => $like->timemodified ? transform::datetime($like->timemodified) : '',
                         'visible' => (int) $like->visible,
                     ];
                 }, array_values($likes)),
-                'displayedpages' => array_map(static function($row) {
+                'displayedpages' => array_map(static function ($row) {
                     return (object) [
                         'pageid' => $row->pageid,
                         'timecreated' => $row->timecreated ? transform::datetime($row->timecreated) : '',
                     ];
                 }, array_values($displayed)),
-                'questionattempts' => array_map(static function($attempt) {
+                'questionattempts' => array_map(static function ($attempt) {
                     return (object) [
                         'pagesquestionsid' => $attempt->pagesquestionsid,
                         'questionid' => $attempt->questionid,
@@ -307,7 +327,7 @@ class provider implements \core_privacy\local\metadata\provider,
                         'timecreated' => $attempt->timecreated ? transform::datetime($attempt->timecreated) : '',
                     ];
                 }, array_values($attempts)),
-                'grades' => array_map(static function($grade) {
+                'grades' => array_map(static function ($grade) {
                     return (object) [
                         'icontentid' => $grade->icontentid,
                         'grade' => $grade->grade,
@@ -419,7 +439,7 @@ class provider implements \core_privacy\local\metadata\provider,
         if (empty($userids)) {
             return;
         }
-        list($insql, $inparams) = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
+        [$insql, $inparams] = $DB->get_in_or_equal($userids, SQL_PARAMS_NAMED);
 
         $DB->delete_records_select(
             'icontent_pages_notes',

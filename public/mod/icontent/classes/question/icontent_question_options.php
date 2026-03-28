@@ -24,7 +24,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace mod_icontent\question;
-defined('MOODLE_INTERNAL') || die(); // @codingStandardsIgnoreLine
+defined('MOODLE_INTERNAL') || die(); // phpcs:ignore
 
 /**
  * Utility class for iContent Questions.
@@ -34,7 +34,6 @@ defined('MOODLE_INTERNAL') || die(); // @codingStandardsIgnoreLine
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class icontent_question_options {
-
     /**
      * Get questions of question bank.
      *
@@ -52,10 +51,11 @@ class icontent_question_options {
         $questioncategoryid,
         $sort,
         $page = 0,
-        $perpage = ICONTENT_PER_PAGE) {
+        $perpage = ICONTENT_PER_PAGE
+    ) {
 
         global $DB;
-        $sort = 'q.name '.$sort;
+        $sort = 'q.name ' . $sort;
         $page = (int) $page;
         $perpage = (int) $perpage;
         $questioncategoryid = $questioncategoryid;
@@ -192,8 +192,8 @@ class icontent_question_options {
                    AND qa.userid = ?;";
         // Get items.
         $idanswers = $DB->get_fieldset_sql($sql, [$pageid, $cmid, $USER->id]);
-        list($in, $values) = $DB->get_in_or_equal($idanswers);
+        [$in, $values] = $DB->get_in_or_equal($idanswers);
         // Delete records.
-        return $DB->delete_records_select('icontent_question_attempts', 'id '. $in, $values);
+        return $DB->delete_records_select('icontent_question_attempts', 'id ' . $in, $values);
     }
 }

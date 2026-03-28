@@ -24,29 +24,34 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-require_once($CFG->libdir.'/formslib.php');
+require_once($CFG->libdir . '/formslib.php');
+require_once($CFG->libdir . '/filelib.php');
 
 /**
  * Class mod_icontent_pages_edit_form
  */
 class icontent_pages_edit_form extends moodleform {
-
     /**
      * Define form elements
      * @throws coding_exception
      * @throws dml_exception
      */
     public function definition() {
-        global $CFG, $COURSE;
+        global $CFG, $COURSE, $USER;
 
         $page = $this->_customdata['page'];
         $pageicontentoptions = $this->_customdata['pageicontentoptions'];
+        $bgimagemaxbytes = $this->_customdata['bgimagemaxbytes'] ?? 0;
 
         $mform = $this->_form;
         $icontentconfig = get_config('mod_icontent');
 
         $page->bgcolor = self::format_colour_for_picker($page->bgcolor ?? $icontentconfig->bgcolor ?? '#FCFCFC', '#FCFCFC');
-        $page->bordercolor = self::format_colour_for_picker($page->bordercolor ?? $icontentconfig->bordercolor ?? '#E4E4E4', '#E4E4E4');
+        $page->bordercolor = self::format_colour_for_picker(
+            $page->bordercolor ?? $icontentconfig->bordercolor ?? '#E4E4E4',
+            '#E4E4E4'
+        );
+        $page->titlecolor = self::format_colour_for_picker($page->titlecolor ?? '#000000', '#000000');
 
         if (!empty($page->id)) {
             $mform->addElement('header', 'general', get_string('editingpage', 'icontent'));
@@ -127,6 +132,12 @@ class icontent_pages_edit_form extends moodleform {
         $mform->setType('showtitle', PARAM_INT);
         $mform->setDefault('showtitle', 1);
 
+        $titleattributes = ['id' => 'icontent_titlecolor_picker', 'size' => '10', 'maxlength' => '7'];
+        $mform->addElement('text', 'titlecolor', get_string('titlecolor', 'icontent'), $titleattributes);
+        $mform->setType('titlecolor', PARAM_TEXT);
+        $mform->addHelpButton('titlecolor', 'titlecolorhelp', 'icontent');
+        $mform->setDefault('titlecolor', $page->titlecolor);
+
         $mform->addElement('advcheckbox', 'showbgimage', get_string('showbgimage', 'icontent'));
         $mform->addHelpButton('showbgimage', 'showbgimage', 'icontent');
         $mform->setType('showbgimage', PARAM_INT);
@@ -134,18 +145,49 @@ class icontent_pages_edit_form extends moodleform {
 
         // Set up options for the filemanager setting.
         $filemanageroptions = [];
-                $filemanageroptions['subdirs'] = 0;
-                $filemanageroptions['maxbytes'] = $COURSE->maxbytes;
-                $filemanageroptions['maxfiles'] = 1;
-                $filemanageroptions['accepted_types'] = ['.jpg', '.png'];
-                $filemanageroptions['return_types'] = FILE_INTERNAL | FILE_EXTERNAL;
-        $mform->addElement('filemanager', 'bgimage', get_string('bgimage', 'icontent'), null, $filemanageroptions);
-        $mform->setType('bgimage', PARAM_INT);
-        $mform->addHelpButton('bgimage', 'bgimagepagehelp', 'icontent');
+        $filemanageroptions['subdirs'] = 0;
+        $filemanageroptions['maxbytes'] = $bgimagemaxbytes;
+        $filemanageroptions['maxfiles'] = 1;
+        $filemanageroptions['accepted_types'] = ['web_image'];
+        $filemanageroptions['return_types'] = FILE_INTERNAL | FILE_EXTERNAL;
+        $mform->addElement('filemanager', 'bgimage_filemanager', get_string('bgimage', 'icontent'), null, $filemanageroptions);
+        $mform->setType('bgimage_filemanager', PARAM_INT);
+        $mform->addHelpButton('bgimage_filemanager', 'bgimagepagehelp', 'icontent');
 
-        // ...$mform->addElement('text', 'bgcolor', get_string('bgcolor', 'icontent'), ['class' => 'color', 'value' => 'FCFCFC']);.
-        // ...$mform->setType('bgcolor', PARAM_TEXT);.
-        // ...$mform->addHelpButton('bgcolor', 'bgcolorpagehelp', 'icontent');.
+        // Show currently stored page background files even if the JS filemanager UI is not working.
+        $storedfileshtml = '';
+        if (!empty($page->id)) {
+            $modulecontext = context_module::instance((int)$page->cmid);
+            $storedfiles = get_file_storage()->get_area_files(
+                $modulecontext->id,
+                'mod_icontent',
+                'bgpage',
+                (int)$page->id,
+                'id',
+                false
+            );
+            if (!empty($storedfiles)) {
+                $links = [];
+                foreach ($storedfiles as $storedfile) {
+                    $fileurl = moodle_url::make_pluginfile_url(
+                        $modulecontext->id,
+                        'mod_icontent',
+                        'bgpage',
+                        (int)$page->id,
+                        (string)$storedfile->get_filepath(),
+                        (string)$storedfile->get_filename(),
+                        true
+                    );
+                    $links[] = html_writer::link($fileurl, $storedfile->get_filename());
+                }
+                $storedfileshtml = html_writer::alist($links);
+            }
+        }
+        if ($storedfileshtml !== '') {
+            $mform->addElement('static', 'bgimage_current_files', get_string('files'), $storedfileshtml);
+        }
+
+        // Legacy bgcolor field setup comments removed.
 
         $bgattributes = ['id' => 'icontent_bgcolor_picker', 'size' => '10', 'maxlength' => '7'];
         $mform->addElement('text', 'bgcolor', get_string('bgcolor', 'icontent'), $bgattributes);
@@ -190,6 +232,7 @@ class icontent_pages_edit_form extends moodleform {
 
                     initColorInput('icontent_bgcolor_picker', '#FCFCFC');
                     initColorInput('icontent_bordercolor_picker', '#E4E4E4');
+                    initColorInput('icontent_titlecolor_picker', '#000000');
                 })();
             </script>
         ");
@@ -223,10 +266,13 @@ class icontent_pages_edit_form extends moodleform {
         $mform->setDefault('expandnotesarea', 0);
 
         $mform->addElement('header', 'grade', get_string('gradenoun'));
-        $mform->addElement('select', 'attemptsallowed', get_string('attemptsallowed', 'icontent'),
+        $mform->addElement(
+            'select',
+            'attemptsallowed',
+            get_string('attemptsallowed', 'icontent'),
             [
                 '0' => get_string('unlimited'),
-                '1' => '1 '.get_string('attempt', 'mod_icontent'),
+                '1' => '1 ' . get_string('attempt', 'mod_icontent'),
             ]
         );
         $mform->addHelpButton('attemptsallowed', 'attemptsallowedhelp', 'icontent');
@@ -269,13 +315,13 @@ class icontent_pages_edit_form extends moodleform {
     protected static function format_colour_for_picker($value, $fallback) {
         $default = strtoupper((string)$fallback);
         if ($default === '' || $default[0] !== '#') {
-            $default = '#'.ltrim($default, '#');
+            $default = '#' . ltrim($default, '#');
         }
         if (!preg_match('/^#[0-9A-F]{6}$/', $default)) {
             $default = '#FCFCFC';
         }
 
-        $raw = '#'.strtoupper(ltrim(trim((string)$value), '#'));
+        $raw = '#' . strtoupper(ltrim(trim((string)$value), '#'));
         if (!preg_match('/^#[0-9A-F]{6}$/', $raw)) {
             return $default;
         }

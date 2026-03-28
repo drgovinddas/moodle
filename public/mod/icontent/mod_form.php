@@ -27,10 +27,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->dirroot.'/course/moodleform_mod.php');
-require_once(dirname(__FILE__).'/locallib.php');
-require_once($CFG->libdir.'/filelib.php');
-$PAGE->requires->js(new moodle_url($CFG->wwwroot.'/mod/icontent/js/jscolor/jscolor.js'));
+require_once($CFG->dirroot . '/course/moodleform_mod.php');
+require_once(dirname(__FILE__) . '/locallib.php');
+require_once($CFG->libdir . '/filelib.php');
+$PAGE->requires->js(new moodle_url($CFG->wwwroot . '/mod/icontent/js/jscolor/jscolor.js'));
 
 /**
  * Module instance settings form
@@ -40,7 +40,6 @@ $PAGE->requires->js(new moodle_url($CFG->wwwroot.'/mod/icontent/js/jscolor/jscol
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class mod_icontent_mod_form extends moodleform_mod {
-
     /**
      * Defines forms elements.
      */
@@ -102,16 +101,18 @@ class mod_icontent_mod_form extends moodleform_mod {
         // Content Pages activity setup, Availability settings.
         $mform->addElement('header', 'availabilityhdr', get_string('availability'));
 
-        $mform->addElement('date_time_selector',
+        $mform->addElement(
+            'date_time_selector',
             'timeopen',
             get_string('icontentopentime', 'icontent'),
             ['optional' => true, 'step' => 1]
-            );
-        $mform->addElement('date_time_selector',
+        );
+        $mform->addElement(
+            'date_time_selector',
             'timeclose',
             get_string('icontentclosetime', 'icontent'),
             ['optional' => true, 'step' => 1]
-            );
+        );
         // Content Pages activity password setup.
         $mform->addElement('selectyesno', 'usepassword', get_string('usepassword', 'icontent'));
         $mform->addHelpButton('usepassword', 'usepassword', 'icontent');
@@ -256,7 +257,12 @@ class mod_icontent_mod_form extends moodleform_mod {
     public function data_preprocessing(&$defaultvalues) {
         if ($this->current->instance) {
             $draftitemid = file_get_submitted_draft_itemid('bgimage');
-            file_save_draft_area_files($defaultvalues['bgimage'], $this->context->id, 'mod_icontent', 'icontent', 0,
+            file_save_draft_area_files(
+                $defaultvalues['bgimage'],
+                $this->context->id,
+                'mod_icontent',
+                'icontent',
+                0,
                 [
                     'subdirs' => 0,
                     'maxbytes' => 0,
@@ -280,7 +286,7 @@ class mod_icontent_mod_form extends moodleform_mod {
         }
 
         if ($colour[0] !== '#') {
-            $colour = '#'.$colour;
+            $colour = '#' . $colour;
         }
 
         if (!preg_match('/^#[0-9a-fA-F]{6}$/', $colour)) {

@@ -25,6 +25,8 @@ Feature: iContent question management on page view
       | questioncategory | qtype       | name             | template    |
       | Test questions   | multichoice | Remove test Q1   | one_of_four |
       | Test questions   | multichoice | Remove blocked Q1| one_of_four |
+      | Test questions   | multichoice | Toolbar delete Q1| one_of_four |
+      | Test questions   | multichoice | TOC delete Q1    | one_of_four |
     And the following "activities" exist:
       | activity | name                     | intro         | course | idnumber              |
       | icontent | iContent Question Manage | Content intro | C1     | icontent-qm           |
@@ -44,3 +46,21 @@ Feature: iContent question management on page view
     When I am on the "iContent Question Manage" "mod_icontent > View" page logged in as "teacher1"
     And I turn editing mode on
     Then ".icon-removequestion" "css_element" should not exist
+
+  Scenario: Editing teacher can delete a page from the toolbar and related data is removed
+    Given the icontent "iContent Question Manage" has a page titled "Toolbar delete page" with content "Toolbar delete content"
+    And the icontent "iContent Question Manage" page "Toolbar delete page" links question "Toolbar delete Q1" and has a graded attempt for "student1" with answer "Choice A"
+    And the icontent "iContent Question Manage" page "Toolbar delete page" has a note "Toolbar note" by "student1" liked by "teacher1"
+    When I am on the "iContent Question Manage" "mod_icontent > View" page logged in as "teacher1"
+    And I turn editing mode on
+    And I delete page "Toolbar delete page" from the toolbar in icontent "iContent Question Manage"
+    Then the icontent "iContent Question Manage" page "Toolbar delete page" should be fully deleted
+
+  Scenario: Editing teacher can delete a page from the TOC and related data is removed
+    Given the icontent "iContent Question Manage" has a page titled "TOC delete page" with content "TOC delete content"
+    And the icontent "iContent Question Manage" page "TOC delete page" links question "TOC delete Q1" and has a graded attempt for "student1" with answer "Choice A"
+    And the icontent "iContent Question Manage" page "TOC delete page" has a note "TOC note" by "student1" liked by "teacher1"
+    When I am on the "iContent Question Manage" "mod_icontent > View" page logged in as "teacher1"
+    And I turn editing mode on
+    And I delete page "TOC delete page" from the TOC in icontent "iContent Question Manage"
+    Then the icontent "iContent Question Manage" page "TOC delete page" should be fully deleted

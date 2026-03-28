@@ -26,7 +26,74 @@
 /**
  * Structure step to restore one icontent activity.
  */
-class restore_icontent_activity_structure_step extends restore_activity_structure_step {
+class restore_icontent_activity_structure_step extends restore_questions_activity_structure_step {
+    /**
+     * iContent restores linked question ids, but does not restore question usage records here.
+     *
+     * @param int $newusageid
+     * @return void
+     */
+    protected function inform_new_usage_id($newusageid) {
+        // No question usages are attached to this restore step.
+    }
+
+    /**
+     * Resolve the restored course module id for this activity.
+     *
+     * @return int
+     */
+    protected function get_restored_cmid() {
+        $cmid = $this->task->get_moduleid();
+        if (!empty($cmid)) {
+            return (int)$cmid;
+        }
+
+        $icontentid = $this->get_new_parentid('icontent');
+        $cm = get_coursemodule_from_instance('icontent', $icontentid);
+        return !empty($cm->id) ? (int)$cm->id : 0;
+    }
+
+    /**
+     * Map a user id and fall back to the original id if no mapping exists.
+     *
+     * @param int $olduserid
+     * @return int
+     */
+    protected function map_userid_with_fallback($olduserid) {
+        $newuserid = $this->get_mappingid('user', $olduserid);
+        return !empty($newuserid) ? (int)$newuserid : (int)$olduserid;
+    }
+
+    /**
+     * Resolve a restored question id.
+     *
+     * First prefer backup/restore mappings. If unavailable, accept the original
+     * id only when the question still exists on this site and optionally matches
+     * the expected qtype from the page-question record.
+     *
+     * @param int $oldquestionid
+     * @param string|null $expectedqtype
+     * @return int
+     */
+    protected function resolve_questionid($oldquestionid, $expectedqtype = null) {
+        global $DB;
+
+        $newquestionid = (int)$this->get_mappingid('question', $oldquestionid);
+        if (!empty($newquestionid)) {
+            return $newquestionid;
+        }
+
+        $question = $DB->get_record('question', ['id' => $oldquestionid], 'id, qtype');
+        if (empty($question)) {
+            return 0;
+        }
+
+        if ($expectedqtype !== null && $expectedqtype !== '' && $question->qtype !== $expectedqtype) {
+            return 0;
+        }
+
+        return (int)$question->id;
+    }
 
     /**
      * Defines structure of path elements to be processed during the restore.
@@ -37,24 +104,44 @@ class restore_icontent_activity_structure_step extends restore_activity_structur
 
         $paths = [];
         $userinfo = $this->get_setting_value('userinfo');
-        $paths[] = new restore_path_element('icontent',
-            '/activity/icontent');
-        $paths[] = new restore_path_element('icontent_page',
-            '/activity/icontent/pages/page');
-        $paths[] = new restore_path_element('icontent_page_question',
-            '/activity/icontent/page_questions/page_question');
+        $paths[] = new restore_path_element(
+            'icontent',
+            '/activity/icontent'
+        );
+        $paths[] = new restore_path_element(
+            'icontent_page',
+            '/activity/icontent/pages/page'
+        );
+        $paths[] = new restore_path_element(
+            'icontent_page_question',
+            '/activity/icontent/pages/page/page_questions/page_question'
+        );
+        $paths[] = new restore_path_element(
+            'icontent_page_tag',
+            '/activity/icontent/pages/page/page_tags/page_tag'
+        );
 
         if ($userinfo) {
-            $paths[] = new restore_path_element('icontent_page_note',
-                '/activity/icontent/pages_notes/pages_note');
-            $paths[] = new restore_path_element('icontent_page_note_like',
-                '/activity/icontent/notes_likes/notes_like');
-            $paths[] = new restore_path_element('icontent_page_displayed',
-                '/activity/icontent/pages_displayeds/pages_displayed');
-            $paths[] = new restore_path_element('icontent_question_attempt',
-                '/activity/icontent/question_attempts/question_attempt');
-            $paths[] = new restore_path_element('icontent_grade',
-                '/activity/icontent/grades/grade');
+            $paths[] = new restore_path_element(
+                'icontent_page_note',
+                '/activity/icontent/pages/page/pages_notes/pages_note'
+            );
+            $paths[] = new restore_path_element(
+                'icontent_page_note_like',
+                '/activity/icontent/pages/page/pages_notes/pages_note/notes_likes/notes_like'
+            );
+            $paths[] = new restore_path_element(
+                'icontent_page_displayed',
+                '/activity/icontent/pages/page/pages_displayeds/pages_displayed'
+            );
+            $paths[] = new restore_path_element(
+                'icontent_question_attempt',
+                '/activity/icontent/pages/page/page_questions/page_question/question_attempts/question_attempt'
+            );
+            $paths[] = new restore_path_element(
+                'icontent_grade',
+                '/activity/icontent/grades/grade'
+            );
         }
         // Return the paths wrapped into standard activity structure.
         return $this->prepare_activity_structure($paths);
@@ -83,6 +170,9 @@ class restore_icontent_activity_structure_step extends restore_activity_structur
             $data->timemodified = time();
         }
 
+        $data->timeopen = $this->apply_date_offset($data->timeopen);
+        $data->timeclose = $this->apply_date_offset($data->timeclose);
+
         if ($data->grade < 0) {
             // Scale found, get mapping.
             $data->grade = -($this->get_mappingid('scale', abs($data->grade)));
@@ -104,11 +194,7 @@ class restore_icontent_activity_structure_step extends restore_activity_structur
 
         $data = (object)$data;
         $oldid = $data->id;
-        // Get new course module id.
-        $icontentid = $this->get_new_parentid('icontent');
-        $cm = get_coursemodule_from_instance('icontent', $icontentid);
-
-        $data->cmid = $cm->id;
+        $data->cmid = $this->get_restored_cmid();
         $data->icontentid = $this->get_new_parentid('icontent');
         $data->timecreated = $this->apply_date_offset($data->timecreated);
         $data->timemodified = $this->apply_date_offset($data->timemodified);
@@ -128,15 +214,64 @@ class restore_icontent_activity_structure_step extends restore_activity_structur
 
         $data = (object)$data;
         $oldid = $data->id;
+        $expectedqtype = trim((string)($data->qtype ?? ''));
+        if ($expectedqtype === '' || $expectedqtype === '0') {
+            $expectedqtype = null;
+        }
+
+        // Try question_bank_entry mapping first (populated when questions.xml contains the questions).
+        $newquestionid = 0;
+        if (!empty($data->questionbankentryid)) {
+            $newqbeid = (int)$this->get_mappingid('question_bank_entry', (int)$data->questionbankentryid);
+            if (!empty($newqbeid)) {
+                $newquestionid = (int)$DB->get_field_sql(
+                    'SELECT questionid FROM {question_versions}
+                      WHERE questionbankentryid = ?
+                   ORDER BY version DESC LIMIT 1',
+                    [$newqbeid]
+                );
+            }
+        }
+
+        // Fall back to direct question mapping or same-site ID fallback.
+        if (empty($newquestionid)) {
+            $newquestionid = $this->resolve_questionid((int)$data->questionid, $expectedqtype);
+        }
+
+        if (empty($newquestionid)) {
+            return;
+        }
 
         $data->pageid = $this->get_new_parentid('icontent_page');
-        $data->questionid = $this->get_mappingid('question', $data->questionid);
-        $data->cmid = $this->get_mappingid('icontent_page', $data->cmid);
+        $data->questionid = $newquestionid;
+        $data->cmid = $this->get_restored_cmid();
         $data->timecreated = $this->apply_date_offset($data->timecreated);
         $data->timemodified = $this->apply_date_offset($data->timemodified);
 
         $newitemid = $DB->insert_record('icontent_pages_questions', $data);
         $this->set_mapping('icontent_page_question', $oldid, $newitemid);
+    }
+
+    /**
+     * Restore one page tag.
+     *
+     * @param array|object $data
+     * @return void
+     */
+    protected function process_icontent_page_tag($data) {
+        if (!core_tag_tag::is_enabled('mod_icontent', 'icontent_pages')) {
+            return;
+        }
+
+        $data = (object)$data;
+        $tag = trim((string)$data->rawname);
+        if ($tag === '') {
+            return;
+        }
+
+        $pageid = (int)$this->get_new_parentid('icontent_page');
+        $context = context_module::instance((int)$this->task->get_moduleid());
+        core_tag_tag::add_item_tag('mod_icontent', 'icontent_pages', $pageid, $context, $tag);
     }
 
     /**
@@ -152,8 +287,8 @@ class restore_icontent_activity_structure_step extends restore_activity_structur
         $oldid = $data->id;
 
         $data->pageid = $this->get_new_parentid('icontent_page');
-        $data->userid = $this->get_mappingid('user', $data->userid);
-        $data->cmid = $this->get_mappingid('icontent_page', $data->cmid);
+        $data->userid = $this->map_userid_with_fallback($data->userid);
+        $data->cmid = $this->get_restored_cmid();
         $data->timecreated = $this->apply_date_offset($data->timecreated);
         $data->timemodified = $this->apply_date_offset($data->timemodified);
 
@@ -174,8 +309,8 @@ class restore_icontent_activity_structure_step extends restore_activity_structur
         $oldid = $data->id;
 
         $data->pagenoteid = $this->get_new_parentid('icontent_page_note');
-        $data->userid = $this->get_mappingid('user', $data->userid);
-        $data->cmid = $this->get_mappingid('icontent_page', $data->cmid);
+        $data->userid = $this->map_userid_with_fallback($data->userid);
+        $data->cmid = $this->get_restored_cmid();
         $data->timemodified = $this->apply_date_offset($data->timemodified);
 
         $newitemid = $DB->insert_record('icontent_pages_notes_like', $data);
@@ -195,8 +330,8 @@ class restore_icontent_activity_structure_step extends restore_activity_structur
         $oldid = $data->id;
 
         $data->pageid = $this->get_new_parentid('icontent_page');
-        $data->cmid = $this->get_mappingid('icontent_page', $data->cmid);
-        $data->userid = $this->get_mappingid('user', $data->userid);
+        $data->cmid = $this->get_restored_cmid();
+        $data->userid = $this->map_userid_with_fallback($data->userid);
         $data->timecreated = $this->apply_date_offset($data->timecreated);
 
         $newitemid = $DB->insert_record('icontent_pages_displayed', $data);
@@ -214,15 +349,40 @@ class restore_icontent_activity_structure_step extends restore_activity_structur
 
         $data = (object)$data;
         $oldid = $data->id;
-
+        $oldresponsefileitemid = !empty($data->responsefileitemid) ? (int)$data->responsefileitemid : 0;
+        unset($data->responsefileitemid);
         $data->pagesquestionsid = $this->get_new_parentid('icontent_page_question');
-        $data->questionid = $this->get_mappingid('question', $data->questionid);
-        $data->userid = $this->get_mappingid('user', $data->userid);
-        $data->cmid = $this->get_mappingid('icontent_page', $data->cmid);
+        if (empty($data->pagesquestionsid)) {
+            return;
+        }
+
+        $mappedpagequestion = $DB->get_record(
+            'icontent_pages_questions',
+            ['id' => $data->pagesquestionsid],
+            'questionid',
+            IGNORE_MISSING
+        );
+
+        if (!empty($mappedpagequestion->questionid)) {
+            $newquestionid = (int)$mappedpagequestion->questionid;
+        } else {
+            $newquestionid = $this->resolve_questionid((int)$data->questionid);
+        }
+
+        if (empty($newquestionid)) {
+            return;
+        }
+
+        $data->questionid = $newquestionid;
+        $data->userid = $this->map_userid_with_fallback($data->userid);
+        $data->cmid = $this->get_restored_cmid();
         $data->timecreated = $this->apply_date_offset($data->timecreated);
 
-        $newitemid = $DB->insert_record('icontent_pages_displayed', $data);
+        $newitemid = $DB->insert_record('icontent_question_attempts', $data);
         $this->set_mapping('icontent_question_attempt', $oldid, $newitemid);
+        if (!empty($oldresponsefileitemid)) {
+            $this->set_mapping('icontent_question_attempt_responsefile', $oldresponsefileitemid, $oldresponsefileitemid, true);
+        }
     }
 
     /**
@@ -236,13 +396,9 @@ class restore_icontent_activity_structure_step extends restore_activity_structur
 
         $data = (object)$data;
         $oldid = $data->id;
-        // Get new course module id.
-        $icontentid = $this->get_new_parentid('icontent');
-        $cm = get_coursemodule_from_instance('icontent', $icontentid);
-
         $data->icontentid = $this->get_new_parentid('icontent');
-        $data->userid = $this->get_mappingid('user', $data->userid);
-        $data->cmid = $cm->id;
+        $data->userid = $this->map_userid_with_fallback($data->userid);
+        $data->cmid = $this->get_restored_cmid();
         $data->timemodified = $this->apply_date_offset($data->timemodified);
 
         $newitemid = $DB->insert_record('icontent_grades', $data);
@@ -259,5 +415,6 @@ class restore_icontent_activity_structure_step extends restore_activity_structur
         // Add page related files, matching by itemname = 'icontent_page'.
         $this->add_related_files('mod_icontent', 'page', 'icontent_page');
         $this->add_related_files('mod_icontent', 'bgpage', 'icontent_page');
+        $this->add_related_files('question', 'response_answer', 'icontent_question_attempt_responsefile');
     }
 }

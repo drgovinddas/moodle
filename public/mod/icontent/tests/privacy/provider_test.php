@@ -25,14 +25,14 @@
 
 namespace mod_icontent\privacy;
 
-defined('MOODLE_INTERNAL') || die();
-
 use core_privacy\local\request\approved_contextlist;
 use core_privacy\local\request\approved_userlist;
 use core_privacy\tests\provider_testcase;
 
 /**
  * Testcases for mod_icontent privacy provider.
+ *
+ * @covers \mod_icontent\privacy\provider
  */
 final class provider_test extends provider_testcase {
     public function setUp(): void {

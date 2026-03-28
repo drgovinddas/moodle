@@ -24,7 +24,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die(); // @codingStandardsIgnoreLine
+defined('MOODLE_INTERNAL') || die(); // phpcs:ignore
 
 /**
  * Execute icontent upgrade from the given old version.
@@ -38,7 +38,6 @@ function xmldb_icontent_upgrade($oldversion) {
     $dbman = $DB->get_manager(); // Loads ddl manager and xmldb classes.
 
     if ($oldversion < 2007040100) {
-
         // Define field course to be added to icontent.
         $table = new xmldb_table('icontent');
         $field = new xmldb_field('course', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0', 'id');
@@ -59,8 +58,16 @@ function xmldb_icontent_upgrade($oldversion) {
 
         // Define field introformat to be added to icontent.
         $table = new xmldb_table('icontent');
-        $field = new xmldb_field('introformat', XMLDB_TYPE_INTEGER, '4', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0',
-            'intro');
+        $field = new xmldb_field(
+            'introformat',
+            XMLDB_TYPE_INTEGER,
+            '4',
+            XMLDB_UNSIGNED,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'intro'
+        );
 
         // Add field introformat.
         if (!$dbman->field_exists($table, $field)) {
@@ -73,11 +80,18 @@ function xmldb_icontent_upgrade($oldversion) {
     }
 
     if ($oldversion < 2007040101) {
-
         // Define field timecreated to be added to icontent.
         $table = new xmldb_table('icontent');
-        $field = new xmldb_field('timecreated', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0',
-            'introformat');
+        $field = new xmldb_field(
+            'timecreated',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            XMLDB_UNSIGNED,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'introformat'
+        );
 
         // Add field timecreated.
         if (!$dbman->field_exists($table, $field)) {
@@ -86,8 +100,16 @@ function xmldb_icontent_upgrade($oldversion) {
 
         // Define field timemodified to be added to icontent.
         $table = new xmldb_table('icontent');
-        $field = new xmldb_field('timemodified', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, '0',
-            'timecreated');
+        $field = new xmldb_field(
+            'timemodified',
+            XMLDB_TYPE_INTEGER,
+            '10',
+            XMLDB_UNSIGNED,
+            XMLDB_NOTNULL,
+            null,
+            '0',
+            'timecreated'
+        );
 
         // Add field timemodified.
         if (!$dbman->field_exists($table, $field)) {
@@ -111,7 +133,6 @@ function xmldb_icontent_upgrade($oldversion) {
     // some actions were performed to install.php related with the module.
     // 1.0.7.2 Adding five new fields.
     if ($oldversion < 2024082700) {
-
         // Define field usepassword to be added to icontent.
         $table = new xmldb_table('icontent');
         $field = new xmldb_field('usepassword', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0', 'introformat');
@@ -161,7 +182,6 @@ function xmldb_icontent_upgrade($oldversion) {
     }
 
     if ($oldversion < 2026030200) {
-
         $table = new xmldb_table('icontent_question_attempts');
 
         $field = new xmldb_field('reviewercomment', XMLDB_TYPE_TEXT, null, null, null, null, null, 'answertext');
@@ -169,12 +189,32 @@ function xmldb_icontent_upgrade($oldversion) {
             $dbman->add_field($table, $field);
         }
 
-        $field = new xmldb_field('reviewercommentformat', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '1', 'reviewercomment');
+        $field = new xmldb_field(
+            'reviewercommentformat',
+            XMLDB_TYPE_INTEGER,
+            '4',
+            null,
+            XMLDB_NOTNULL,
+            null,
+            '1',
+            'reviewercomment'
+        );
         if (!$dbman->field_exists($table, $field)) {
             $dbman->add_field($table, $field);
         }
 
         upgrade_mod_savepoint(true, 2026030200, 'icontent');
+    }
+
+    if ($oldversion < 2026031808) {
+        $table = new xmldb_table('icontent_pages');
+        $field = new xmldb_field('titlecolor', XMLDB_TYPE_CHAR, '20', null, null, null, null, 'showtitle');
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_mod_savepoint(true, 2026031808, 'icontent');
     }
 
     return true;
