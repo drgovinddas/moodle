@@ -9369,7 +9369,7 @@ function any_new_admin_settings($node) {
 
     } else if ($node instanceof admin_settingpage) {
             foreach ($node->settings as $setting) {
-                if ($setting->get_setting() === NULL) {
+                if ($setting->get_setting() === NULL && !in_array($setting->name, ['fullscreenwidth', 'debug'])) {
                     return true;
                 }
             }
