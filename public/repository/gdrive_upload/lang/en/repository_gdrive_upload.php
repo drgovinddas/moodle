@@ -22,7 +22,7 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['pluginname']      = 'Upload a file';
+$string['pluginname']      = 'Drive Upload';
 $string['configplugin']    = 'Google Drive Upload Repository Configuration';
 $string['pluginname_help'] = 'Upload files from your device directly to Google Drive.';
 $string['privacy:metadata']= 'The Google Drive Upload repository does not store any personal data itself. Uploaded files are stored in Google Drive under the configured system account.';
