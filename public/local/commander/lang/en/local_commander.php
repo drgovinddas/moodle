@@ -20,7 +20,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  *
  * @package   local_commander
- * @copyright 2018 MFreak.nl
+ * @copyright 2018 MFreak.nl | LdesignMedia.nl
  * @author    Luuk Verhoeven
  **/
 defined('MOODLE_INTERNAL') || die();
@@ -31,7 +31,7 @@ $string['commander:display'] = 'Local commander';
 $string['privacy:null_reason'] = 'No data collected by this plugin.';
 
 // JS.
-$string['js:header'] = 'Commander - Speed up your Moodling';
+$string['js:header'] = 'Local Commander';
 $string['js:command_placeholder'] = 'Search here for your command..';
 $string['js:error_parsing'] = 'Error parsing';
 $string['js:keycode_help'] = 'KeyboardEvent.code helper (press a keyboard key to see its code)';
@@ -42,3 +42,4 @@ $string['setting:keys_desc'] = 'The default keyboard shortcut is the <b>` Backqu
 
 // Errors.
 $string['error:noaccess'] = 'Error: missing capability "commander:display"';
+$string['error:invalidkeycode'] = 'Invalid keycode format. Use comma-separated numeric keycodes.';
