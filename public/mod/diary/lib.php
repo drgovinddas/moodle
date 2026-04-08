@@ -36,6 +36,19 @@ use mod_diary\local\results;
 function diary_add_instance($diary) {
     global $DB;
 
+    $enableborders = isset($diary->enableborders)
+        ? (int)$diary->enableborders
+        : (int)get_config('mod_diary', 'enableborders');
+    $borderstyle = isset($diary->borderstyle)
+        ? $diary->borderstyle
+        : (string)get_config('mod_diary', 'borderstyle');
+    $bordercolor = isset($diary->bordercolor)
+        ? $diary->bordercolor
+        : (string)get_config('mod_diary', 'bordercolor');
+    unset($diary->enableborders);
+    unset($diary->borderstyle);
+    unset($diary->bordercolor);
+
     if (empty($diary->assessed)) {
         $diary->assessed = 0;
     }
@@ -57,6 +70,10 @@ function diary_add_instance($diary) {
 
     diary_grade_item_update($diary);
 
+    set_config('enableborders_' . $diary->id, $enableborders, 'mod_diary');
+    set_config('borderstyle_' . $diary->id, $borderstyle, 'mod_diary');
+    set_config('bordercolor_' . $diary->id, $bordercolor, 'mod_diary');
+
     return $diary->id;
 }
 
@@ -71,6 +88,19 @@ function diary_add_instance($diary) {
  */
 function diary_update_instance($diary) {
     global $DB;
+
+    $enableborders = isset($diary->enableborders)
+        ? (int)$diary->enableborders
+        : (int)get_config('mod_diary', 'enableborders');
+    $borderstyle = isset($diary->borderstyle)
+        ? $diary->borderstyle
+        : (string)get_config('mod_diary', 'borderstyle');
+    $bordercolor = isset($diary->bordercolor)
+        ? $diary->bordercolor
+        : (string)get_config('mod_diary', 'bordercolor');
+    unset($diary->enableborders);
+    unset($diary->borderstyle);
+    unset($diary->bordercolor);
 
     $diary->timemodified = time();
     $diary->id = $diary->instance;
@@ -98,6 +128,10 @@ function diary_update_instance($diary) {
     \core_completion\api::update_completion_date_event($diary->coursemodule, 'diary', $diary->id, $completionexpected);
 
     diary_grade_item_update($diary);
+
+    set_config('enableborders_' . $diary->id, $enableborders, 'mod_diary');
+    set_config('borderstyle_' . $diary->id, $borderstyle, 'mod_diary');
+    set_config('bordercolor_' . $diary->id, $bordercolor, 'mod_diary');
 
     return true;
 }
@@ -149,7 +183,85 @@ function diary_delete_instance($id) {
         $result = false;
     }
 
+    unset_config('enableborders_' . $diary->id, 'mod_diary');
+    unset_config('borderstyle_' . $diary->id, 'mod_diary');
+    unset_config('bordercolor_' . $diary->id, 'mod_diary');
+
     return $result;
+}
+
+/**
+ * Returns whether entry/prompt borders are enabled for a diary activity.
+ *
+ * Stored in plugin config keyed by diary id to avoid schema changes.
+ * Falls back to site default mod_diary/enableborders.
+ *
+ * @param int $diaryid Diary activity id.
+ * @return bool
+ */
+function diary_get_enable_borders($diaryid) {
+    $diaryid = (int)$diaryid;
+    $value = get_config('mod_diary', 'enableborders_' . $diaryid);
+    if ($value === false || $value === null || $value === '') {
+        $value = get_config('mod_diary', 'enableborders');
+    }
+    return !empty($value);
+}
+
+/**
+ * Returns border style value for a diary activity.
+ *
+ * @param int $diaryid Diary activity id.
+ * @return string 'none', 'thin', or 'double'
+ */
+function diary_get_border_style($diaryid) {
+    $diaryid = (int)$diaryid;
+    $value = get_config('mod_diary', 'borderstyle_' . $diaryid);
+    if ($value === false || $value === null || $value === '') {
+        $value = get_config('mod_diary', 'borderstyle');
+    }
+    if ($value === 'none' || $value === 'thin' || $value === 'double') {
+        return $value;
+    }
+    return 'none';
+}
+
+/**
+ * Returns border color value for a diary activity.
+ *
+ * @param int $diaryid Diary activity id.
+ * @return string CSS color string
+ */
+function diary_get_border_color($diaryid) {
+    $diaryid = (int)$diaryid;
+    $value = get_config('mod_diary', 'bordercolor_' . $diaryid);
+    if ($value === false || $value === null || $value === '') {
+        $value = get_config('mod_diary', 'bordercolor');
+    }
+    if (empty($value)) {
+        $value = '#666666';
+    }
+    return (string)$value;
+}
+
+/**
+ * Returns inline CSS variables for entry/prompt border style.
+ *
+ * @param int $diaryid Diary activity id.
+ * @return string
+ */
+function diary_get_border_css_vars($diaryid) {
+    if (diary_get_enable_borders($diaryid)) {
+        $color = diary_get_border_color($diaryid);
+        $style = diary_get_border_style($diaryid);
+        if ($style === 'none') {
+            return '--diary-entry-border:0;--diary-prompt-border:0;';
+        }
+        $entryborder = ($style === 'double') ? '3px double ' . $color : '1px solid ' . $color;
+        $promptborder = ($style === 'double') ? '3px double ' . $color : '1px solid ' . $color;
+        return '--diary-entry-border:' . $entryborder . ';--diary-prompt-border:' . $promptborder . ';';
+    }
+    return '--diary-entry-border:0;--diary-prompt-border:0;';
 }
 
 /**
@@ -199,6 +311,81 @@ function diary_supports($feature) {
         default:
             return null;
     }
+}
+
+/**
+ * Returns cached module information for course pages.
+ *
+ * Appends the current prompt text to the Diary description shown in course topics
+ * when the module is configured to show its description.
+ *
+ * @param stdClass $coursemodule Course module record from {course_modules}.
+ * @return cached_cm_info|null
+ */
+function diary_get_coursemodule_info($coursemodule) {
+    global $DB;
+
+    $diary = $DB->get_record(
+        'diary',
+        ['id' => $coursemodule->instance],
+        'id,name,intro,introformat',
+        IGNORE_MISSING
+    );
+    if (!$diary) {
+        return null;
+    }
+
+    $info = new cached_cm_info();
+    $info->name = $diary->name;
+
+    if (!empty($coursemodule->showdescription)) {
+        $context = \context_module::instance($coursemodule->id);
+        $content = '';
+
+        if (trim(strip_tags($diary->intro)) !== '') {
+            $content = format_module_intro('diary', $diary, $coursemodule->id, false);
+        }
+
+        $now = time();
+        $params = ['diaryid' => $diary->id, 'startnow' => $now, 'finishnow' => $now];
+        $activesql = "diaryid = :diaryid AND datestart <= :startnow AND datestop >= :finishnow";
+        $activepromptcount = $DB->count_records_select('diary_prompts', $activesql, $params);
+
+        if ($activepromptcount > 1) {
+            $promptlabel = \html_writer::tag('strong', get_string('coursetopiccurrentpromptcount', 'diary', $activepromptcount));
+            $content .= \html_writer::div($promptlabel, 'diary-course-topic-currentprompt');
+        } else if ($activepromptcount === 1) {
+            $sql = "SELECT id, text, format
+                      FROM {diary_prompts}
+                     WHERE diaryid = :diaryid
+                       AND datestart <= :startnow
+                       AND datestop >= :finishnow
+                  ORDER BY datestart DESC, id DESC";
+            $currentprompt = $DB->get_record_sql($sql, $params, IGNORE_MULTIPLE);
+
+            if (!empty($currentprompt)) {
+                $prompttext = format_text($currentprompt->text, $currentprompt->format, [
+                    'context' => $context,
+                    'overflowdiv' => true,
+                    'para' => false,
+                    // This callback can run while course modinfo is being built before $PAGE is fully initialised.
+                    // Avoid filter chains that require $PAGE->context (e.g. emoticon filter).
+                    'filter' => false,
+                ]);
+                $promptlabel = \html_writer::tag('strong', get_string('coursetopiccurrentpromptlabel', 'diary'));
+                $content .= \html_writer::div(
+                    $promptlabel . $prompttext,
+                    'diary-course-topic-currentprompt'
+                );
+            }
+        }
+
+        if ($content !== '') {
+            $info->content = $content;
+        }
+    }
+
+    return $info;
 }
 
 /**

@@ -1,5 +1,5 @@
 {{!
-    @template mod_diary/mobile_edit_entry
+    @template mod_diary/mobileapp/mobile_edit_entry
 
     Mobile edit entry view for the Diary plugin.
 
@@ -44,11 +44,12 @@
                     <textarea
                         name="text"
                         rows="15"
-                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: sans-serif;"
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-family: sans-serif; background: #fff; color: #111;"
                         placeholder="{{#str}}entry, mod_diary{{/str}}">{{text_plain}}</textarea>
                     </div>
 
-                    <input type="hidden" name="diaryid" value="{{diaryid}}">
+                    <input type="hidden" name="cmid" value="{{cmid}}">
+                    <input type="hidden" name="entryid" value="{{entryid}}">
                     <input type="hidden" name="format" value="{{format}}">
                     <input type="hidden" name="itemid" value="0">
                 </form>

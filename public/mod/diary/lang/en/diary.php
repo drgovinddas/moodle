@@ -35,8 +35,33 @@ $string['alwaysopen'] = 'Always open';
 $string['alwaysshowdescription'] = 'Always show description';
 $string['alwaysshowdescription_help'] = 'If disabled, the diary description above will only become visible to students on the "Open time" date.';
 $string['and'] = ' and ';
+$string['assignzeronoentry'] = 'Assign zero and create entry';
 $string['attachment'] = 'Attachment';
 $string['attachment_help'] = 'You can optionally attach one or more files to a diary entry.';
+$string['autograderuleadd'] = 'Add autograde rule';
+$string['autograderulebehavior'] = 'Phrase behavior';
+$string['autograderulecaseinsensitive'] = 'Case insensitive';
+$string['autograderulecasesensitive'] = 'Case sensitive';
+$string['autograderuledeleted'] = 'Prompt autograde rule deleted.';
+$string['autograderulefullmatch'] = 'Full match';
+$string['autograderuleignorebreaks'] = 'Ignore line breaks';
+$string['autograderulelineif'] = 'If';
+$string['autograderulelineofgrade'] = 'of the entry grade.';
+$string['autograderulelineusedaward'] = 'is used, award';
+$string['autograderulematchcontains'] = 'Contains';
+$string['autograderulematchexact'] = 'Exact';
+$string['autograderulematchregex'] = 'Regex';
+$string['autograderulematchtype'] = 'Match type';
+$string['autograderulephrase'] = 'Phrase';
+$string['autograderulephraseempty'] = 'Phrase cannot be blank.';
+$string['autograderulerecognizebreaks'] = 'Respect line breaks';
+$string['autograderulerequired'] = 'Required phrase';
+$string['autograderulesaved'] = 'Prompt autograde rule saved.';
+$string['autograderulesheading'] = 'Prompt autograde rules';
+$string['autograderulesintro'] = 'Define phrase-based rules for this prompt. These values are stored now and will be applied when scoring integration is enabled.';
+$string['autograderulesortorder'] = 'Sort order';
+$string['autograderuleupdate'] = 'Update autograde rule';
+$string['autograderuleweightpercent'] = 'Weight percent';
 $string['autorating'] = 'Auto-rating';
 $string['autorating_descr'] = 'If enabled, the rating for an entry will be automatically calculated based on the Min/Max counts settings.';
 $string['autorating_help'] = 'This setting along with Min/Max counts define the defaults for autorating in all new diarys.';
@@ -50,9 +75,22 @@ $string['avgsylperword'] = 'Average syllables per word {$a}';
 $string['avgwordlenchar'] = 'Average word length {$a} characters';
 $string['avgwordpara'] = 'Average words per paragraph {$a}';
 $string['blankentry'] = 'Blank entry';
+$string['bordercolor'] = 'Border color';
+$string['bordercolor_default'] = '#666666';
+$string['bordercolor_descr'] = 'Default border color for new Diary activities.';
+$string['bordercolor_help'] = 'Choose the border color used for entries and prompts when borders are enabled.';
+$string['bordercolor_title'] = 'Default border color';
+$string['borderstyle'] = 'Border style';
+$string['borderstyle_descr'] = 'Default border style for new Diary activities.';
+$string['borderstyle_help'] = 'Choose how entry and prompt borders are drawn when borders are enabled.';
+$string['borderstyle_title'] = 'Default border style';
+$string['borderstyledouble'] = 'Double';
+$string['borderstylenone'] = 'None';
+$string['borderstylethin'] = 'Thin';
 $string['calendarend'] = '{$a} closes';
 $string['calendarstart'] = '{$a} opens';
 $string['cancel'] = 'Cancel transfer';
+$string['changessaved'] = 'Changes saved';
 $string['chars'] = 'Characters:';
 $string['charspersentence'] = 'Characters per sentence';
 $string['clearfeedback'] = 'Clear feedback';
@@ -60,6 +98,8 @@ $string['commonerrorpercentset'] = 'Common error percent setting {$a}%';
 $string['commonerrors'] = 'Common Errors';
 $string['commonerrors_help'] = 'The common errors are defined in the "Glossary of errors" associated with this question.';
 $string['configdateformat'] = 'This defines how dates are shown in diary reports. The default value, "M d, Y G:i" is Month, day, year and 24 hour format time. Refer to Date in the PHP manual for more examples and predefined date constants.';
+$string['coursetopiccurrentpromptcount'] = 'Current writing prompts: {$a} to choose from.';
+$string['coursetopiccurrentpromptlabel'] = 'Current writing prompt: ';
 $string['created'] = 'Created {$a->one} days and {$a->two} hours ago.';
 $string['createnewprompt'] = 'Create new prompt';
 $string['crontask'] = 'Background processing for Diary module';
@@ -85,6 +125,8 @@ $string['deletenotenrolled'] = 'Delete entries by users not enrolled';
 $string['details'] = 'Details: ';
 $string['detectcommonerror'] = 'Detected at least {$a->one}, {$a->two}. They are: {$a->three}
 <br>If allowed, you should fix and re-submit.';
+$string['detectmissingphrase'] = 'Detected {$a->one} missing prompt phrase-rule matches. They are: {$a->two}
+<br>If allowed, you should fix and re-submit.';
 $string['diary:addentries'] = 'Add diary entries';
 $string['diary:addinstance'] = 'Add diary instances';
 $string['diary:emailconfirmsubmission'] = 'Confirm a student\'s diary entry submission.';
@@ -106,10 +148,8 @@ $string['diarymailhtml'] = '<strong>Greetings {$a->user},</strong><br /><br />
 {$a->teacher} has posted some feedback on your
 diary entry for \'<i>{$a->diary}</i>\'.<br /><br />
 You can see it appended to your <a href="{$a->url}">diary entry</a>.';
-
 $string['diarymailhtmluser'] = 'has posted a diary entry for \'<i>{$a->diary}</i>\' Created {$a->timecreated} and modified {$a->timemodified}.<br /><br />
 You may view the <a href="{$a->url}">diary entry here</a>.<br /><br />Note: You may need to provide feedback or update the status of the entry in order for the activity to be set to complete.';
-
 $string['diarymailuser'] = 'has posted a diary entry for \'{$a->diary}\'
 
 You may view the entry here:
@@ -117,7 +157,6 @@ You may view the entry here:
     {$a->url}
 
 Note: You may need to provide feedback or update the status of the entry in order for the activity to be set to complete.';
-
 $string['diaryname'] = 'Diary name';
 $string['diaryopentime'] = 'Open time';
 $string['diaryopentime_help'] = 'If enabled, you can set a date for the diary to be opened for use.';
@@ -129,6 +168,9 @@ $string['editdates'] = 'Edit entry dates';
 $string['editdates_help'] = 'When enabled, users can edit the date of any entry.';
 $string['editingended'] = 'Editing period has ended';
 $string['editingends'] = 'Editing period ends';
+$string['editlimitnote_maxopens'] = 'Note: You may open this entry for editing a maximum of <strong>{$a}</strong> times.';
+$string['editlimitnote_promptonedone'] = 'Note: This prompt is one-and-done. After an entry is saved, it cannot be opened again for editing.';
+$string['editlimitreached'] = 'Edit limit reached for this entry ({$a->one} of {$a->two}).';
 $string['editthisentry'] = 'Edit this entry';
 $string['edittopoflist'] = 'Edit top of the list';
 $string['eeditlabel'] = 'Edit';
@@ -137,16 +179,18 @@ $string['emailnow'] = 'Email now';
 $string['emailpreference'] = 'Toggle emails';
 $string['enableautorating'] = 'Enable automatic rating';
 $string['enableautorating_help'] = 'Enable, or disable, automatic ratings';
+$string['enableborders'] = 'Show entry and prompt borders';
+$string['enableborders_descr'] = 'Default for new Diary activities. Teachers can override this per activity in Appearance settings.';
+$string['enableborders_help'] = 'Enable to show borders around diary entries and prompts. Disable for a borderless look controlled by theme/background colors.';
+$string['enableborders_title'] = 'Default entry and prompt borders';
 $string['enablestats'] = 'Enable statistics';
 $string['enablestats_descr'] = 'If enabled, the statistics for each entry will be shown.';
 $string['enablestats_help'] = 'Enable, or disable, viewing statistics for each entry.';
 $string['enablestats_title'] = 'Enable statistics';
-
 $string['enabletitles'] = 'Enable titles';
 $string['enabletitles_descr'] = 'If enabled, the titles for each entry will be required and shown.';
 $string['enabletitles_help'] = 'Enable, or disable, requiring titles for each entry.';
 $string['enabletitles_title'] = 'Enable titles';
-
 $string['entries'] = 'Entries';
 $string['entry'] = 'Entry';
 $string['entrybgc'] = 'Diary entry/feedback background color';
@@ -190,6 +234,16 @@ $string['eventxfrentries'] = 'Journal to Diary entry transfer';
 $string['exportfilename'] = 'entries.csv';
 $string['exportfilenamep1'] = 'All_Site';
 $string['exportfilenamep2'] = '_Diary_Entries_Exported_On_';
+$string['feedback'] = 'Feedback';
+$string['feedbackclearedbodyhtml'] = '<p>{$a->teacher} cleared feedback for one of your entries in <strong>{$a->diary}</strong> ({$a->course}).</p><p>You can review your entry here: <a href="{$a->url}">{$a->url}</a></p>';
+$string['feedbackclearedbodyplain'] = '{$a->teacher} cleared feedback for one of your entries in {$a->diary} ({$a->course}).
+
+You can review your entry here:
+{$a->url}';
+$string['feedbackclearedsubject'] = 'Diary feedback cleared in {$a->diary}';
+
+
+
 $string['feedbackupdated'] = 'Feedback updated for {$a} entries';
 $string['files'] = 'Files';
 $string['firstentry'] = 'First diary entries:';
@@ -252,6 +306,8 @@ $string['maxchar_help'] = 'If a number greater than zero is entered, the user mu
 $string['maxcharacterlimit'] = 'Character count maximum';
 $string['maxcharacterlimit_desc'] = 'Note: This entry can use a <strong>maximum of {$a} characters.</strong>';
 $string['maxcharacterlimit_help'] = 'If a number is entered, the user must use less characters than the maximum number listed.';
+$string['maxeditopens'] = 'Maximum edit openings per entry';
+$string['maxeditopens_help'] = 'Set the maximum number of times a student can open an existing entry in the editor. 0 means unlimited.';
 $string['maxparagraph'] = 'Paragraph count maximum';
 $string['maxparagraph_help'] = 'If a number greater than zero is entered, the user must use less paragraphs than the maximum number listed, or receive a penalty for each of the extra paragraphs.';
 $string['maxparagraphlimit'] = 'Paragraph count maximum';
@@ -273,12 +329,9 @@ $string['mediumwords_help'] = 'Medium words are words that have two syllables. N
 $string['messagegreeting'] = 'Hi there ';
 $string['messageprovider:diary_entries_due'] = 'Diary is due in 7 days';
 $string['messageprovider:diary_entries_due_soon'] = 'Your Diary entry is due soon';
-
 $string['messageprovider:diary_entries_overdue'] = 'Warning when your Diary attempt becomes overdue';
 $string['messageprovider:diary_entry_confirmation'] = 'Diary entry confirmation';
-$string['messageprovider:diary_entry_notification'] = 'Confirm your own Diary entry submissions';
-
-
+$string['messageprovider:diary_entry_notification'] = 'Notify teacher that a user has submitted a Diary entry';
 $string['min'] = ' min';
 $string['minc'] = ' Min: ';
 $string['minchar'] = 'Character count minimum';
@@ -330,6 +383,7 @@ $string['nodeadline'] = 'Always open';
 $string['noentriesfound'] = 'No entry found for this user.';
 $string['noentriesmanagers'] = 'There are no teachers';
 $string['noentry'] = 'No entry. ';
+$string['nograde'] = 'No grade';
 $string['noratinggiven'] = 'No rating given';
 $string['notextdetected'] = '<b>No text detected!</b>';
 $string['notopenuntil'] = 'This diary won\'t be open until';
@@ -355,6 +409,7 @@ $string['pluginname'] = 'Diary';
 $string['popoverhelp'] = 'click for info';
 $string['potautoratingerrpen'] = 'Potential Autorating error penalty: {$a->one}% or {$a->two} points off.';
 $string['potcommerrpen'] = 'Potential Common error penalty: {$a->one} * {$a->two} = {$a->three}% or {$a->four} points off.';
+$string['potphraserulepen'] = 'Potential prompt phrase-rule penalty: total rules {$a->one}, matched {$a->two}, missing {$a->three}, missing required {$a->four}, total phrase penalty {$a->five}%.';
 $string['present'] = 'Present';
 $string['previousentry'] = 'Previous entry';
 $string['privacy:metadata:diary_entries'] = 'A record of a diary entry.';
@@ -376,10 +431,11 @@ $string['privacy:metadata:diary_entries:userid'] = 'ID of the user.';
 $string['prompt'] = 'Enter your writing prompt';
 $string['promptbgc'] = 'Background color for this prompt';
 $string['promptbgc_help'] = 'This sets the overall background color for this prompt.';
-
 $string['promptid'] = 'Prompt id';
 $string['promptinfo'] = 'There are {$a->past} past prompts, {$a->current} current prompt, and {$a->future} future prompts for this diary activity.<br>';
 $string['promptmaxc'] = 'Char max';
+$string['promptmaxeditopens'] = 'Prompt edit opening override';
+$string['promptmaxeditopens_help'] = 'Set prompt-specific edit opening behavior for existing entries. Use -1 to inherit the diary setting, 0 for one-and-done (no re-open), or a positive number to limit edit openings for this prompt.';
 $string['promptmaxp'] = 'Para max';
 $string['promptmaxs'] = 'Sent max';
 $string['promptmaxw'] = 'Word max';
@@ -413,12 +469,15 @@ $string['reportsingleallentries'] = 'All Diary entries for this user.';
 $string['returnto'] = 'Return to {$a}';
 $string['returntoreport'] = 'Return to report page for - {$a}';
 $string['saveallfeedback'] = 'Save all my feedback';
+$string['saveandcontinueediting'] = 'Save and continue editing';
+$string['savefeedback'] = 'Save feedback';
 $string['savesettings'] = 'Save settings';
 $string['search'] = 'Search';
 $string['search:activity'] = 'Diary - activity information';
 $string['search:entry'] = 'Diary - entries';
 $string['search:entrycomment'] = 'Diary - entry comment';
 $string['selectentry'] = 'Select entry for marking';
+$string['selectuserforreport'] = 'View single user entries';
 $string['sentences'] = 'Sentences:';
 $string['sentencesperparagraph'] = 'Sentences per paragraph';
 $string['shortwords'] = 'Unique short words';
@@ -470,6 +529,8 @@ $string['tablecolumnwords'] = 'Words&nbsp;&nbsp;&nbsp;&nbsp;';
 $string['tagarea_diary_entries'] = 'Diary entries';
 $string['tcount'] = 'Currently, this diary activity has a total of {$a} writing prompts that belong to it.<br>';
 $string['teacher'] = 'Teacher';
+$string['teachercreatedemptyentry'] = 'This entry was created by {$a->one} on {$a->two} because no student submission existed at grading time.';
+$string['teachercreatedemptytitle'] = 'Teacher-created entry (no student submission)';
 $string['teacheremail'] = 'Send email notifications to teachers';
 $string['teacheremail_help'] = 'Enable or disable the capability to immediately send email notifications to teachers.';
 $string['text'] = 'Enter your writing prompt';

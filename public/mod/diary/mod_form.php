@@ -184,6 +184,14 @@ class mod_diary_mod_form extends moodleform_mod {
         $mform->setType($name, PARAM_INT);
         $mform->setDefault($name, $diaryconfig->editdates);
 
+        // Maximum number of times an existing entry can be opened for editing.
+        $name = 'maxeditopens';
+        $label = get_string($name, $plugin);
+        $mform->addElement('text', $name, $label, $mediumtextoptions);
+        $mform->addHelpButton($name, $name, $plugin);
+        $mform->setType($name, PARAM_INT);
+        $mform->setDefault($name, (int)($diaryconfig->maxeditopens ?? 0));
+
         // 20210704 Added heading for appearance options section.
         $name = 'appearancehdr';
         $label = get_string('appearance');
@@ -191,13 +199,12 @@ class mod_diary_mod_form extends moodleform_mod {
         $mform->setExpanded($name, true);
 
         // Diary entry/feedback overall background colour setting.
-        $attributes = 'size = "20"';
         $name = 'entrybgc';
         $label = get_string('entrybgc_title', 'diary');
         $description = get_string('entrybgc_descr', 'diary');
         $default = get_string('entrybgc_colour', 'diary');
-        $mform->setType($name, PARAM_NOTAGS);
-        $mform->addElement('text', $name, $label, $attributes);
+        $mform->setType($name, PARAM_TEXT);
+        $mform->addElement('text', $name, $label, ['id' => 'diary_entrybgc_picker']);
         $mform->addHelpButton($name, $name, $plugin);
         $mform->setDefault($name, $diaryconfig->entrybgc);
 
@@ -206,10 +213,64 @@ class mod_diary_mod_form extends moodleform_mod {
         $label = get_string('entrytextbgc_title', 'diary');
         $description = get_string('entrytextbgc_descr', 'diary');
         $default = get_string('entrytextbgc_colour', 'diary');
-        $mform->setType($name, PARAM_NOTAGS);
-        $mform->addElement('text', $name, $label, $attributes);
+        $mform->setType($name, PARAM_TEXT);
+        $mform->addElement('text', $name, $label, ['id' => 'diary_entrytextbgc_picker']);
         $mform->addHelpButton($name, $name, $plugin);
         $mform->setDefault($name, $diaryconfig->entrytextbgc);
+
+        // Entry/prompt border toggle for this activity.
+        $name = 'enableborders';
+        $label = get_string('enableborders', 'diary');
+        $mform->addElement('selectyesno', $name, $label);
+        $mform->addHelpButton($name, $name, $plugin);
+        $mform->setType($name, PARAM_INT);
+        $mform->setDefault($name, (int)($diaryconfig->enableborders ?? 0));
+
+        $name = 'borderstyle';
+        $label = get_string('borderstyle', 'diary');
+        $mform->addElement('select', $name, $label, [
+            'none' => get_string('borderstylenone', 'diary'),
+            'thin' => get_string('borderstylethin', 'diary'),
+            'double' => get_string('borderstyledouble', 'diary'),
+        ]);
+        $mform->addHelpButton($name, $name, $plugin);
+        $mform->setType($name, PARAM_ALPHANUMEXT);
+        $mform->setDefault($name, $diaryconfig->borderstyle ?? 'none');
+        $mform->disabledIf($name, 'enableborders', 'eq', 0);
+
+        $name = 'bordercolor';
+        $label = get_string('bordercolor', 'diary');
+        $mform->addElement('text', $name, $label, ['id' => 'diary_bordercolor_picker']);
+        $mform->addHelpButton($name, $name, $plugin);
+        $mform->setType($name, PARAM_TEXT);
+        $mform->setDefault($name, $diaryconfig->bordercolor ?? get_string('bordercolor_default', 'diary'));
+        $mform->disabledIf($name, 'enableborders', 'eq', 0);
+
+        $mform->addElement('html', "
+            <script>
+                (function() {
+                    var ids = ['diary_entrybgc_picker', 'diary_entrytextbgc_picker', 'diary_bordercolor_picker'];
+                    var colors = {
+                        'red': '#ff0000', 'blue': '#0000ff', 'green': '#008000',
+                        'yellow': '#ffff00', 'pink': '#ffc0cb', 'white': '#ffffff',
+                        'orange': '#ffa500', 'purple': '#800080'
+                    };
+                    ids.forEach(function(id) {
+                        var cp = document.getElementById(id);
+                        if (cp) {
+                            var currentVal = cp.value.toLowerCase();
+                            if (colors[currentVal]) {
+                                cp.value = colors[currentVal];
+                            }
+                            cp.type = 'color';
+                            cp.style.width = '60px';
+                            cp.style.height = '35px';
+                            cp.style.cursor = 'pointer';
+                        }
+                    });
+                })();
+            </script>
+        ");
 
         // 20210812 Added enable/disable setting for statistics.
         $name = 'enablestats';
@@ -431,16 +492,31 @@ class mod_diary_mod_form extends moodleform_mod {
         $mform->disabledIf($name, 'itemtype', 'eq', 5);
         $mform->disabledIf($name, 'enablestats', 'eq', 0);
 
-        // 20230508 Added a selector to enable/disable removing matches that are substrings of longer matches.
-        $name = 'errorfullmatch';
-        $label = get_string($name, $plugin);
-        $mform->addElement('select', $name, $label, $this->diary_get_fullmatch_options($plugin));
-        $mform->addHelpButton($name, $name, $plugin);
-        $mform->setDefault($name, $this->get_my_default_value($name, 1));
-        $mform->setType($name, PARAM_INT);
-        $mform->disabledIf($name, 'errorcmid', 'eq', 0);
-        $mform->disabledIf($name, 'itemtype', 'eq', 5);
-        $mform->disabledIf($name, 'enablestats', 'eq', 0);
+        // 20260401 Keep the three common-error matching controls on one row (Essay-style).
+        $errormatchgroup = [];
+        $errormatchgroup[] = $mform->createElement('select', 'errorfullmatch', '', $this->diary_get_fullmatch_options($plugin));
+        $errormatchgroup[] = $mform->createElement('select', 'errorcasesensitive', '', $this->get_casesensitive_options($plugin));
+        $errormatchgroup[] = $mform->createElement('select', 'errorignorebreaks', '', $this->get_ignorebreaks_options($plugin));
+        $mform->addGroup($errormatchgroup, 'errorbehavior', get_string('errorbehavior', $plugin), ' ', false);
+        $mform->addHelpButton('errorbehavior', 'errorbehavior', $plugin);
+
+        $mform->setDefault('errorfullmatch', $this->get_my_default_value('errorfullmatch', 1));
+        $mform->setType('errorfullmatch', PARAM_INT);
+        $mform->disabledIf('errorfullmatch', 'errorcmid', 'eq', 0);
+        $mform->disabledIf('errorfullmatch', 'itemtype', 'eq', 5);
+        $mform->disabledIf('errorfullmatch', 'enablestats', 'eq', 0);
+
+        $mform->setDefault('errorcasesensitive', $this->get_my_default_value('errorcasesensitive', 0));
+        $mform->setType('errorcasesensitive', PARAM_INT);
+        $mform->disabledIf('errorcasesensitive', 'errorcmid', 'eq', 0);
+        $mform->disabledIf('errorcasesensitive', 'itemtype', 'eq', 5);
+        $mform->disabledIf('errorcasesensitive', 'enablestats', 'eq', 0);
+
+        $mform->setDefault('errorignorebreaks', $this->get_my_default_value('errorignorebreaks', 0));
+        $mform->setType('errorignorebreaks', PARAM_INT);
+        $mform->disabledIf('errorignorebreaks', 'errorcmid', 'eq', 0);
+        $mform->disabledIf('errorignorebreaks', 'itemtype', 'eq', 5);
+        $mform->disabledIf('errorignorebreaks', 'enablestats', 'eq', 0);
 
         // Add the rest of the common settings.
         $this->standard_grading_coursemodule_elements();
@@ -462,6 +538,32 @@ class mod_diary_mod_form extends moodleform_mod {
 
         $this->standard_coursemodule_elements();
         $this->add_action_buttons();
+    }
+
+    /**
+     * Preprocess form data before rendering.
+     *
+     * Loads per-activity border setting stored in plugin config.
+     *
+     * @param array $defaultvalues
+     * @return void
+     */
+    public function data_preprocessing(&$defaultvalues) {
+        if (!empty($defaultvalues['instance'])) {
+            $instanceid = (int)$defaultvalues['instance'];
+            $stored = get_config('mod_diary', 'enableborders_' . $instanceid);
+            if ($stored !== false && $stored !== null && $stored !== '') {
+                $defaultvalues['enableborders'] = (int)$stored;
+            }
+            $storedstyle = get_config('mod_diary', 'borderstyle_' . $instanceid);
+            if ($storedstyle !== false && $storedstyle !== null && $storedstyle !== '') {
+                $defaultvalues['borderstyle'] = (string)$storedstyle;
+            }
+            $storedcolor = get_config('mod_diary', 'bordercolor_' . $instanceid);
+            if ($storedcolor !== false && $storedcolor !== null && $storedcolor !== '') {
+                $defaultvalues['bordercolor'] = (string)$storedcolor;
+            }
+        }
     }
 
     /**

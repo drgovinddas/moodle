@@ -37,6 +37,7 @@ $cm = get_coursemodule_from_id('diary', $id, 0, false, MUST_EXIST); // Complete 
 $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST); // Complete details about this course.
 $action = optional_param('action', 'currententry', PARAM_ALPHANUMEXT); // Action(default to current entry).
 $promptid = optional_param('promptid', '', PARAM_INT); // Current entries promptid.
+$jumpuser = optional_param('jumpuser', 0, PARAM_INT); // Selected user for reportsingle jump.
 
 $context = context_module::instance($cm->id);
 
@@ -60,6 +61,7 @@ $diary = $DB->get_record('diary', ['id' => $cm->instance], '*', MUST_EXIST);
 // 20210705 Added new activity color setting. Gets the setting for the correct Diary activity.
 $color3 = $diary->entrybgc;
 $color4 = $diary->entrytextbgc;
+$bordercssvars = diary_get_border_css_vars($diary->id);
 
 // 20230511 Following two lines are for View, Automatic Completion marking.
 $completion = new completion_info($course);
@@ -67,6 +69,30 @@ $completion->set_module_viewed($cm);
 
 // Need to call a prompt function that returns the current promptid, if there is one that is current.
 $promptid = prompts::get_current_promptid($diary);
+
+$currentgroup = groups_get_activity_group($cm, true);
+$groupfilter = $currentgroup ? $currentgroup : '';
+$reportjumpusers = [];
+if ($entriesmanager) {
+    $reportjumpusers = get_users_by_capability(
+        $context,
+        'mod/diary:addentries',
+        '',
+        'lastname ASC, firstname ASC',
+        '',
+        '',
+        $groupfilter
+    );
+}
+
+if ($entriesmanager && $jumpuser > 0 && isset($reportjumpusers[$jumpuser])) {
+    $singleurl = new moodle_url('/mod/diary/reportsingle.php', [
+        'id' => $cm->id,
+        'user' => $jumpuser,
+        'action' => 'allentries',
+    ]);
+    redirect($singleurl);
+}
 
 if (!$cw = $DB->get_record('course_sections', ['id' => $cm->section])) {
     throw new moodle_exception(get_string('incorrectmodule', 'diary'));
@@ -151,24 +177,53 @@ if (prompts::diary_available($diary)) {
         // 20230810 Changed via pull request #29.
         $url1 = new moodle_url($CFG->wwwroot . '/mod/diary/prompt_edit.php', ['id' => $cm->id, 'jumptocurrent' => 1]);
         echo '</a> <a href="' . $url1->out(true)
-            . '" class="btn btn-success" style="border-radius: 8px">'
+            . '" class="btn btn-success diary-btn-rounded">'
             . get_string('warning', 'diary', $current)
             . '</a> ';
         die;
     } else {
         $status = prompts::prompts_viewcurrent($diary, $action, $promptid);
         // Show the current prompt.
-        echo '<b>' . $diary->intro . '</b>';
+        echo '<span class="diary-intro-highlight">' . $diary->intro . '</span>';
     }
     echo get_string('tcount', 'diary', $tcount);
     echo get_string('promptinfo', 'diary', ['past' => $past, 'current' => $current, 'future' => $future]);
+    if ((int)$current === 0) {
+        if ($diary->mincharacterlimit > 0) {
+            echo '<br>' . get_string('mincharacterlimit_desc', 'diary', (int)$diary->mincharacterlimit);
+        }
+        if ($diary->maxcharacterlimit > 0) {
+            echo '<br>' . get_string('maxcharacterlimit_desc', 'diary', (int)$diary->maxcharacterlimit);
+        }
+        if ($diary->minwordlimit > 0) {
+            echo '<br>' . get_string('minwordlimit_desc', 'diary', (int)$diary->minwordlimit);
+        }
+        if ($diary->maxwordlimit > 0) {
+            echo '<br>' . get_string('maxwordlimit_desc', 'diary', (int)$diary->maxwordlimit);
+        }
+        if ($diary->minsentencelimit > 0) {
+            echo '<br>' . get_string('minsentencelimit_desc', 'diary', (int)$diary->minsentencelimit);
+        }
+        if ($diary->maxsentencelimit > 0) {
+            echo '<br>' . get_string('maxsentencelimit_desc', 'diary', (int)$diary->maxsentencelimit);
+        }
+        if ($diary->minparagraphlimit > 0) {
+            echo '<br>' . get_string('minparagraphlimit_desc', 'diary', (int)$diary->minparagraphlimit);
+        }
+        if ($diary->maxparagraphlimit > 0) {
+            echo '<br>' . get_string('maxparagraphlimit_desc', 'diary', (int)$diary->maxparagraphlimit);
+        }
+        $editlimitnote = diarystats::get_edit_limit_note_html($diary, 0);
+        if ($editlimitnote !== '') {
+            echo '<br>' . $editlimitnote;
+        }
+    }
 }
 
 // If viewer is a manager, create a link to report.php showing diary entries made by users.
 if ($entriesmanager) {
     // Check to see if groups are being used here.
     $groupmode = groups_get_activity_groupmode($cm);
-    $currentgroup = groups_get_activity_group($cm, true);
     $ouput = groups_print_activity_menu($cm, $CFG->wwwroot . "/mod/diary/view.php?id=$cm->id");
     // 20230131 Ticket, Diary_954, fixes entry count shown for selected group.
     $entrycount = results::diary_count_entries($diary, $currentgroup);
@@ -181,6 +236,28 @@ if ($entriesmanager) {
         get_string('viewalldiaries', 'diary') . '</a>';
     $temp .= '</a></span>';
     echo $temp;
+
+    if (!empty($reportjumpusers)) {
+        $useroptions = [0 => get_string('selectuserforreport', 'diary')];
+        foreach ($reportjumpusers as $reportuser) {
+            $useroptions[(int)$reportuser->id] = fullname($reportuser);
+        }
+
+        echo '<form method="get" action="view.php" class="diary-inline-form">';
+        echo '<input type="hidden" name="id" value="' . $cm->id . '">';
+        echo html_writer::select(
+            $useroptions,
+            'jumpuser',
+            0,
+            false,
+            [
+                'id' => 'jumpuserview',
+                'class' => 'custom-select diary-inline-select',
+                'onchange' => 'if (this.value > 0) { this.form.submit(); }',
+            ]
+        );
+        echo '</form>';
+    }
 } else {
     // 20200831 Added to show link to only index.php page for students. 20210501 modified to remove div.
     echo '<a class="reportlink" href="index.php?id=' . $course->id . '">' . get_string('viewalldiaries', 'diary') . '</a>';
@@ -232,7 +309,8 @@ if ($timenow > $timestart) {
     $oldstatspreference = get_user_preferences('diary_statspreference_' . $diary->id, 1);
     $statspreference = optional_param('statspreference', $oldstatspreference, PARAM_INT);
 
-    $oldemailpreference = get_user_preferences('diary_emailpreference_' . $diary->id, 2);
+    $defaultemailpreference = ((int)$diary->teacheremail === 1) ? 1 : 2;
+    $oldemailpreference = get_user_preferences('diary_emailpreference_' . $diary->id, $defaultemailpreference);
     $emailpreference = optional_param('emailpreference', $oldemailpreference, PARAM_INT);
 
     echo $OUTPUT->box_start();
@@ -278,7 +356,7 @@ if ($timenow > $timestart) {
                 $options['firstkey'] = $firstkey;
                 $options['action'] = 'editentry';
                 $options['promptid'] = $firstpromptid;
-                echo '<span style="float: right;">' . get_string('usertoolbar', 'diary');
+                echo '<span class="diary-toolbar-right">' . get_string('usertoolbar', 'diary');
                 echo $output->toolbar(
                     $firstkey,
                     $options
@@ -409,11 +487,12 @@ if ($timenow > $timestart) {
         }
         foreach ($entries as $entry) {
             if (empty($entry->text)) {
-                echo '<p align="center"><b>' . get_string('blankentry', 'diary') . '</b></p>';
+                echo '<p class="diary-blankentry">' . get_string('blankentry', 'diary') . '</p>';
             } else if ($thispage <= $perpage) {
                 $thispage++;
                 // 20210501 Changed to class, start a division to contain the overall entry.
-                echo '<div class="entry" style="background: ' . $color3 . ';">';
+                echo '<div class="entry diary-entry-themed" style="--diary-entry-bg: '
+                    . s($color3) . ';' . s($bordercssvars) . '">';
 
                 $date1 = new DateTime(date('Y-m-d G:i:s', time()));
                 $date2 = new DateTime(date('Y-m-d G:i:s', $entry->timecreated));
@@ -435,9 +514,24 @@ if ($timenow > $timestart) {
 
                 $url2 = new moodle_url('/mod/diary/deleteentry.php', $deloptions);
 
+                $effectiveeditlimit = (int)($diary->maxeditopens ?? 0);
+                if (!empty($entry->promptid)) {
+                    $prompteditlimit = diarystats::get_prompt_edit_limit_override((int)$diary->id, (int)$entry->promptid);
+                    if ($prompteditlimit !== null) {
+                        $effectiveeditlimit = $prompteditlimit;
+                    }
+                }
+
                 // 20200901 If editing time has expired, remove the edit toolbutton from the title.
                 // 20201015 Enable/disable check of the edit old entries editing tool.
-                if (($timenow < $timefinish && $diary->editall) || (is_siteadmin())) {
+                $editlimitreached = (
+                    !is_siteadmin()
+                    && !$entriesmanager
+                    && (($effectiveeditlimit === 0 && !empty($entry->promptid))
+                        || ($effectiveeditlimit > 0 && (int)($entry->editcount ?? 0) >= $effectiveeditlimit))
+                );
+
+                if ((($timenow < $timefinish && $diary->editall) || (is_siteadmin())) && !$editlimitreached) {
                     $editthisentry = html_writer::link(
                         $url,
                         $output->pix_icon('i/edit', get_string('editthisentry', 'diary')),
@@ -466,8 +560,9 @@ if ($timenow > $timestart) {
 
                         // 20250122 I think this might be what I need!
                         $deletethisentry = ' <a onclick="return confirm(\''
-                            . get_string('deleteentryconfirm', 'diary') . $entry->id . ' and ' . $tagcount . ' tags' .
-                            '\')" href="' . $updateurl . '" title="' . $alt . '">' . $pix . '</a>';
+                            . get_string('deleteentryconfirm', 'diary')
+                            . $entry->id . ' and ' . $tagcount . ' tags'
+                            . '\')" href="' . $updateurl . '" title="' . $alt . '">' . $pix . '</a>';
                     }
                 } else {
                     $editthisentry = ' ';
@@ -481,7 +576,8 @@ if ($timenow > $timestart) {
                     // 20230321 Added capability to use contrasting color for the prompt background.
                     // 20240116 Added code to use a prompt background color.
                     // 20240117 Gave promptentry it's own class name to enable
-                    echo '<div class="promptentry" style="background: ' . $prompt->promptbgc . ';">';
+                    echo '<div class="promptentry diary-prompt-themed" style="--diary-prompt-bg: '
+                        . s($prompt->promptbgc) . ';' . s($bordercssvars) . '">';
                     echo '<strong>Prompt ID-' . $prompt->id . ', ' . get_string('prompttext', 'diary')
                         . '</strong>: ' . $prompt->text . '</div>';
                 }
@@ -496,7 +592,8 @@ if ($timenow > $timestart) {
 
                 // 20210511 Start an inner division for the user's text entry container.
                 // 20210705 Added new activity color setting. 20210704 Switched to a setting.
-                echo '<div class="entry" style="background: ' . $color4 . ';">';
+                echo '<div class="entry diary-entry-themed" style="--diary-entry-bg: '
+                    . s($color4) . ';' . s($bordercssvars) . '">';
 
                 // 20250122 Modified the entry text division to add tags right at the end of the entry.
                 echo results::diary_format_entry_text($entry, $course, $cm);
@@ -513,6 +610,11 @@ if ($timenow > $timestart) {
                 );
                 // 20250122 This is the close div for each entry listed on the page.
                 echo '</div>';
+
+                // Compute once so feedback checks are always available in all branches below.
+                $hasfeedback = trim(strip_tags((string)$entry->entrycomment)) !== '';
+                $hasrating = $entry->rating !== null && $entry->rating !== '';
+                $hasteacherresponse = $hasfeedback || $hasrating;
 
                 // Info regarding entry details with stats, date when created, and date of last edit.
                 if ($timenow < $timefinish) {
@@ -536,14 +638,10 @@ if ($timenow > $timestart) {
                     } else {
                         print_string('noentry', 'diary');
                         // 20210701 Moved copy 2 of 2 here due to new stats.
-                        echo '</div></td><td style="width:55px;"></td></tr>';
+                        echo '</div></td><td class="diary-col-actions"></td></tr>';
                     }
 
                     echo '</table>';
-
-                    $hasfeedback = trim(strip_tags((string)$entry->entrycomment)) !== '';
-                    $hasrating = $entry->rating !== null && $entry->rating !== '';
-                    $hasteacherresponse = $hasfeedback || $hasrating;
 
                     // Added lines to mark entry as needing to be rated or rated again after the entry was updated.
                     if (!$hasteacherresponse) {
