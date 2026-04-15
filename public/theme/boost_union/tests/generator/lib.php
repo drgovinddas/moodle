@@ -239,6 +239,10 @@ class theme_boost_union_generator extends component_generator_base {
             'sortorder' => $sortorder,
             'url' => $url,
             'email' => $email,
+            'email_cc' => $data['email_cc'] ?? null,
+            'email_bcc' => $data['email_bcc'] ?? null,
+            'email_subject' => $data['email_subject'] ?? null,
+            'email_body' => isset($data['email_body']) ? str_replace('\\n', "\n", $data['email_body']) : null,
             'category' => $category,
             'category_subcats' => $categorysubcats,
             'enrolmentrole' => $enrolmentrole,
@@ -359,6 +363,8 @@ class theme_boost_union_generator extends component_generator_base {
             'applytocategories_ids' => null,
             'look_backgroundimagepos' => $data['look_backgroundimagepos'] ?? null,
             'look_brandcolor' => $data['look_brandcolor'] ?? null,
+            'look_linkcolor' => $data['look_linkcolor'] ?? null,
+            'look_buttonbrandcolor' => $data['look_buttonbrandcolor'] ?? null,
             'look_bootstrapcolorsuccess' => $data['look_bootstrapcolorsuccess'] ?? null,
             'look_bootstrapcolorinfo' => $data['look_bootstrapcolorinfo'] ?? null,
             'look_bootstrapcolorwarning' => $data['look_bootstrapcolorwarning'] ?? null,
@@ -373,6 +379,8 @@ class theme_boost_union_generator extends component_generator_base {
             'look_navbarcolor' => $data['look_navbarcolor'] ?? null,
             'look_rawscss' => $data['look_rawscss'] ?? null,
             'look_rawscsspre' => $data['look_rawscsspre'] ?? null,
+            'content_footnote' => $data['content_footnote'] ?? null,
+            'content_footnote_format' => FORMAT_HTML,
         ];
 
         // Handle category IDs if provided.

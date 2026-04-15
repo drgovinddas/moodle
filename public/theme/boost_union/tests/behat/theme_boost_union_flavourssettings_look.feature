@@ -222,7 +222,7 @@ Feature: Configuring the theme_boost_union plugin on the "Flavours" page, applyi
       | center center | 50% 50%  |
 
   @javascript
-  Scenario: Flavours: Brand color - Set the brand color (with a global color not having been set before)
+  Scenario: Flavours: Primary brand color - Set the primary brand color (with a global color not having been set before)
     Given the following "theme_boost_union > flavours" exist:
       | title                | applytocategories_ids | look_brandcolor |
       | My shiny new flavour | CAT1                  | #FF0000         |
@@ -235,7 +235,7 @@ Feature: Configuring the theme_boost_union plugin on the "Flavours" page, applyi
     Then DOM element ".mytesttext" should have computed style "color" "rgb(255, 0, 0)"
 
   @javascript
-  Scenario: Flavours: Brand color - Set the brand color (with the global setting being overridden)
+  Scenario: Flavours: Primary brand color - Set the primary brand color (with the global setting being overridden)
     Given the following config values are set as admin:
       | config     | value   | plugin            |
       | brandcolor | #FFFFFF | theme_boost_union |
@@ -251,7 +251,7 @@ Feature: Configuring the theme_boost_union plugin on the "Flavours" page, applyi
     Then DOM element ".mytesttext" should have computed style "color" "rgb(255, 0, 0)"
 
   @javascript
-  Scenario: Flavours: Brand color - Do not set the brand color (with a global setting being served properly)
+  Scenario: Flavours: Primary brand color - Do not set the primary brand color (with a global setting being served properly)
     Given the following config values are set as admin:
       | config     | value   | plugin            |
       | brandcolor | #FF0000 | theme_boost_union |
@@ -265,6 +265,106 @@ Feature: Configuring the theme_boost_union plugin on the "Flavours" page, applyi
     And I am on "Course 1" course homepage
     And I should see "My test text"
     Then DOM element ".mytesttext" should have computed style "color" "rgb(255, 0, 0)"
+
+  @javascript
+  Scenario: Flavours: Link color - Set the link color (with a global color not having been set before)
+    Given the following config values are set as admin:
+      | config     | value       | plugin            |
+      | brandcolor | #FF0000     | theme_boost_union |
+    And the following "theme_boost_union > flavours" exist:
+      | title                | applytocategories_ids | look_linkcolor |
+      | My shiny new flavour | CAT1                  | #00FF00        |
+    And the following "activities" exist:
+      | activity | name      | intro                                           | course |
+      | label    | Label one | <a href="#" class="mytestlink">My test link</a> | C1     |
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    And I should see "My test link"
+    Then DOM element ".mytestlink" should have computed style "color" "rgb(0, 255, 0)"
+
+  @javascript
+  Scenario: Flavours: Link color - Set the link color (with the global setting being overridden)
+    Given the following config values are set as admin:
+      | config     | value   | plugin            |
+      | brandcolor | #FF0000 | theme_boost_union |
+      | linkcolor  | #FFFFFF | theme_boost_union |
+    And the following "theme_boost_union > flavours" exist:
+      | title                | applytocategories_ids | look_linkcolor |
+      | My shiny new flavour | CAT1                  | #00FF00        |
+    And the following "activities" exist:
+      | activity | name      | intro                                           | course |
+      | label    | Label one | <a href="#" class="mytestlink">My test link</a> | C1     |
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    And I should see "My test link"
+    Then DOM element ".mytestlink" should have computed style "color" "rgb(0, 255, 0)"
+
+  @javascript
+  Scenario: Flavours: Link color - Do not set the link color (with a global setting being served properly)
+    Given the following config values are set as admin:
+      | config     | value   | plugin            |
+      | brandcolor | #FF0000 | theme_boost_union |
+      | linkcolor  | #00FF00 | theme_boost_union |
+    And the following "theme_boost_union > flavours" exist:
+      | title                | applytocategories_ids |
+      | My shiny new flavour | CAT1                  |
+    And the following "activities" exist:
+      | activity | name      | intro                                           | course |
+      | label    | Label one | <a href="#" class="mytestlink">My test link</a> | C1     |
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    And I should see "My test link"
+    Then DOM element ".mytestlink" should have computed style "color" "rgb(0, 255, 0)"
+
+  @javascript
+  Scenario: Flavours: Button brand color - Set the button brand color (with a global color not having been set before)
+    Given the following config values are set as admin:
+      | config     | value       | plugin            |
+      | brandcolor | #FF0000     | theme_boost_union |
+    And the following "theme_boost_union > flavours" exist:
+      | title                | applytocategories_ids | look_buttonbrandcolor |
+      | My shiny new flavour | CAT1                  | #00FF00               |
+    And the following "activities" exist:
+      | activity | name      | intro                                                               | course |
+      | label    | Label one | <a href="#" class="mytestbutton btn btn-primary">My test button</a> | C1     |
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    And I should see "My test button"
+    Then DOM element ".mytestbutton" should have computed style "background-color" "rgb(0, 255, 0)"
+
+  @javascript
+  Scenario: Flavours: Button brand color - Set the button brand color (with the global setting being overridden)
+    Given the following config values are set as admin:
+      | config           | value   | plugin            |
+      | brandcolor       | #FF0000 | theme_boost_union |
+      | buttonbrandcolor | #FFFFFF | theme_boost_union |
+    And the following "theme_boost_union > flavours" exist:
+      | title                | applytocategories_ids | look_buttonbrandcolor |
+      | My shiny new flavour | CAT1                  | #00FF00               |
+    And the following "activities" exist:
+      | activity | name      | intro                                                               | course |
+      | label    | Label one | <a href="#" class="mytestbutton btn btn-primary">My test button</a> | C1     |
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    And I should see "My test button"
+    Then DOM element ".mytestbutton" should have computed style "background-color" "rgb(0, 255, 0)"
+
+  @javascript
+  Scenario: Flavours: Button brand color - Do not set the button brand color (with a global setting being served properly)
+    Given the following config values are set as admin:
+      | config           | value   | plugin            |
+      | brandcolor       | #FF0000 | theme_boost_union |
+      | buttonbrandcolor | #00FF00 | theme_boost_union |
+    And the following "theme_boost_union > flavours" exist:
+      | title                | applytocategories_ids |
+      | My shiny new flavour | CAT1                  |
+    And the following "activities" exist:
+      | activity | name      | intro                                                               | course |
+      | label    | Label one | <a href="#" class="mytestbutton btn btn-primary">My test button</a> | C1     |
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    And I should see "My test button"
+    Then DOM element ".mytestbutton" should have computed style "background-color" "rgb(0, 255, 0)"
 
   @javascript
   Scenario Outline: Flavours: Bootstrap colors - Set the Bootstrap colors (with a global color not having been set before)
@@ -460,6 +560,40 @@ Feature: Configuring the theme_boost_union plugin on the "Flavours" page, applyi
     And I navigate to "Appearance > Boost Union > Flavours" in site administration
     And I click on ".action-preview" "css_element" in the "My shiny new flavour" "table_row"
     Then I should not see "Preview flavour" in the "#page-header .page-header-headings" "css_element"
+
+  Scenario: Flavours: Footnote - Set a flavour-specific footnote (with no global footnote set)
+    Given the following "theme_boost_union > flavours" exist:
+      | title                | applytocategories_ids | content_footnote           |
+      | My shiny new flavour | CAT1                  | <p>My flavour footnote</p> |
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    Then "#footnote" "css_element" should exist
+    And I should see "My flavour footnote" in the "#footnote" "css_element"
+
+  Scenario: Flavours: Footnote - Set a flavour-specific footnote (with global footnote being overridden)
+    Given the following config values are set as admin:
+      | config   | value                     | plugin            |
+      | footnote | <p>My global footnote</p> | theme_boost_union |
+    And the following "theme_boost_union > flavours" exist:
+      | title                | applytocategories_ids | content_footnote           |
+      | My shiny new flavour | CAT1                  | <p>My flavour footnote</p> |
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    Then "#footnote" "css_element" should exist
+    And I should see "My flavour footnote" in the "#footnote" "css_element"
+    And I should not see "My global footnote" in the "#footnote" "css_element"
+
+  Scenario: Flavours: Footnote - Do not set a flavour-specific footnote (with global footnote being served properly)
+    Given the following config values are set as admin:
+      | config   | value                     | plugin            |
+      | footnote | <p>My global footnote</p> | theme_boost_union |
+    And the following "theme_boost_union > flavours" exist:
+      | title                | applytocategories_ids |
+      | My shiny new flavour | CAT1                  |
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    Then "#footnote" "css_element" should exist
+    And I should see "My global footnote" in the "#footnote" "css_element"
 
   @javascript
   Scenario Outline: Flavours: Flavour SCSS should be applied immediately in normal operation as well as if theme designer mode is on (with styles_debug.php).

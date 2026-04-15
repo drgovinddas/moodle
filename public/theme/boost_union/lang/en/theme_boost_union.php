@@ -185,6 +185,17 @@ $string['backgroundimagepositionsetting'] = 'Background image position';
 $string['backgroundimagepositionsetting_desc'] = 'With this setting, you control the positioning of the background image within the browser window. The first value is the horizontal position, the second value is the vertical position.';
 // ... Section: Brand colors.
 $string['brandcolorsheading'] = 'Brand colors';
+// ... ... Setting: Primary brand color.
+$string['brandcolor'] = 'Primary brand color';
+$string['brandcolor_desc'] = 'The primary brand color. It is used for accent and highlighting purposes across the site and is also used as basis for calculating gradated brand colors. Furthermore, it is used for links and buttons unless you set distinct colors for links and buttons in the settings below.';
+// ... Section: Link colors.
+$string['linkcolorsheading'] = 'Link colors';
+// ... ... Setting: Link brand color.
+$string['linkcolorsetting'] = 'Link brand color';
+$string['linkcolorsetting_desc'] = 'With this setting, you can set a dedicated brand color for links. If this setting is empty, Boost Union\'s primary brand color is used.';
+// ... ... Setting: Button brand color.
+$string['buttonbrandcolorsetting'] = 'Button brand color';
+$string['buttonbrandcolorsetting_desc'] = 'With this setting, you can define a dedicated brand color for primary buttons. If this setting is empty, Boost Union\'s primary brand color is used.';
 // ... Section: Bootstrap colors.
 $string['bootstrapcolorsheading'] = 'Bootstrap colors';
 // ... ... Setting: Bootstrap color for 'Success'.
@@ -1570,8 +1581,12 @@ $string['flavoursbootstrapcolorsuccess'] = 'Bootstrap color for "Success"';
 $string['flavoursbootstrapcolorsuccess_help'] = 'With this setting, the flavour will override the Bootstrap "success" color which is configured in Boost Union\'s look settings.';
 $string['flavoursbootstrapcolorwarning'] = 'Bootstrap color for "Warning"';
 $string['flavoursbootstrapcolorwarning_help'] = 'With this setting, the flavour will override the Bootstrap "warning" color which is configured in Boost Union\'s look settings.';
-$string['flavoursbrandcolor'] = 'Brand color';
-$string['flavoursbrandcolor_help'] = 'With this setting, the flavour will override the brand color which is configured in Boost Union\'s look settings.';
+$string['flavoursbrandcolor'] = 'Primary brand color';
+$string['flavoursbrandcolor_help'] = 'With this setting, the flavour will override the primary brand color which is configured in Boost Union\'s look settings.';
+$string['flavourslinkcolor'] = 'Link brand color';
+$string['flavourslinkcolor_help'] = 'With this setting, the flavour will override the link color which is configured in Boost Union\'s look settings.';
+$string['flavoursbuttonbrandcolor'] = 'Button brand color';
+$string['flavoursbuttonbrandcolor_help'] = 'With this setting, the flavour will override the button brand color which is configured in Boost Union\'s look settings.';
 $string['flavourscreateflavour'] = 'Create flavour';
 $string['flavourscustomscss'] = 'Raw SCSS';
 $string['flavourscustomscss_help'] = 'With this setting, you can write custom SCSS for the flavour. It will be appended to the stack of CSS code which is shipped to the browser as soon as the flavour applies.';
@@ -1586,6 +1601,8 @@ $string['flavoursedit'] = 'Edit';
 $string['flavourseditflavour'] = 'Edit flavour';
 $string['flavoursfavicon'] = 'Favicon';
 $string['flavoursfavicon_help'] = 'With this setting, the flavour will override the favicon which is configured in Boost Union\'s look settings.';
+$string['flavoursfootnote'] = 'Footnote';
+$string['flavoursfootnote_help'] = 'With this setting, the flavour will override the footnote which is configured in Boost Union\'s content settings.';
 $string['flavoursflavours'] = 'Flavours';
 $string['flavoursgeneralsettings'] = 'General settings';
 $string['flavoursincludesubcategories'] = 'Include subcategories';
@@ -1754,9 +1771,18 @@ $string['smartmenusmenuitemcssclass_help'] = 'Enter a CSS class for the menu ite
 $string['smartmenusmenuitemdeleteconfirm'] = 'Are you sure you want to delete this menu item from the smart menu?';
 $string['smartmenusmenuitemdeletesuccess'] = 'Smart menu item deleted successfully';
 $string['smartmenusmenuitemdisplayallcourses'] = 'Show hidden courses';
-$string['smartmenusmenuitememail'] = 'Recipient\'s email address';
-$string['smartmenusmenuitememail_help'] = 'The recipient\'s email address for the menu item. This will be used to build a mailto link that opens when the menu item is clicked.';
-$string['smartmenusmenuitememail_required'] = 'Required – Please enter a valid email address without the \'mailto:\' prefix.';
+$string['smartmenusmenuitememail'] = 'To';
+$string['smartmenusmenuitememail_help'] = 'Primary recipient email address(es) for the mailto link. Separate multiple addresses with commas. Do not include a \'mailto:\' prefix.';
+$string['smartmenusmenuitememail_required'] = 'Required – Enter at least one valid email address without the \'mailto:\' prefix.';
+$string['smartmenusmenuitememail_invalid'] = 'Please enter only valid email address(es), separated by commas if there are several.';
+$string['smartmenusmenuitememail_cc'] = 'Cc';
+$string['smartmenusmenuitememail_cc_help'] = 'Optional carbon-copy address(es), separate multiple addresses with commas. These are added to the mailto link as a Cc header.';
+$string['smartmenusmenuitememail_bcc'] = 'Bcc';
+$string['smartmenusmenuitememail_bcc_help'] = 'Optional blind carbon-copy address(es), separate multiple addresses with commas. These are added to the mailto link as a Bcc header.';
+$string['smartmenusmenuitememail_subject'] = 'Subject';
+$string['smartmenusmenuitememail_subject_help'] = 'Optional default subject line for the composed message. It is URL-encoded in the mailto link.';
+$string['smartmenusmenuitememail_body'] = 'Message body';
+$string['smartmenusmenuitememail_body_help'] = 'Optional default message body. It is URL-encoded in the mailto link (including line breaks).';
 $string['smartmenusmenuitemhidehiddencourses'] = 'Hide hidden courses';
 $string['smartmenusmenuitemhiddencoursessorting_help'] = 'Choose how hidden courses should be sorted in the course list of the dynamic courses menu items.';
 $string['smartmenusmenuitemhiddencoursessorting'] = 'Hidden courses sorting';
@@ -1826,7 +1852,7 @@ $string['smartmenusmenuitemtitle_help'] = 'The title of the menu. This will be u
 $string['smartmenusmenuitemtooltip'] = 'Tooltip';
 $string['smartmenusmenuitemtooltip_help'] = 'The tooltip which will be displayed when the user hovers over the menu item.';
 $string['smartmenusmenuitemtype'] = 'Menu item type';
-$string['smartmenusmenuitemtype_help'] = '<p>Select the type of menu item you want to create, choosing between static, mailto, heading, moodle documentation, dynamic courses, divider, static with placeholders, and heading with placeholders.</p><ul><li>Static: A static menu item is simply a link to a fixed URL that does not change.</li><li>Mailto: A mailto menu item opens the user\'s default email client to compose a message to the specified email address.</li><li>Heading: A heading menu item is used to group related menu items together under a common heading. It does not have a link and is not clickable.</li><li>Separator: A divider menu item displays a horizontal line in the menu to visually separate groups of menu items.</li><li>Moodle documentation: A Moodle documentation menu item is used to link to the corresponding MoodleDocs article, similar to the MoodleDocs link which is located in the Moodle footer (questionmark icon).</li><li>Dynamic courses: A dynamic courses menu item is used to display a list of courses based on certain criteria, such as course category, course enrolment role, course completion status or date range. The content displayed in a dynamic courses menu item will update automatically as the criteria changes.</li><li>Static (with placeholders): Like the static type, but the title and URL can contain placeholders which are replaced with user-, course- and page-specific values at render time. These items are never cached, so use them only if you plan to use placeholders.</li><li>Heading (with placeholders): Like the heading type, but the title can contain placeholders. These items are never cached.</li></ul>';
+$string['smartmenusmenuitemtype_help'] = '<p>Select the type of menu item you want to create, choosing between static, mailto, heading, moodle documentation, dynamic courses, divider, static with placeholders, and heading with placeholders.</p><ul><li>Static: A static menu item is simply a link to a fixed URL that does not change.</li><li>Mailto: A mailto menu item opens the user\'s default email client to compose a message. You can set To, optional Cc and Bcc, and optional subject and message body; each address field can list multiple addresses separated by commas.</li><li>Heading: A heading menu item is used to group related menu items together under a common heading. It does not have a link and is not clickable.</li><li>Separator: A divider menu item displays a horizontal line in the menu to visually separate groups of menu items.</li><li>Moodle documentation: A Moodle documentation menu item is used to link to the corresponding MoodleDocs article, similar to the MoodleDocs link which is located in the Moodle footer (questionmark icon).</li><li>Dynamic courses: A dynamic courses menu item is used to display a list of courses based on certain criteria, such as course category, course enrolment role, course completion status or date range. The content displayed in a dynamic courses menu item will update automatically as the criteria changes.</li><li>Static (with placeholders): Like the static type, but the title and URL can contain placeholders which are replaced with user-, course- and page-specific values at render time. These items are never cached, so use them only if you plan to use placeholders.</li><li>Heading (with placeholders): Like the heading type, but the title can contain placeholders. These items are never cached.</li></ul>';
 $string['smartmenusmenuitemplaceholdersinfoheader'] = 'Available placeholders';
 $string['smartmenusmenuitemplaceholdersinfo'] = '<p>This is a smart menu item type which supports placeholders. The following placeholders can be used in the title and URL fields. They will be replaced with context-specific values at render time.</p><ul><li><code>{courseid}</code> &ndash; The current course\'s internal ID</li><li><code>{coursefullname}</code> &ndash; The current course\'s full name</li><li><code>{courseshortname}</code> &ndash; The current course\'s shortname</li><li><code>{editingtoggle}</code> &ndash; The value \'on\' or \'off\' to toggle edit mode (for use in URLs)</li><li><code>{userid}</code> &ndash; The logged-in user\'s internal ID</li><li><code>{userusername}</code> &ndash; The logged-in user\'s username</li><li><code>{userfullname}</code> &ndash; The logged-in user\'s full name</li><li><code>{pagecontextid}</code> &ndash; The current page\'s context ID</li><li><code>{pagepath}</code> &ndash; The current page\'s URL path</li><li><code>{sesskey}</code> &ndash; The current session key (for use in secured URLs)</li></ul>';
 $string['smartmenusmenuitemtypedocs'] = 'Moodle documentation';

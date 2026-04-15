@@ -4,6 +4,16 @@ moodle-theme_boost_union
 Changes
 -------
 
+### v5.1-r10
+
+* 2026-04-07 - Tests: Add a test to view a user tour
+* 2026-04-03 - Improvement: Add CLI script to validate the SCSS compilation and to see SCSS compilation errors, resolves #1217
+* 2026-03-31 - Improvement: Allow the footnote text to be set in flavours as well, resolves #1216
+* 2026-03-31 - Internal change: Prefix all custom Boost Union SCSS variables which are set by Boost Union settings with 'bu-' for the sake of consistency
+* 2026-03-30 - Feature: Add admin settings to tint links and buttons separate from the primary brand color, resolves #709
+* 2026-03-30 - Improvement: SmartMenus: Improve mailto menu items with predefined email content, resolves #1122
+* 2026-03-28 - Tests: Fix a broken test related to breadcrumbs, resolves #1207
+
 ### v5.1-r9
 
 * 2026-03-24 - Improvement: Remove the 25 images limit for login background images, resolves #815
