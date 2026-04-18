@@ -22,23 +22,25 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  **/
 
-require_once(dirname(__FILE__).'/../../config.php');
-require_once( "lib.php");
-require_once( "locallib.php");
+use mod_game\event\game_played;
 
-require_once( "hangman/play.php");
-require_once( "cross/play.php");
-require_once( "cryptex/play.php");
-require_once( "millionaire/play.php");
-require_once( "sudoku/play.php");
-require_once( "bookquiz/play.php");
-require_once( "snakes/play.php");
-require_once( "hiddenpicture/play.php");
+require_once(dirname(__FILE__) . '/../../config.php');
+require_once("lib.php");
+require_once("locallib.php");
+
+require_once("hangman/play.php");
+require_once("cross/play.php");
+require_once("cryptex/play.php");
+require_once("millionaire/play.php");
+require_once("sudoku/play.php");
+require_once("bookquiz/play.php");
+require_once("snakes/play.php");
+require_once("hiddenpicture/play.php");
 
 $action = optional_param('action', "", PARAM_ALPHANUM);  // Is the param action.
 
-game_show_header( $id, $game, $course, $context, $cm);
-game_do_attempt( $game, $action, $course, $context, $cm);
+game_show_header($id, $game, $course, $context, $cm);
+game_do_attempt($game, $action, $course, $context, $cm);
 
 /**
  * Do the required checks and print header.
@@ -49,11 +51,11 @@ game_do_attempt( $game, $action, $course, $context, $cm);
  * @param stdClass $context
  * @param stdClass $cm
  */
-function game_show_header( &$id, &$game, &$course, &$context, &$cm) {
+function game_show_header(&$id, &$game, &$course, &$context, &$cm) {
     global $DB, $USER, $PAGE, $OUTPUT;
 
     $id = optional_param('id', 0, PARAM_INT); // It represents Course Module ID.
-    $q = optional_param('q',  0, PARAM_INT);  // It represents game id.
+    $q = optional_param('q', 0, PARAM_INT);  // It represents game id.
 
     if ($id) {
         if (! $cm = get_coursemodule_from_id('game', $id)) {
@@ -79,7 +81,7 @@ function game_show_header( &$id, &$game, &$course, &$context, &$cm) {
 
     // Check login and get context.
     require_login($course->id, false, $cm);
-    $context = game_get_context_module_instance( $cm->id);
+    $context = game_get_context_module_instance($cm->id);
     require_capability('mod/game:view', $context);
 
     // Cache some other capabilites we use several times.
@@ -90,9 +92,9 @@ function game_show_header( &$id, &$game, &$course, &$context, &$cm) {
     $timenow = time();
 
     // Log this request.
-    if ( game_use_events()) {
-        require( 'classes/event/game_played.php');
-        \mod_game\event\game_played::played($game, $context)->trigger();
+    if (game_use_events()) {
+        require('classes/event/game_played.php');
+        game_played::played($game, $context)->trigger();
     } else {
         add_to_log($course->id, 'game', 'view', "view.php?id=$cm->id", $game->id, $cm->id);
     }
@@ -110,10 +112,10 @@ function game_show_header( &$id, &$game, &$course, &$context, &$cm) {
     $title = $course->shortname . ': ' . format_string($game->name);
 
     if ($PAGE->user_allowed_editing() && !empty($CFG->showblocksonmodpages)) {
-        $buttons = '<table><tr><td><form method="get" action="view.php"><div>'.
-                '<input type="hidden" name="id" value="'.$cm->id.'" />'.
-                '<input type="hidden" name="edit" value="'.($PAGE->user_is_editing() ? 'off' : 'on').'" />'.
-                '<input type="submit" value="'.get_string($PAGE->user_is_editing() ? 'blockseditoff' : 'blocksediton').
+        $buttons = '<table><tr><td><form method="get" action="view.php"><div>' .
+                '<input type="hidden" name="id" value="' . $cm->id . '" />' .
+                '<input type="hidden" name="edit" value="' . ($PAGE->user_is_editing() ? 'off' : 'on') . '" />' .
+                '<input type="submit" value="' . get_string($PAGE->user_is_editing() ? 'blockseditoff' : 'blocksediton') .
                 '" /></div></form></td></tr></table>';
         $PAGE->set_button($buttons);
     }
@@ -133,73 +135,73 @@ function game_show_header( &$id, &$game, &$course, &$context, &$cm) {
  * @param stdClass $context
  * @param stdClass $cm
  */
-function game_do_attempt( $game, $action, $course, $context, $cm) {
+function game_do_attempt($game, $action, $course, $context, $cm) {
     global $OUTPUT;
 
     $forcenew = optional_param('forcenew', false, PARAM_BOOL); // Teacher has requested new preview.
     $endofgame = optional_param('endofgame', false, PARAM_BOOL);
-    $pos = optional_param('pos',  0, PARAM_INT);
-    $num = optional_param('num',  0, PARAM_INT);
-    $q = optional_param('q',  0, PARAM_INT);
-    $attemptid = optional_param('attemptid',  0, PARAM_INT);
-    $g = optional_param('g',  '', PARAM_RAW);
-    $finishattempt = optional_param('finishattempt',  '', PARAM_TEXT);
-    $answer = optional_param('answer',  '', PARAM_TEXT);
+    $pos = optional_param('pos', 0, PARAM_INT);
+    $num = optional_param('num', 0, PARAM_INT);
+    $q = optional_param('q', 0, PARAM_INT);
+    $attemptid = optional_param('attemptid', 0, PARAM_INT);
+    $g = optional_param('g', '', PARAM_RAW);
+    $finishattempt = optional_param('finishattempt', '', PARAM_TEXT);
+    $answer = optional_param('answer', '', PARAM_TEXT);
     $continue = false;
 
     // Print the main part of the page.
-    switch ( $action) {
+    switch ($action) {
         case 'crosscheck':
-            $attempt = game_getattempt( $game, $detail);
-            $g = game_cross_unpackpuzzle( $g);
-            game_cross_continue( $cm, $game, $attempt, $detail, $g, $finishattempt, $context, $course);
+            $attempt = game_getattempt($game, $detail);
+            $g = game_cross_unpackpuzzle($g);
+            game_cross_continue($cm, $game, $attempt, $detail, $g, $finishattempt, $context, $course);
             break;
         case 'crossprint':
-            $attempt = game_getattempt( $game, $detail);
-            game_cross_play( $cm->id, $game, $attempt, $detail, '', true, false, false, true, $context);
+            $attempt = game_getattempt($game, $detail);
+            game_cross_play($cm->id, $game, $attempt, $detail, '', true, false, false, true, $context);
             break;
         case 'sudokucheck':     // The student tries to answer a question.
-            $attempt = game_getattempt( $game, $detail);
-            game_sudoku_check_questions( $cm, $game, $attempt, $detail, $finishattempt, $course, $context);
+            $attempt = game_getattempt($game, $detail);
+            game_sudoku_check_questions($cm, $game, $attempt, $detail, $finishattempt, $course, $context);
             $continue = true;
             break;
         case 'sudokucheckg':    // The student tries to guess a glossaryenry.
-            $attempt = game_getattempt( $game, $detail);
-            $endofgame = array_key_exists( 'endofgame', $_GET);
-            $continue = game_sudoku_check_glossaryentries( $cm, $game, $attempt, $detail, $endofgame, $course);
+            $attempt = game_getattempt($game, $detail);
+            $endofgame = array_key_exists('endofgame', $_GET);
+            $continue = game_sudoku_check_glossaryentries($cm, $game, $attempt, $detail, $endofgame, $course);
             $continue = true;
             break;
         case 'sudokucheckn':    // The user tries to guess a number.
-            $attempt = game_getattempt( $game, $detail);
-            game_sudoku_check_number( $cm, $game, $attempt, $detail, $pos, $num, $context, $course);
+            $attempt = game_getattempt($game, $detail);
+            game_sudoku_check_number($cm, $game, $attempt, $detail, $pos, $num, $context, $course);
             $continue = false;
             break;
         case 'cryptexcheck':    // The user tries to guess a question.
-            $attempt = game_getattempt( $game, $detail);
-            game_cryptex_check( $cm, $game, $attempt, $detail, $q, $answer, $finishattempt, $context, $course);
+            $attempt = game_getattempt($game, $detail);
+            game_cryptex_check($cm, $game, $attempt, $detail, $q, $answer, $finishattempt, $context, $course);
             break;
         case 'bookquizcheck':   // The student tries to answer a question.
-            $attempt = game_getattempt( $game, $detail);
-            game_bookquiz_check_questions( $cm, $game, $attempt, $detail, $context, $course);
+            $attempt = game_getattempt($game, $detail);
+            game_bookquiz_check_questions($cm, $game, $attempt, $detail, $context, $course);
             break;
         case 'snakescheck':     // The student tries to answer a question.
-            $attempt = game_getattempt( $game, $detail);
-            game_snakes_check_questions( $cm, $game, $attempt, $detail, $context, $course);
+            $attempt = game_getattempt($game, $detail);
+            game_snakes_check_questions($cm, $game, $attempt, $detail, $context, $course);
             break;
         case 'snakescheckg':    // The student tries to answer a question from glossary.
-            $attempt = game_getattempt( $game, $detail);
-            game_snakes_check_glossary( $cm, $game, $attempt, $detail, $context, $course);
+            $attempt = game_getattempt($game, $detail);
+            game_snakes_check_glossary($cm, $game, $attempt, $detail, $context, $course);
             break;
         case 'hiddenpicturecheckg': // The student tries to guess a glossaryentry.
-            $attempt = game_getattempt( $game, $detail);
-            game_hiddenpicture_check_mainquestion( $cm, $game, $attempt, $detail, $endofgame, $context, $course);
+            $attempt = game_getattempt($game, $detail);
+            game_hiddenpicture_check_mainquestion($cm, $game, $attempt, $detail, $endofgame, $context, $course);
             break;
         default:
             $continue = true;
             break;
     }
     if ($continue) {
-        game_create( $game, $forcenew, $course, $context, $finishattempt, $cm);
+        game_create($game, $forcenew, $course, $context, $finishattempt, $cm);
     }
     // Finish the page.
     echo $OUTPUT->footer();
@@ -215,41 +217,39 @@ function game_do_attempt( $game, $action, $course, $context, $cm) {
  * @param boolean $finishattempt
  * @param stdClass $cm
  */
-function game_create( $game, $forcenew, $course, $context, $finishattempt, $cm) {
-    global $USER, $CFG, $DB;
+function game_create($game, $forcenew, $course, $context, $finishattempt, $cm) {
+    $attempt = game_getattempt($game, $detail);
+    $chapterid = optional_param('chapterid', 0, PARAM_INT);
+    $newletter = optional_param('newletter', '', PARAM_ALPHA);
+    $action2 = optional_param('action2', '', PARAM_ALPHA);
 
-    $attempt = game_getattempt( $game, $detail);
-    $chapterid = optional_param('chapterid',  0, PARAM_INT);
-    $newletter = optional_param('newletter',  '', PARAM_ALPHA);
-    $action2 = optional_param('action2',  '', PARAM_ALPHA);
-
-    switch ( $game->gamekind) {
+    switch ($game->gamekind) {
         case 'cross':
-            game_cross_continue( $cm, $game, $attempt, $detail, '', $forcenew, $context, $course);
+            game_cross_continue($cm, $game, $attempt, $detail, '', $forcenew, $context, $course);
             break;
         case 'hangman':
-            game_hangman_continue( $cm, $game, $attempt, $detail, $newletter, $action2, $context, $course);
+            game_hangman_continue($cm, $game, $attempt, $detail, $newletter, $action2, $context, $course);
             break;
         case 'millionaire':
-            game_millionaire_continue( $cm, $game, $attempt, $detail, $context, $course);
+            game_millionaire_continue($cm, $game, $attempt, $detail, $context, $course);
             break;
         case 'bookquiz':
-            game_bookquiz_continue( $cm, $game, $attempt, $detail, $chapterid, $context, $course);
+            game_bookquiz_continue($cm, $game, $attempt, $detail, $chapterid, $context, $course);
             break;
         case 'sudoku':
-            game_sudoku_continue( $cm, $game, $attempt, $detail, $finishattempt, $context, $course);
+            game_sudoku_continue($cm, $game, $attempt, $detail, $finishattempt, $context, $course);
             break;
         case 'cryptex':
-            game_cryptex_continue( $cm, $game, $attempt, $detail, $forcenew, $context, $course);
+            game_cryptex_continue($cm, $game, $attempt, $detail, $forcenew, $context, $course);
             break;
         case 'snakes':
-            game_snakes_continue( $cm, $game, $attempt, $detail, $context, $course);
+            game_snakes_continue($cm, $game, $attempt, $detail, $context, $course);
             break;
         case 'hiddenpicture':
-            game_hiddenpicture_continue( $cm, $game, $attempt, $detail, $context, $course);
+            game_hiddenpicture_continue($cm, $game, $attempt, $detail, $context, $course);
             break;
         default:
-            throw new moodle_exception( 'gamenotfound', 'game', $game->gamekind);
+            throw new moodle_exception('gamenotfound', 'game', $game->gamekind);
             break;
     }
 }
@@ -259,17 +259,17 @@ function game_create( $game, $forcenew, $course, $context, $finishattempt, $cm) 
  *
  * @param string $g
  */
-function game_cross_unpackpuzzle( $g) {
+function game_cross_unpackpuzzle($g) {
     $ret = "";
-    $len = game_strlen( $g);
+    $len = game_strlen($g);
     while ($len) {
         for ($i = 0; $i < $len; $i++) {
-            $c = game_substr( $g, $i, 1);
-            if ( $c >= '1' && $c <= '9') {
-                if ( $i > 0) {
+            $c = game_substr($g, $i, 1);
+            if ($c >= '1' && $c <= '9') {
+                if ($i > 0) {
                     // Found escape character.
-                    if (game_substr( $g, $i - 1, 1) == '/') {
-                        $g = game_substr( $g, 0, $i - 1).game_substr( $g, $i);
+                    if (game_substr($g, $i - 1, 1) == '/') {
+                        $g = game_substr($g, 0, $i - 1) . game_substr($g, $i);
                         $i--;
                         $len--;
                         continue;
@@ -282,16 +282,16 @@ function game_cross_unpackpuzzle( $g) {
         if ($i < $len) {
             // Found the start of a number.
             for ($j = $i + 1; $j < $len; $j++) {
-                $c = game_substr( $g, $j, 1);
+                $c = game_substr($g, $j, 1);
                 if ($c < '0' || $c > '9') {
                     break;
                 }
             }
-            $count = game_substr( $g, $i, $j - $i);
-            $ret .= game_substr( $g, 0, $i) . str_repeat( '_', $count);
+            $count = game_substr($g, $i, $j - $i);
+            $ret .= game_substr($g, 0, $i) . str_repeat('_', $count);
 
-            $g = game_substr( $g, $j);
-            $len = game_strlen( $g);
+            $g = game_substr($g, $j);
+            $len = game_strlen($g);
         } else {
             $ret .= $g;
             break;

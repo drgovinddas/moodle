@@ -33,7 +33,6 @@ require_once($CFG->dirroot . '/mod/game/backup/moodle2/restore_game_stepslib.php
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class restore_game_activity_task extends restore_activity_task {
-
     /**
      * Define (add) particular settings this activity can have
      */
@@ -107,8 +106,15 @@ class restore_game_activity_task extends restore_activity_task {
         $rules = [];
 
         // Fix old wrong uses (missing extension).
-        $rules[] = new restore_log_rule('game', 'view all', 'index?id={course}', null,
-                                        null, null, 'index.php?id={course}');
+        $rules[] = new restore_log_rule(
+            'game',
+            'view all',
+            'index?id={course}',
+            null,
+            null,
+            null,
+            'index.php?id={course}'
+        );
         $rules[] = new restore_log_rule('game', 'view all', 'index.php?id={course}', null);
 
         return $rules;
@@ -124,8 +130,12 @@ class restore_game_activity_task extends restore_activity_task {
         $gameid = $this->get_activityid();
 
         // Extract Game configdata and update it to point to the new glossary.
-        $rec = $DB->get_record_select( 'game', 'id='.$gameid,
-            null, 'id,quizid,glossaryid,glossarycategoryid,questioncategoryid,bookid,glossaryid2,glossarycategoryid2');
+        $rec = $DB->get_record_select(
+            'game',
+            'id=' . $gameid,
+            null,
+            'id,quizid,glossaryid,glossarycategoryid,questioncategoryid,bookid,glossaryid2,glossarycategoryid2'
+        );
 
         $restoreid = $this->get_restoreid();
         $ret = restore_dbops::get_backup_ids_record($restoreid, 'quiz', $rec->quizid);
@@ -163,11 +173,16 @@ class restore_game_activity_task extends restore_activity_task {
             $rec->glossarycategoryid = $ret->newitemid;
         }
 
-        $DB->update_record( 'game', $rec);
+        $DB->update_record('game', $rec);
 
         // Read game_repetitions.
-        $recs = $DB->get_records_select( 'game_repetitions', 'gameid='.$gameid, null, '',
-                'id,questionid,glossaryentryid');
+        $recs = $DB->get_records_select(
+            'game_repetitions',
+            'gameid=' . $gameid,
+            null,
+            '',
+            'id,questionid,glossaryentryid'
+        );
         if ($recs != false) {
             foreach ($recs as $rec) {
                 $ret = restore_dbops::get_backup_ids_record($this->get_restoreid(), 'question', $rec->questionid);
@@ -180,13 +195,18 @@ class restore_game_activity_task extends restore_activity_task {
                     $rec->glossaryentryid = $ret->newitemid;
                 }
 
-                $DB->update_record( 'game_repetitions', $rec);
+                $DB->update_record('game_repetitions', $rec);
             }
         }
 
         // Read game_queries.
-        $recs = $DB->get_records_select( 'game_queries', 'gameid='.$gameid, null, '',
-                'id,questionid,glossaryentryid,answerid');
+        $recs = $DB->get_records_select(
+            'game_queries',
+            'gameid=' . $gameid,
+            null,
+            '',
+            'id,questionid,glossaryentryid,answerid'
+        );
         if ($recs != false) {
             foreach ($recs as $rec) {
                 $ret = restore_dbops::get_backup_ids_record($this->get_restoreid(), 'question', $rec->questionid);
@@ -203,12 +223,12 @@ class restore_game_activity_task extends restore_activity_task {
                     $rec->answerid = $ret->newitemid;
                 }
 
-                $DB->update_record( 'game_queries', $rec);
+                $DB->update_record('game_queries', $rec);
             }
         }
 
         // Read bookquiz.
-        $recs = $DB->get_records_select( 'game_bookquiz', 'id='.$gameid, null, '', 'id,lastchapterid');
+        $recs = $DB->get_records_select('game_bookquiz', 'id=' . $gameid, null, '', 'id,lastchapterid');
         if ($recs != false) {
             foreach ($recs as $rec) {
                 $ret = restore_dbops::get_backup_ids_record($this->get_restoreid(), 'book_chapters', $rec->lastchapterid);
@@ -216,27 +236,27 @@ class restore_game_activity_task extends restore_activity_task {
                     $rec->lastchapterid = $ret->newitemid;
                 }
 
-                $DB->update_record( 'game_bookquiz', $rec);
+                $DB->update_record('game_bookquiz', $rec);
             }
         }
 
         // Read bookquiz_chapters.
-        $sql = "SELECT gbc.* ".
-            "FROM {game_bookquiz_chapters} gbc LEFT JOIN {game_attempts} a ON gbc.attemptid = a.id".
+        $sql = "SELECT gbc.* " .
+            "FROM {game_bookquiz_chapters} gbc LEFT JOIN {game_attempts} a ON gbc.attemptid = a.id" .
             " WHERE a.gameid=$gameid";
-        $recs = $DB->get_records_sql( $sql);
+        $recs = $DB->get_records_sql($sql);
         if ($recs != false) {
             foreach ($recs as $rec) {
                 $ret = restore_dbops::get_backup_ids_record($this->get_restoreid(), 'book_chapters', $rec->chapterid);
                 if ($ret != false) {
                     $rec->chapterid = $ret->newitemid;
                 }
-                $DB->update_record( 'game_bookquiz_chapter', $rec);
+                $DB->update_record('game_bookquiz_chapter', $rec);
             }
         }
 
         // Read bookquiz_questions.
-        $recs = $DB->get_records_select( 'game_bookquiz_questions', 'id='.$gameid, null, '', 'id,chapterid,questioncategoryid');
+        $recs = $DB->get_records_select('game_bookquiz_questions', 'id=' . $gameid, null, '', 'id,chapterid,questioncategoryid');
         if ($recs != false) {
             foreach ($recs as $rec) {
                 $ret = restore_dbops::get_backup_ids_record($this->get_restoreid(), 'book_chapters', $rec->chapterid);
@@ -249,7 +269,7 @@ class restore_game_activity_task extends restore_activity_task {
                     $rec->questioncategoryid = $ret->newitemid;
                 }
 
-                $DB->update_record( 'game_bookquiz_questions', $rec);
+                $DB->update_record('game_bookquiz_questions', $rec);
             }
         }
     }

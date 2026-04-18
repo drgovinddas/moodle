@@ -39,7 +39,7 @@ defined('MOODLE_INTERNAL') || die();
 <?php
     createsubmodaljs();
 ?>
-    
+
 <style type="text/css">
 #pawn
 {
@@ -52,12 +52,12 @@ img
 
 }
 body
-{ 
+{
     background: #999 url('images/backdropJungle.png') no-repeat fixed left top;
 }
 
 .score {
-    color: #FC3; 
+    color: #FC3;
     font-size: 40px;
 }
 </style>
@@ -70,84 +70,84 @@ body
 // Snakes for Moodle by Maria Rigkou.
 
 var boards = 1;
-var board_images = new Array( boards);
-var board_names = new Array( boards);
+var board_images = new Array(boards);
+var board_names = new Array(boards);
 var pawn_width = new Array(boards);
 var pawn_height = new Array(boards);
 var board_cols = new Array(boards);
 var board_rows = new Array(boards);
-var board_contents = new Array (boards);
+var board_contents = new Array(boards);
 var board_headerx = new Array(boards);
 var board_headery = new Array(boards);
 var board_footerx = new Array(boards);
 var board_footery = new Array(boards);
 var board_width = new Array(boards);
 var board_height = new Array(boards);
-var board_data = new Array(boards); 
-var pawn_width = new Array(boards); 
-var pawn_height = new  Array(boards); 
+var board_data = new Array(boards);
+var pawn_width = new Array(boards);
+var pawn_height = new Array(boards);
 
 var current_board = 0;
 var current_position=0;
 var current_quest = 0;
 var mchoice_count = 0;
-var mchoice_positions =new Array( 1);
+var mchoice_positions =new Array(1);
 
 var quest_text = "";    //Question
 var quest_resp = "";    // Answer
 var quest_feedb = "";   // feedback
 var quest_total = 25; // Count of questions
 
-board_images[ 0] = '<?php echo $board->fileboard; ?>';
-board_names[ 0] = "<?php echo $game->name; ?>";
-board_cols [0] = <?php echo $board->usedcols; ?>;
-board_rows [0] = <?php echo $board->usedrows; ?>;
-board_contents [0] = '<?php echo $board->data; ?>';
-board_headerx [0] = <?php echo $board->headerx; ?>;
-board_headery [0] = <?php echo $board->headery; ?>;
-board_footerx [0] = <?php echo $board->footerx; ?>;
-board_footery [0] = <?php echo $board->footery; ?>;
-board_width [0] = <?php echo $board->width; ?>;
-board_height [0] = <?php echo $board->height; ?>;
-pawn_width [0] = 40;
-pawn_height [0]= 40;
+board_images[0] = '<?php echo $board->fileboard; ?>';
+board_names[0] = "<?php echo $game->name; ?>";
+board_cols[0] = <?php echo $board->usedcols; ?>;
+board_rows[0] = <?php echo $board->usedrows; ?>;
+board_contents[0] = '<?php echo $board->data; ?>';
+board_headerx[0] = <?php echo $board->headerx; ?>;
+board_headery[0] = <?php echo $board->headery; ?>;
+board_footerx[0] = <?php echo $board->footerx; ?>;
+board_footery[0] = <?php echo $board->footery; ?>;
+board_width[0] = <?php echo $board->width; ?>;
+board_height[0] = <?php echo $board->height; ?>;
+pawn_width[0] = 40;
+pawn_height[0]= 40;
 
 <?php
 
 echo "var countofquestionsM=$countofquestionsm;\r\n";
-echo 'var countofquestionsS='.count($questionss).";\r\n";
+echo 'var countofquestionsS=' . count($questionss) . ";\r\n";
 
 $questionsm = '';
 foreach ($questionss as $line) {
-    $s = $line->question.'#'.str_replace( [ '"', '#'], [ "'", ' '], $line->answer);
+    $s = $line->question . '#' . str_replace(['"', '#'], ["'", ' '], $line->answer);
     if ($questionsm != '') {
         $questionsm .= ",\r";
     }
-    $questionsm .= '"'.base64_encode( game_upper( $s)).'"';
+    $questionsm .= '"' . base64_encode(game_upper($s)) . '"';
 
-    $s = '#'.str_replace( [ '"', '#'], [ "'", ' '], $line->feedback);
+    $s = '#' . str_replace(['"', '#'], ["'", ' '], $line->feedback);
     if ($retfeedback != '') {
         $retfeedback .= ",\r";
     }
-    $retfeedback .= '"'.base64_encode( $s).'"';
+    $retfeedback .= '"' . base64_encode($s) . '"';
 }
 $rettimesasked = '';
 for ($i = 0; $i < $countofquestionsm + count($questionss); $i++) {
     $rettimesasked .= ',0';
 }
-$rettimesasked = substr( $rettimesasked, 1);
+$rettimesasked = substr($rettimesasked, 1);
 
-echo "var questions=new Array( $questionsm);\r\n";
-echo "var feedbacks=new Array( $retfeedback);\r\n";
-echo "var quest_times_asked=new Array( $rettimesasked); //How many times is used a question\r\n";
+echo "var questions=new Array($questionsm);\r\n";
+echo "var feedbacks=new Array($retfeedback);\r\n";
+echo "var quest_times_asked=new Array($rettimesasked); //How many times is used a question\r\n";
 
 ?>
 var current_dice=0;
-var feedb_correct_S = "<?php print_string( 'html_snakes_correct', 'game'); ?>";
-var feedb_wrong_S = "<?php print_string( 'html_snakes_wrong', 'game'); ?>";
-var str_score = "<?php print_string( 'score', 'game'); ?>";
-var str_check = "<?php print_string( 'html_snakes_check', 'game'); ?>";
-var str_no_selection = "<?php print_string( 'html_snakes_no_selection', 'game'); ?>";
+var feedb_correct_S = "<?php print_string('html_snakes_correct', 'game'); ?>";
+var feedb_wrong_S = "<?php print_string('html_snakes_wrong', 'game'); ?>";
+var str_score = "<?php print_string('score', 'game'); ?>";
+var str_check = "<?php print_string('html_snakes_check', 'game'); ?>";
+var str_no_selection = "<?php print_string('html_snakes_no_selection', 'game'); ?>";
 
 var correct_ans = 0;    //counter of correct answers
 var all_ans = 0;        //counter of all answers
@@ -166,10 +166,10 @@ function ShowMainForm()
     var col_width = (board_width[current_board]-board_headerx[current_board]-board_footerx[current_board])/cols;
     var col_height = (board_height[current_board]-board_headery[current_board]-board_footery[current_board])/rows;
 
-    document.write('<img id="boardimage" src="images/' + board_images[ current_board] + '">');
+    document.write('<img id="boardimage" src="images/' + board_images[current_board] + '">');
     document.write('<div id="dicecont">&nbsp;</div>');
 
-    if( current_position  >= 0) {
+    if(current_position  >= 0) {
         direction=Math.floor((current_position /cols))%2;
         if (direction == 1) {
             axis_x=(cols-(current_position %cols)-1);
@@ -200,10 +200,10 @@ function select_quest() {
             current_quest=quest_candidates[i];
     }
 
-    q=Base64decode( questions[ current_quest]);
-    quest_resp = decode_multiple_choice( q);
-    quest_text = quest_resp[ 0];
-    quest_feedb = Base64decode( feedbacks[ current_quest]);
+    q=Base64decode(questions[current_quest]);
+    quest_resp = decode_multiple_choice(q);
+    quest_text = quest_resp[0];
+    quest_feedb = Base64decode(feedbacks[current_quest]);
 }
 
 function IsMultipleChoiceQuestion() {
@@ -212,7 +212,7 @@ function IsMultipleChoiceQuestion() {
 
 function check_answer() {
     all_ans=all_ans+1;
-    if( IsMultipleChoiceQuestion()) {
+    if(IsMultipleChoiceQuestion()) {
         check_answer_M();
     } else {
         check_answer_S();
@@ -227,12 +227,12 @@ function check_answer_M() {
     var useranswer;
     var n=document.snakesform.radio_answer.length;
     for(useranswer=0;useranswer < n;useranswer++) {
-        if( document.snakesform.radio_answer[ useranswer].checked)
+        if(document.snakesform.radio_answer[useranswer].checked)
             break;
     }
 
-    if( useranswer >= n) {
-        alert( str_no_selection);
+    if(useranswer >= n) {
+        alert(str_no_selection);
         document.getElementById("feedb").innerHTML= "";
         document.getElementById("check_btn").style.display = "block";
         return;
@@ -242,13 +242,13 @@ function check_answer_M() {
 
     var j;
     for (j=0;j<n;j++) {
-        document.snakesform.radio_answer[ j].disabled = "true"; 
+        document.snakesform.radio_answer[j].disabled = "true";
     }
 
-    document.getElementById("feedb").innerHTML= feedbacks[ mchoice_positions[useranswer]];
+    document.getElementById("feedb").innerHTML= feedbacks[mchoice_positions[useranswer]];
     document.getElementById("feedb").style.display = "block";
 
-    if ( mchoice_positions[ useranswer] == 1) {
+    if (mchoice_positions[useranswer] == 1) {
         current_position += current_dice;
         correct_ans =correct_ans+1; //calculate new score----
         score = Math.round((correct_ans/all_ans)*100);
@@ -270,18 +270,18 @@ function check_answer_S() {
     document.getElementById("answer").disabled = "true";
     document.getElementById("check_btn").style.display = "none";
 
-    if (document.getElementById("answer").value.toUpperCase() == quest_resp[ 1].toUpperCase())  {
+    if (document.getElementById("answer").value.toUpperCase() == quest_resp[1].toUpperCase())  {
         document.getElementById("feedb").style.display = "block";
         current_position += current_dice;
         correct_ans =correct_ans+1; //calculate new score
-        score = Math.round((correct_ans/all_ans)*100); 
+        score = Math.round((correct_ans/all_ans)*100);
         var s = '<strong>'+str_score+': </strong><strong class="score">' +score+ '</strong>';
         document.getElementById("show_score").innerHTML = s;
         check_game_over();
         check_exists_ladder();
     } else {
         document.getElementById("feedb_wrong").style.display = "block";
-        score = Math.round((correct_ans/all_ans)*100); 
+        score = Math.round((correct_ans/all_ans)*100);
         var s = '<strong>'+str_score+': </strong><strong class="score">' +score+ '</strong>';
         document.getElementById("show_score").innerHTML = s;
         check_exists_snake();
@@ -300,16 +300,16 @@ function check_game_over() {
 
 function check_exists_ladder() {
     var find = "L" + (current_position+1) + "-";
-    var pos = board_contents[ current_board].indexOf( find);
+    var pos = board_contents[current_board].indexOf(find);
 
-    if( pos < 0) {
+    if (pos < 0) {
         return;
     }
 
-    var s = board_contents[ current_board].substr( pos+find.length)
-    pos = s.indexOf( ',');
+    var s = board_contents[current_board].substr(pos+find.length)
+    pos = s.indexOf(',');
     if (pos >= 0) {
-        s = s.substr( 0, pos);
+        s = s.substr(0, pos);
     }
 
     current_position = s-1;
@@ -317,25 +317,25 @@ function check_exists_ladder() {
 
 function check_exists_snake() {
     var find = "-" + (current_position+1) + ",";
-    var s= ',' +board_contents[ current_board] + ',';
+    var s= ',' +board_contents[current_board] + ',';
 
     for(;;) {
-        var pos = s.indexOf( find);
+        var pos = s.indexOf(find);
 
         if (pos < 0) {
             return;
         }
 
-        var pos_start = s.lastIndexOf( ',', pos-1);
+        var pos_start = s.lastIndexOf(',', pos-1);
 
-        var kind = s.substr( pos_start+1, 1);
-        if ( kind != "S") {
-            s = s.substr( pos+1);
+        var kind = s.substr(pos_start+1, 1);
+        if (kind != "S") {
+            s = s.substr(pos+1);
             continue;
         }
-        s = s.substr( pos_start+2);
-        pos = s.indexOf( '-');
-        current_position = s.substr( 0, pos)-1;
+        s = s.substr(pos_start+2);
+        pos = s.indexOf('-');
+        current_position = s.substr(0, pos)-1;
         break;
     }
 }
@@ -345,13 +345,13 @@ function decode_multiple_choice(s) {
 
     var i=0;
     for(;;) {
-        var pos=s.indexOf( '#');
-        if( pos < 0) {
-            ret[ i++] = s;
+        var pos=s.indexOf'#');
+        if (pos < 0) {
+            ret[i++] = s;
             return ret;
         }
-        ret[ i++] = s.substr( 0, pos);
-        s = s.substr( pos+1);
+        ret[i++] = s.substr(0, pos);
+        s = s.substr(pos + 1);
     }
 }
 
@@ -359,7 +359,7 @@ function display_quest()  {
     current_dice = Math.floor((Math.random() * 6)) + 1;
     select_quest();
 
-    if( IsMultipleChoiceQuestion()) {
+    if (IsMultipleChoiceQuestion()) {
         display_quest_M();
     } else {
         display_quest_S();
@@ -376,27 +376,27 @@ function display_quest_M() {
     s = s + '<form name="snakesform">';
 
     mchoice_count = quest_resp.length-1;
-    mchoice_positions = new Array( mchoice_count);
+    mchoice_positions = new Array(mchoice_count);
     for(i=0; i < mchoice_count ; i++) {
-        mchoice_positions[ i] = i+1;
+        mchoice_positions[i] = i+1;
     }
     for(i=0; i < mchoice_count ; i++) {
         var j = Math.floor((Math.random() * mchoice_count));
-        var temp = mchoice_positions[ i];
-        mchoice_positions[ i] = mchoice_positions[ j];
-        mchoice_positions[ j] = temp;
+        var temp = mchoice_positions[i];
+        mchoice_positions[i] = mchoice_positions[j];
+        mchoice_positions[j] = temp;
     }
 
     for(i=0; i < mchoice_count;i++) {
         s = s + '<input type="radio" name="radio_answer" id="radio_answer" value="';
-        s = s + i+'" />'+quest_resp[ mchoice_positions[ i]] + '<br />';
+        s = s + i+'" />'+quest_resp[mchoice_positions[i]] + '<br />';
     }
 
     s = s + '<br /><input type="button" id="check_btn" value="'+str_check;
     s = s + '" onclick="check_answer();">  <br/><div id="feedb_area"> <div id="feedb_wrong" style="display:none; color:yellow;"> ';
     s = s + quest_feedb+' </div> <br /><div id="feedb" style="display:none; color:yellow;"> ';
     s = s + quest_feedb+'. Θα προχωρήσεις ';
-    s = s + current_dice+' τετράγωνα μπροστά!</div><br /> <div id="OK_btn"';   
+    s = s + current_dice+' τετράγωνα μπροστά!</div><br /> <div id="OK_btn"';
     s = s + 'style="display:none;"><input type="button" onclick="display_quest();" value="OK"/></div> </div></form>';
 
     document.getElementById("dicecont").innerHTML = s;
@@ -431,8 +431,8 @@ function move_pawn() {
     var rows = board_rows[current_board];
     var col_width = (board_width[current_board]-board_headerx[current_board]-board_footerx[current_board])/cols;
     var col_height = (board_height[current_board]-board_headery[current_board]-board_footery[current_board])/rows;
-    
-    if( current_position  >= 0) {
+
+    if (current_position  >= 0) {
         direction=Math.floor((current_position /cols))%2;
         if (direction == 1) {
             axis_x=(cols-(current_position %cols)-1);
@@ -457,7 +457,7 @@ function move_pawn() {
         var enc1, enc2, enc3, enc4;
         var i = 0;
         var keyStr="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
- 
+
         input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
 
         while (i < input.length) {
@@ -492,7 +492,7 @@ function move_pawn() {
         var i = 0;
         var c = c1 = c2 = 0;
 
-        while ( i < utftext.length ) {
+        while (i < utftext.length ) {
             c = utftext.charCodeAt(i);
 
             if (c < 128) {
@@ -519,11 +519,12 @@ function move_pawn() {
 
 <?php
 /**
- * Javascript code
+ * Outputs the JavaScript used by the submodal popup.
  */
 function createsubmodaljs() {
-?>
-<script type="text/javascript" src="js/common.js">
+    echo <<<'EOT'
+<script type="text/javascript" src="js/common.js"></script>
+<script type="text/javascript">
 var gPopupMask = null;
 var gPopupContainer = null;
 var gPopFrame = null;
@@ -534,7 +535,7 @@ var gHideSelects = false;
 var gReturnVal = null;
 
 var gTabIndexes = new Array();
-// Pre-defined list of tags we want to disable/enable tabbing into
+// Pre-defined list of tags we want to disable/enable tabbing into.
 var gTabbableTags = new Array('A', 'BUTTON', 'TEXTAREA', 'INPUT', 'IFRAME');
 
 // If using Mozilla or Firefox, use Tab-key trap.
@@ -542,11 +543,9 @@ if (!document.all) {
     document.onkeypress = keyDownHandler;
 }
 
-/**
- * Initializes popup code on load.
- */
+// Initializes popup code on load.
 function initPopUp() {
-    // Add the HTML to the body
+    // Add the HTML to the body.
     theBody = document.getElementsByTagName('BODY')[0];
     popmask = document.createElement('div');
     popmask.id = 'popupMask';
@@ -560,9 +559,9 @@ function initPopUp() {
         '<img src="close.gif" onclick="hidePopWin(false);" id="popCloseBox" />' +
         '</div>' +
         '</div>' +
-        '<iframe src="'+ gDefaultPage +'" style="width:100%;height:100%;background-color:transparent;" ' +
-        ' scrolling="auto" frameborder="0" allowtransparency="true" id="popupFrame" name="popupFrame" ' + 
-        ' width="100%" height="100%"></iframe>' +
+        '<iframe src="' + gDefaultPage + '" style="width:100%;height:100%;background-color:transparent;" ' +
+        'scrolling="auto" frameborder="0" allowtransparency="true" id="popupFrame" name="popupFrame" ' +
+        'width="100%" height="100%"></iframe>' +
         '</div>';
     theBody.appendChild(popmask);
     theBody.appendChild(popcont);
@@ -571,43 +570,38 @@ function initPopUp() {
     gPopupContainer = document.getElementById("popupContainer");
     gPopFrame = document.getElementById("popupFrame");
 
-    // check to see if this is IE version 6 or lower. hide select boxes if so
-    // maybe they'll fix this in version 7?
+    // Check to see if this is IE version 6 or lower. Hide select boxes if so.
     var brsVersion = parseInt(window.navigator.appVersion.charAt(0), 10);
     if (brsVersion <= 6 && window.navigator.userAgent.indexOf("MSIE") > -1) {
         gHideSelects = true;
     }
 
-    // Add onclick handlers to 'a' elements of class submodal or submodal-width-height
+    // Add onclick handlers to 'a' elements of class submodal or submodal-width-height.
     var elms = document.getElementsByTagName('a');
     for (i = 0; i < elms.length; i++) {
-        if (elms[i].className.indexOf("submodal") == 0) { 
-            elms[i].onclick = function(){
-                // default width and height
+        if (elms[i].className.indexOf("submodal") == 0) {
+            elms[i].onclick = function() {
                 var width = 400;
                 var height = 200;
-                // Parse out optional width and height from className
                 params = this.className.split('-');
                 if (params.length == 3) {
-                    width = parseInt(params[1]);
-                    height = parseInt(params[2]);
+                    width = parseInt(params[1], 10);
+                    height = parseInt(params[2], 10);
                 }
-                showPopWin(this.href,width,height,null); return false;
-            }
+                showPopWin(this.href, width, height, null);
+                return false;
+            };
         }
     }
 }
 addEvent(window, "load", initPopUp);
 
-/**
- * @argument width - int in pixels
- * @argument height - int in pixels
- * @argument url - url to display
- * @argument returnFunc - function to call when returning true from the window.
- * @argument showCloseBox - show the close box - default true
- */
+// width: int in pixels
+// height: int in pixels
+// url: URL to display
+// returnFunc: function to call when returning true from the window
+// showCloseBox: show the close box; default true
 function showPopWin(url, width, height, returnFunc, showCloseBox) {
-    // show or hide the window close widget
     if (showCloseBox == null || showCloseBox == true) {
         document.getElementById("popCloseBox").style.display = "block";
     } else {
@@ -617,32 +611,28 @@ function showPopWin(url, width, height, returnFunc, showCloseBox) {
     disableTabIndexes();
     gPopupMask.style.display = "block";
     gPopupContainer.style.display = "block";
-    // calculate where to place the window on screen
+
     centerPopWin(width, height);
 
     var titleBarHeight = parseInt(document.getElementById("popupTitleBar").offsetHeight, 10);
 
     gPopupContainer.style.width = width + "px";
-    gPopupContainer.style.height = (height+titleBarHeight) + "px";
+    gPopupContainer.style.height = (height + titleBarHeight) + "px";
 
     setMaskSize();
 
-    // need to set the width of the iframe to the title bar width because of the dropshadow
-    // some oddness was occuring and causing the frame to poke outside the border in IE6
     gPopFrame.style.width = parseInt(document.getElementById("popupTitleBar").offsetWidth, 10) + "px";
-    gPopFrame.style.height = (height) + "px";
-
-    // set the url
+    gPopFrame.style.height = height + "px";
     gPopFrame.src = url;
-   
+
     gReturnFunc = returnFunc;
-    // for IE
     if (gHideSelects == true) {
         hideSelectBoxes();
     }
 }
 
 var gi = 0;
+
 function centerPopWin(width, height) {
     if (gPopupIsShown == true) {
         if (width == null || isNaN(width)) {
@@ -653,8 +643,8 @@ function centerPopWin(width, height) {
         }
 
         var theBody = document.getElementsByTagName("BODY")[0];
-        var scTop = parseInt(getScrollTop(),10);
-        var scLeft = parseInt(theBody.scrollLeft,10);
+        var scTop = parseInt(getScrollTop(), 10);
+        var scLeft = parseInt(theBody.scrollLeft, 10);
 
         setMaskSize();
 
@@ -663,25 +653,21 @@ function centerPopWin(width, height) {
         var fullHeight = getViewportHeight();
         var fullWidth = getViewportWidth();
 
-        gPopupContainer.style.top = (scTop + ((fullHeight - (height+titleBarHeight)) / 2)) + "px";
-        gPopupContainer.style.left =  (scLeft + ((fullWidth - width) / 2)) + "px";
+        gPopupContainer.style.top = (scTop + ((fullHeight - (height + titleBarHeight)) / 2)) + "px";
+        gPopupContainer.style.left = (scLeft + ((fullWidth - width) / 2)) + "px";
     }
 }
 addEvent(window, "resize", centerPopWin);
 addEvent(window, "scroll", centerPopWin);
 window.onscroll = centerPopWin;
 
-/**
- * Sets the size of the popup mask.
- *
- */
+// Sets the size of the popup mask.
 function setMaskSize() {
     var theBody = document.getElementsByTagName("BODY")[0];
 
     var fullHeight = getViewportHeight();
     var fullWidth = getViewportWidth();
 
-    // Determine what's bigger, scrollHeight or fullHeight / width
     if (fullHeight > theBody.scrollHeight) {
         popHeight = fullHeight;
     } else {
@@ -698,10 +684,8 @@ function setMaskSize() {
     gPopupMask.style.width = popWidth + "px";
 }
 
-/**
- * @argument callReturnFunc - bool - determines if we call the return function specified
- * @argument returnVal - anything - return value 
- */
+// callReturnFunc: bool - determines if we call the return function specified
+// returnVal: mixed - return value
 function hidePopWin(callReturnFunc) {
     gPopupIsShown = false;
     var theBody = document.getElementsByTagName("BODY")[0];
@@ -713,43 +697,40 @@ function hidePopWin(callReturnFunc) {
     gPopupMask.style.display = "none";
     gPopupContainer.style.display = "none";
     if (callReturnFunc == true && gReturnFunc != null) {
-        // Set the return code to run in a timeout.
-        // Was having issues using with an Ajax.Request();
         gReturnVal = window.frames["popupFrame"].returnVal;
         window.setTimeout('gReturnFunc(gReturnVal);', 1);
     }
     gPopFrame.src = gDefaultPage;
-    // display all select boxes
     if (gHideSelects == true) {
         displaySelectBoxes();
     }
 }
 
-// Tab key trap. iff popup is shown and key was [TAB], suppress it.
-// @argument e - event - keyboard event that caused this function to be called.
+// Tab key trap. If popup is shown and key was TAB, suppress it.
 function keyDownHandler(e) {
-    if (gPopupIsShown && e.keyCode == 9)  return false;
+    if (gPopupIsShown && e.keyCode == 9) {
+        return false;
+    }
 }
 
-// For IE.  Go through predefined tags and disable tabbing into them.
+// For IE. Go through predefined tags and disable tabbing into them.
 function disableTabIndexes() {
     if (document.all) {
         var i = 0;
         for (var j = 0; j < gTabbableTags.length; j++) {
             var tagElements = document.getElementsByTagName(gTabbableTags[j]);
-            for (var k = 0 ; k < tagElements.length; k++) {
+            for (var k = 0; k < tagElements.length; k++) {
                 gTabIndexes[i] = tagElements[k].tabIndex;
-                tagElements[k].tabIndex="-1";
+                tagElements[k].tabIndex = "-1";
                 i++;
             }
         }
     }
 }
 
-function returnRefresh() 
-{   
-    window.location.reload(); 
-} 
+function returnRefresh() {
+    window.location.reload();
+}
 
 // For IE. Restore tab-indexes.
 function restoreTabIndexes() {
@@ -757,7 +738,7 @@ function restoreTabIndexes() {
         var i = 0;
         for (var j = 0; j < gTabbableTags.length; j++) {
             var tagElements = document.getElementsByTagName(gTabbableTags[j]);
-            for (var k = 0 ; k < tagElements.length; k++) {
+            for (var k = 0; k < tagElements.length; k++) {
                 tagElements[k].tabIndex = gTabIndexes[i];
                 tagElements[k].tabEnabled = true;
                 i++;
@@ -766,35 +747,23 @@ function restoreTabIndexes() {
     }
 }
 
-
-/**
- * Hides all drop down form select boxes on the screen so they do not appear above the mask layer.
- * IE has a problem with wanted select form tags to always be the topmost z-index or layer
- *
- * Thanks for the code Scott!
- */
+// Hides all drop-down form select boxes on the screen.
 function hideSelectBoxes() {
     var x = document.getElementsByTagName("SELECT");
 
-    for (i=0;x && i < x.length; i++) {
+    for (i = 0; x && i < x.length; i++) {
         x[i].style.visibility = "hidden";
     }
 }
 
-/**
- * Makes all drop down form select boxes on the screen visible so they do not 
- * reappear after the dialog is closed.
- * 
- * IE has a problem with wanting select form tags to always be the 
- * topmost z-index or layer.
- */
+// Makes all drop-down form select boxes on the screen visible again.
 function displaySelectBoxes() {
     var x = document.getElementsByTagName("SELECT");
 
-    for (i=0;x && i < x.length; i++){
+    for (i = 0; x && i < x.length; i++) {
         x[i].style.visibility = "visible";
     }
 }
 </script>
-    <?php
+EOT;
 }

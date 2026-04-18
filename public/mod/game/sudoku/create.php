@@ -18,14 +18,16 @@
  * Creates a sudoku.
  *
  * @package    mod_game
+ * @subpackage sudoku
  * @copyright  2007 Vasilis Daloukas
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-require( "../../../config.php");
-require_once("class.Sudoku.php");
-require( '../header.php');
 
-$action = optional_param('action', PARAM_ALPHA);   // The action.
+require("../../../config.php");
+require_once("class.Sudoku.php");
+require('../header.php');
+
+$action = optional_param('action', '', PARAM_ALPHA);   // The action.
 require_login();
 if ($action == 'create') {
     AppendSudokuB();
@@ -34,81 +36,86 @@ if ($action == 'create') {
 }
 
 /**
- * Show form
+ * Show the form.
+ *
+ * @package mod_game
  */
 function showform() {
-    $id = required_param('id', PARAM_NUMBER);   // The action.
+    $id = required_param('id', PARAM_INT);
 
-?>
-<form name="form" method="post" action="create.php">
-<center>
-<table cellpadding="5">
-<tr valign="top">
-    <td align="right"><b><?php  echo get_string( 'sudoku_create_count', 'game'); ?>:</b></td>
-    <td>
-        <input type="text" name="count" size="6" value="2" /><br>
-    </td>
-</tr>
-<tr><td colspan=2><center><br><input type="submit" value="<?php  print_string('sudoku_create_start', 'game') ?>" /></td></tr>
-</table>
-<input type="hidden" name=action        value="create" >
-<input type="hidden" name=level1        value="1" >
-<input type="hidden" name=level2        value="10" >
-<input type="hidden" name=id        value="<?php  echo $id; ?>" />
-</form>
-
-    <?php
+    echo '<form name="form" method="post" action="create.php">';
+    echo '<div>';
+    echo '<table cellpadding="5">';
+    echo '<tr valign="top">';
+    echo '<td align="right"><b>' . get_string('sudoku_create_count', 'game') . ':</b></td>';
+    echo '<td><input type="text" name="count" size="6" value="2" /><br></td>';
+    echo '</tr>';
+    echo '<tr><td colspan="2"><center><br><input type="submit" value="' .
+            s(get_string('sudoku_create_start', 'game')) . '" /></center></td></tr>';
+    echo '</table>';
+    echo '<input type="hidden" name="action" value="create" />';
+    echo '<input type="hidden" name="level1" value="1" />';
+    echo '<input type="hidden" name="level2" value="10" />';
+    echo '<input type="hidden" name="id" value="' . s($id) . '" />';
+    echo '</div>';
+    echo '</form>';
 }
 
 /**
  * Append sudoku
+ *
+ * @package mod_game
  */
 function appendsudokub() {
     global $DB;
 
-    $level1 = required_param('level1', PARAM_NUMBER);
-    $level2 = required_param('level2', PARAM_NUMBER);
-    $count = required_param('count', PARAM_NUMBER);
+    $level1 = required_param('level1', PARAM_INT);
+    $level2 = required_param('level2', PARAM_INT);
+    $count = required_param('count', PARAM_INT);
 
     $level = $level1;
 
     for ($i = 1; $i <= $count; $i++) {
-        create( $si, $sp, $level);
+        create($si, $sp, $level);
 
-        $newrec->data = packsudoku( $si, $sp);
-        if (strlen( $newrec->data) != 81) {
+        $newrec = new stdClass();
+
+        $newrec->data = packsudoku($si, $sp);
+        if (strlen($newrec->data) != 81) {
             return 0;
         }
         $newrec->level = $level;
-        $newrec->opened = GetOpened( $si);
+        $newrec->opened = GetOpened($si);
 
-        $DB->insert_record( 'game_sudoku_database', $newrec, true);
+        $DB->insert_record('game_sudoku_database', $newrec, true);
 
         $level++;
         if ($level > $level2) {
             $level = $level1;
         }
 
-        echo get_string( 'sudoku_creating', 'game', $i)."<br>\r\n";
+        echo get_string('sudoku_creating', 'game', $i) . "<br>\r\n";
     }
 }
 
 /**
  * Pack sudoku
  *
+ * @package mod_game
+ *
  * @param object $si
  * @param object $sp
  *
- * @return the packed sudoku
+ * @return string: the packed sudoku
  */
-function packsudoku( $si, $sp) {
+function packsudoku($si, $sp): string {
     $data = '';
 
     for ($i = 1; $i <= 9; $i++) {
         for ($j = 1; $j <= 9; $j++) {
             $c = &$sp->thesquares[$i];
             $c = &$c->getcell($j);
-            $solution = $c->asstring( false);
+            $solution = $c->asstring(false);
 
             $c = &$si->thesquares[$i];
             $c = &$c->getCell($j);
@@ -116,7 +123,7 @@ function packsudoku( $si, $sp) {
 
             if ($thesolvedstate == 1) {
                 // Hint.
-                $solution = substr( 'ABCDEFGHI', $c->asString( false) - 1, 1);
+                $solution = substr('ABCDEFGHI', $c->asString(false) - 1, 1);
             }
 
             $data .= $solution;
@@ -129,17 +136,19 @@ function packsudoku( $si, $sp) {
 /**
  * Creates a sudoku
  *
+ * @package mod_game
+ *
  * @param stdClass $si
  * @param object $sp
  * @param int $level
  *
  * @return true if created correctly
  */
-function create( &$si, &$sp, $level=1) {
+function create(&$si, &$sp, $level = 1) {
     for ($i = 1; $i <= 40; $i++) {
         $sp = new sudoku();
-        $theinitialposition = $sp->generatepuzzle( 10, 50, $level);
-        if (count( $theinitialposition)) {
+        $theinitialposition = $sp->generatepuzzle(10, 50, $level);
+        if (count($theinitialposition)) {
             break;
         }
     }
@@ -149,7 +158,7 @@ function create( &$si, &$sp, $level=1) {
 
     $si = new sudoku();
 
-    $si->initializepuzzlefromarray( $theinitialposition);
+    $si->initializepuzzlefromarray($theinitialposition);
 
     return true;
 }
@@ -157,11 +166,13 @@ function create( &$si, &$sp, $level=1) {
 /**
  * get opened
  *
+ * @package mod_game
+ *
  * @param stdClass $si
  *
- * @return count of opened
+ * @return int: count of opened
  */
-function getopened( $si) {
+function getopened($si) {
     $count = 0;
 
     for ($i = 1; $i <= 9; $i++) {

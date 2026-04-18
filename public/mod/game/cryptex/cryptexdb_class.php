@@ -30,7 +30,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class CryptexDB extends CrossDB {
-
     /** @var array Contains the words that cannot be created in the game. */
     protected $badwords;
 
@@ -38,10 +37,8 @@ class CryptexDB extends CrossDB {
      * Sets bad words.
      *
      * @param array $badwords
-     *
-     * @return the saved record
      */
-    public function setbadwords( $badwords) {
+    public function setbadwords($badwords): void {
         $this->badwords = $badwords;
     }
 
@@ -56,12 +53,12 @@ class CryptexDB extends CrossDB {
      *
      * @return the saved record
      */
-    public function savecryptex( $game, &$crossm, $crossd, $id, $letters) {
+    public function savecryptex($game, &$crossm, $crossd, $id, $letters) {
         global $USER;
 
-        CrossDB::delete_records( $id);
+        CrossDB::delete_records($id);
 
-        if ((CrossDB::savecross( $game, $crossm, $crossd, $id)) == false) {
+        if ((CrossDB::savecross($game, $crossm, $crossd, $id)) == false) {
             return false;
         }
 
@@ -71,8 +68,8 @@ class CryptexDB extends CrossDB {
         $newrec->id = $id;
         $newrec->letters = $letters;
 
-        if (!($cryptexid = game_insert_record( "game_cryptex", $newrec))) {
-            throw new moodle_exception( 'cryptex_error', 'game', 'Insert page: new page game_cryptex not inserted');
+        if (!game_insert_record("game_cryptex", $newrec)) {
+            throw new moodle_exception('cryptex_error', 'game', 'Insert page: new page game_cryptex not inserted');
         }
 
         return $newrec;
@@ -87,10 +84,10 @@ class CryptexDB extends CrossDB {
      *
      * @return the letters.
      */
-    public function computeletters( $crossm, $crossd, $badwords) {
+    public function computeletters($crossm, $crossd, $badwords) {
         $letters = '';
         $cols = $crossm->usedcols + 1;
-        $letters = str_repeat('.', $crossm->usedcols).'#';
+        $letters = str_repeat('.', $crossm->usedcols) . '#';
         $letters = str_repeat($letters, $crossm->usedrows);
 
         $freqs1 = [];  // If one letter appears three times there is three times in the array.
@@ -98,28 +95,28 @@ class CryptexDB extends CrossDB {
         foreach ($crossd as $rec) {
             $pos = $rec->mycol - 1 + ($rec->myrow - 1) * $cols;
             $s = $rec->answertext;
-            $len = game_strlen( $s);
+            $len = game_strlen($s);
 
             $a = [];
             for ($i = 0; $i < $len; $i++) {
-                $a[] = game_substr( $s, $i, 1);
+                $a[] = game_substr($s, $i, 1);
             }
 
             for ($i = 0; $i < $len; $i++) {
-                $this->setchar( $letters, $pos,  $a[$i]);
-                $pos += ( $rec->horizontal ? 1 : $cols);
+                $this->setchar($letters, $pos, $a[$i]);
+                $pos += ($rec->horizontal ? 1 : $cols);
 
                 $freqs1[++$count1] = $a[$i];
                 if ($i + 1 < $len) {
-                    $freqs2[++$count2] = $a[$i].$a[$i + 1];
+                    $freqs2[++$count2] = $a[$i] . $a[$i + 1];
                 }
             }
         }
 
-        $len = game_strlen( $letters);
+        $len = game_strlen($letters);
         $spaces = 0;
         for ($i = 0; $i < $len; $i++) {
-            if (game_substr( $letters, $i, 1) == '.') {
+            if (game_substr($letters, $i, 1) == '.') {
                 $spaces++;
             }
         }
@@ -129,21 +126,21 @@ class CryptexDB extends CrossDB {
         while ($spaces) {
             if ($step == 1) {
                 $step = 2;
-                $i = array_rand( $freqs1);
-                $this->insertchar( $letters, $crossm->usedcols, $crossm->usedrows, $freqs1[$i], $spaces);
+                $i = array_rand($freqs1);
+                $this->insertchar($letters, $crossm->usedcols, $crossm->usedrows, $freqs1[$i], $spaces);
             } else {
                 $step = 1;
-                $i = array_rand( $freqs2);
-                $this->insertchars( $letters, $crossm->usedcols, $crossm->usedrows, $freqs2[$i], $spaces);
+                $i = array_rand($freqs2);
+                $this->insertchars($letters, $crossm->usedcols, $crossm->usedrows, $freqs2[$i], $spaces);
             }
         }
 
         $retletters = "";
         for ($row = 0; $row < $crossm->usedrows; $row++) {
-            $retletters .= game_substr( $letters, $cols * $row, ($cols - 1));
+            $retletters .= game_substr($letters, $cols * $row, ($cols - 1));
         }
 
-        $this->repair_bad_words( $retletters, $freqs1, $originalletters, $badwords, $crossm);
+        $this->repair_bad_words($retletters, $freqs1, $originalletters, $badwords, $crossm);
 
         return $retletters;
     }
@@ -158,21 +155,21 @@ class CryptexDB extends CrossDB {
      * @param boolean $showsolution
      * @param boolean $textdir
      */
-    public function displaycryptex( $cols, $rows, $letters, $mask, $showsolution, $textdir) {
+    public function displaycryptex($cols, $rows, $letters, $mask, $showsolution, $textdir) {
         echo "<table border=1 $textdir class=\"mod-game-cryptex\">";
         for ($row = 0; $row < $rows; $row++) {
             echo "<tr>";
             for ($col = 0; $col < $cols; $col++) {
                 $pos = $cols * $row + $col;
-                $c = game_substr( $letters, $pos, 1);
-                $m = game_substr( $mask, $pos, 1);
+                $c = game_substr($letters, $pos, 1);
+                $m = game_substr($mask, $pos, 1);
 
                 if ($showsolution && $m > '0') {
-                    echo "<td><b><font color=red>".$c."</font></td>";
-                } else if ( $m == '1') {
-                    echo "<td><b><font color=red>".$c."</font></td>";
+                    echo "<td><b><font color=red>" . $c . "</font></td>";
+                } else if ($m == '1') {
+                    echo "<td><b><font color=red>" . $c . "</font></td>";
                 } else {
-                    echo "<td>".$c."</td>";
+                    echo "<td>" . $c . "</td>";
                 }
             }
             echo "</tr>\r\n";
@@ -189,11 +186,11 @@ class CryptexDB extends CrossDB {
      * @param string $char
      * @param int $spaces
      */
-    public function insertchar( &$letters, $cols, $rows, $char, &$spaces) {
-        $len = game_strlen( $letters);
+    public function insertchar(&$letters, $cols, $rows, $char, &$spaces) {
+        $len = game_strlen($letters);
         for ($i = 0; $i < $len; $i++) {
-            if (game_substr( $letters, $i, 1) == '.') {
-                $this->setchar( $letters, $i, $char);
+            if (game_substr($letters, $i, 1) == '.') {
+                $this->setchar($letters, $i, $char);
                 $spaces--;
                 return;
             }
@@ -209,18 +206,18 @@ class CryptexDB extends CrossDB {
      * @param string $char
      * @param int $spaces
      */
-    public function insertchars( &$letters, $cols, $rows, $char, &$spaces) {
-        $len = game_strlen( $letters);
+    public function insertchars(&$letters, $cols, $rows, $char, &$spaces) {
+        $len = game_strlen($letters);
         for ($i = 0; $i < $len; $i++) {
-            if (game_substr( $letters, $i, 1) == '.'  && game_substr( $letters, $i + 1, 1) == '.' ) {
-                $this->setchar( $letters, $i, game_substr( $char, 0, 1));
-                $this->setchar( $letters, $i + 1, game_substr( $char, 1, 1));
+            if (game_substr($letters, $i, 1) == '.'  && game_substr($letters, $i + 1, 1) == '.') {
+                $this->setchar($letters, $i, game_substr($char, 0, 1));
+                $this->setchar($letters, $i + 1, game_substr($char, 1, 1));
                 $spaces -= 2;
                 return true;
             }
-            if (game_substr( $letters, $i, 1) == '.' && game_substr( $letters, $i + $cols + 1, 1) == '.' ) {
-                $this->setchar( $letters, $i, game_substr( $char, 0, 1));
-                $this->setchar( $letters, $i + $cols + 1, game_substr( $char, 1, 1));
+            if (game_substr($letters, $i, 1) == '.' && game_substr($letters, $i + $cols + 1, 1) == '.') {
+                $this->setchar($letters, $i, game_substr($char, 0, 1));
+                $this->setchar($letters, $i + $cols + 1, game_substr($char, 1, 1));
                 $spaces -= 2;
                 return true;
             }
@@ -234,14 +231,14 @@ class CryptexDB extends CrossDB {
      *
      * @param string $word
      *
-     * @return the hash
+     * @return int: the hash
      */
-    public function gethash( $word) {
+    public function gethash($word) {
         $x = 37;
-        $len = game_strlen( $word);
+        $len = game_strlen($word);
 
         for ($i = 0; $i < $len; $i++) {
-            $x = $x xor ord( game_substr( $word, $i, 1));
+            $x = $x xor ord(game_substr($word, $i, 1));
         }
 
         return $x;
@@ -257,31 +254,31 @@ class CryptexDB extends CrossDB {
      *
      * @return questions
      */
-    public function loadcryptex( $crossm, &$mask, &$corrects, &$language) {
+    public function loadcryptex($crossm, &$mask, &$corrects, &$language) {
         global $DB;
 
         $questions = $corrects = [];
 
-        $mask = str_repeat( '0', $crossm->usedcols * $crossm->usedrows);
+        $mask = str_repeat('0', $crossm->usedcols * $crossm->usedrows);
 
-        if ($recs = $DB->get_records( 'game_queries', [ 'attemptid' => $crossm->id])) {
+        if ($recs = $DB->get_records('game_queries', [ 'attemptid' => $crossm->id])) {
             foreach ($recs as $rec) {
                 if ($rec->questiontext == '') {
                     $rec->questiontext = ' ';
                 }
-                $key = $this->gethash( $rec->questiontext).'-'.$rec->answertext.'-'.$rec->id;
+                $key = $this->gethash($rec->questiontext) . '-' . $rec->answertext . '-' . $rec->id;
                 $questions[$key] = $rec;
 
                 $word = $rec->answertext;
                 $pos = $crossm->usedcols * ($rec->myrow - 1) + ($rec->mycol - 1);
-                $len = game_strlen( $word);
+                $len = game_strlen($word);
                 $found = ($rec->answertext == $rec->studentanswer);
 
                 for ($i = 0; $i < $len; $i++) {
-                    $c = ( $found ? '1' : '2');
+                    $c = ($found ? '1' : '2');
 
-                    if (game_substr( $mask, $pos,  1) != '1') {
-                        game_setchar( $mask, $pos, $c);
+                    if (game_substr($mask, $pos, 1) != '1') {
+                        game_setchar($mask, $pos, $c);
                     }
 
                     $pos += ($rec->horizontal ? 1 : $crossm->usedcols);
@@ -292,10 +289,10 @@ class CryptexDB extends CrossDB {
                 }
 
                 if ($language == '') {
-                    $language = game_detectlanguage( $rec->answertext);
+                    $language = game_detectlanguage($rec->answertext);
                 }
             }
-            ksort( $questions);
+            ksort($questions);
         }
 
         return $questions;
@@ -310,8 +307,8 @@ class CryptexDB extends CrossDB {
      *
      * @return Cross::setwords
      */
-    public function setwords( $answers, $maxcols, $reps) {
-        return Cross::setwords( $answers, $maxcols, $reps);
+    public function setwords($answers, $maxcols, $reps) {
+        return Cross::setwords($answers, $maxcols, $reps);
     }
 
     /**
@@ -324,12 +321,12 @@ class CryptexDB extends CrossDB {
      * @param int $maxwords
      * @param int $mtimelimit
      */
-    public function computedata( &$crossm, &$crossd, &$letters, $minwords, $maxwords, $mtimelimit=3) {
-        if (!cross::computedata( $crossm, $crossd, $letters, $minwords, $maxwords, $mtimelimit)) {
+    public function computedata(&$crossm, &$crossd, &$letters, $minwords, $maxwords, $mtimelimit = 3) {
+        if (!cross::computedata($crossm, $crossd, $letters, $minwords, $maxwords, $mtimelimit)) {
             return false;
         }
 
-        $letters = $this->computeletters( $crossm, $crossd, $this->badwords);
+        $letters = $this->computeletters($crossm, $crossd, $this->badwords);
 
         return true;
     }
@@ -343,39 +340,49 @@ class CryptexDB extends CrossDB {
      * @param array $badwords
      * @param stdClass $crossm
      */
-    public function repair_bad_words( &$letters, $freqs1, $original, $badwords, $crossm) {
+    public function repair_bad_words(&$letters, $freqs1, $original, $badwords, $crossm) {
         $cols = $crossm->usedcols;
         $rows = $crossm->usedrows;
         for (;;) {
             $ret = false;
             // Horizontaly.
             for ($y = 0; $y < $rows; $y++) {
-                $ret |= $this->repair_bad_words_step( $letters, $freqs1, $original, $badwords, $cols, $rows, 0, $y, 1, 0);
+                $ret |= $this->repair_bad_words_step($letters, $freqs1, $original, $badwords, $cols, $rows, 0, $y, 1, 0);
             }
             // Verticaly.
             for ($x = 0; $x < $cols; $x++) {
-                $ret |= $this->repair_bad_words_step( $letters, $freqs1, $original, $badwords, $cols, $rows, $x, 0, 0, 1);
+                $ret |= $this->repair_bad_words_step($letters, $freqs1, $original, $badwords, $cols, $rows, $x, 0, 0, 1);
             }
 
             // Diagonial 1.
             for ($x = 0; $x < $cols; $x++) {
-                $ret |= $this->repair_bad_words_step( $letters, $freqs1, $original, $badwords, $cols, $rows, $x, 0, 1, 1);
+                $ret |= $this->repair_bad_words_step($letters, $freqs1, $original, $badwords, $cols, $rows, $x, 0, 1, 1);
             }
 
             // Diagonial 2.
             for ($x = 0; $x < $cols; $x++) {
-                $ret |= $this->repair_bad_words_step( $letters, $freqs1, $original, $badwords, $cols, $rows, $x, $rows - 1, 1, -1);
+                $ret |= $this->repair_bad_words_step($letters, $freqs1, $original, $badwords, $cols, $rows, $x, $rows - 1, 1, -1);
             }
 
             // Diagonial 3.
             for ($x = 0; $x < $cols; $x++) {
-                $ret |= $this->repair_bad_words_step( $letters, $freqs1, $original, $badwords, $cols, $rows, $x, 0, -1, 1);
+                $ret |= $this->repair_bad_words_step($letters, $freqs1, $original, $badwords, $cols, $rows, $x, 0, -1, 1);
             }
 
             // Diagonial 4.
             for ($x = 0; $x < $cols; $x++) {
-                $ret |= $this->repair_bad_words_step( $letters, $freqs1, $original, $badwords, $cols, $rows, $cols - 1,
-                    $rows - 1, -1, -1);
+                $ret |= $this->repair_bad_words_step(
+                    $letters,
+                    $freqs1,
+                    $original,
+                    $badwords,
+                    $cols,
+                    $rows,
+                    $cols - 1,
+                    $rows - 1,
+                    -1,
+                    -1
+                );
             }
 
             if ($ret == false) {
@@ -383,7 +390,6 @@ class CryptexDB extends CrossDB {
             }
         }
     }
-
 
     /**
      * Removes bad words horizontally.
@@ -399,8 +405,7 @@ class CryptexDB extends CrossDB {
      * @param int $dx
      * @param int $dy
      */
-    public function repair_bad_words_step( &$letters, $freqs1, $original, $badwords, $cols, $rows, $x, $y, $dx, $dy) {
-
+    public function repair_bad_words_step(&$letters, $freqs1, $original, $badwords, $cols, $rows, $x, $y, $dx, $dy) {
         $xx = $x;
         $yy = $y;
 
@@ -412,27 +417,27 @@ class CryptexDB extends CrossDB {
                 break;
             }
 
-            $nl .= game_substr( $letters, $x + $cols * $y, 1);
-            $no .= game_substr( $original, $x + ($cols + 1) * $y, 1);
+            $nl .= game_substr($letters, $x + $cols * $y, 1);
+            $no .= game_substr($original, $x + ($cols + 1) * $y, 1);
 
             $x += $dx;
             $y += $dy;
         }
 
         foreach ($badwords as $bad) {
-            $pos = game_strpos( $nl, $bad);
+            $pos = game_strpos($nl, $bad);
             if ($pos === false) {
                 continue;
             }
-            $lenb = game_strlen( $bad);
+            $lenb = game_strlen($bad);
             for ($i = 0; $i < $lenb; $i++) {
-                if (game_substr( $no, $pos + $i, 1) != '.') {
+                if (game_substr($no, $pos + $i, 1) != '.') {
                     continue;
                 }
 
-                $new = $freqs1[array_rand( $freqs1)];
+                $new = $freqs1[array_rand($freqs1)];
                 $pos2 = $xx + ($i + $pos) * $dx + ($yy + $i * $dy + $pos * $dy) * $cols;
-                $this->setchar( $letters, $pos2, $new);
+                $this->setchar($letters, $pos2, $new);
                 $found = true;
             }
         }

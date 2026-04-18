@@ -34,20 +34,20 @@ $edit = optional_param('edit', -1, PARAM_BOOL);         // Edit mode.
  * =========================================================================
  */
 if (!$cm = get_coursemodule_from_id('book', $id)) {
-    throw new moodle_exception( 'bookquiz_error', 'game', 'Course Module ID was incorrect');
+    throw new moodle_exception('bookquiz_error', 'game', 'Course Module ID was incorrect');
 }
 
-if (!$course = $DB->get_record('course', [ 'id' => $cm->course])) {
-    throw new moodle_exception( 'bookquiz_error', 'game', 'Course is misconfigured');
+if (!$course = $DB->get_record('course', ['id' => $cm->course])) {
+    throw new moodle_exception('bookquiz_error', 'game', 'Course is misconfigured');
 }
 
-if (!$book = $DB->get_record('book', [ 'id' => $cm->instance])) {
-    throw new moodle_exception( 'bookquiz_error', 'game', 'Course module is incorrect');
+if (!$book = $DB->get_record('book', ['id' => $cm->instance])) {
+    throw new moodle_exception('bookquiz_error', 'game', 'Course module is incorrect');
 }
 
 require_course_login($course, true, $cm);
 
-$context = game_get_context_module_instance( $cm->id);
+$context = game_get_context_module_instance($cm->id);
 
 // Read chapters.
 $select = $allowedit ? "bookid = $book->id" : "bookid = $book->id AND hidden = 0";
@@ -68,8 +68,8 @@ if ($chapterid == '0') {
     }
 }
 
-if (!$chapter = $DB->get_record('book_chapters', [ 'id' => $chapterid])) {
-    throw new moodle_exception( 'bookquiz_error', 'game', 'Error reading book chapters.');
+if (!$chapter = $DB->get_record('book_chapters', ['id' => $chapterid])) {
+    throw new moodle_exception('bookquiz_error', 'game', 'Error reading book chapters.');
 }
 
 // Check all variables.
@@ -78,18 +78,18 @@ unset($chapterid);
 
 // Chapter is hidden for students.
 if (!$allowedit && $chapter->hidden) {
-    throw new moodle_exception( 'bookquiz_error', 'game', 'Error reading book chapters.');
+    throw new moodle_exception('bookquiz_error', 'game', 'Error reading book chapters.');
 }
 
 // Chapter not part of this book!
 if ($chapter->bookid != $book->id) {
-    throw new moodle_exception( 'bookquiz_error', 'game', 'Chapter not part of this book!');
+    throw new moodle_exception('bookquiz_error', 'game', 'Chapter not part of this book!');
 }
 /* =========================================================================
  * security checks  END
  * =========================================================================
  */
-add_to_log($course->id, 'book', 'view', 'view.php?id='.$cm->id.'&amp;chapterid='.$chapter->id, $book->id, $cm->id);
+add_to_log($course->id, 'book', 'view', 'view.php?id=' . $cm->id . '&amp;chapterid=' . $chapter->id, $book->id, $cm->id);
 
 // Read standard strings.
 $strbooks = get_string('modulenameplural', 'book');
@@ -97,14 +97,14 @@ $strbook = get_string('modulename', 'book');
 
 // Prepare header.
 if ($course->category) {
-    $navigation = '<a href="../../course/view.php?id='.$course->id.'">'.$course->shortname.'</a> ->';
+    $navigation = '<a href="../../course/view.php?id=' . $course->id . '">' . $course->shortname . '</a> ->';
 } else {
     $navigation = '';
 }
 
-$buttons = $allowedit ? '<table cellspacing="0" cellpadding="0"><tr><td>'.
-        update_module_button($cm->id, $course->id, $strbook).'</td>'.
-        '<td>&nbsp;</td><td>'.book_edit_button($cm->id, $course->id, $chapter->id).'</td></tr></table>' : '&nbsp;';
+$buttons = $allowedit ? '<table cellspacing="0" cellpadding="0"><tr><td>' .
+        update_module_button($cm->id, $course->id, $strbook) . '</td>' .
+        '<td>&nbsp;</td><td>' . book_edit_button($cm->id, $course->id, $chapter->id) . '</td></tr></table>' : '&nbsp;';
 
 // Prepare chapter navigation icons.
 $previd = null;
@@ -129,25 +129,25 @@ $chnavigation = '';
 echo "previd=$previd nextid=$nextid<br>";
 
 if ($previd) {
-    $chnavigation .= '<a title="'.get_string('navprev', 'book').'" href="view.php?id='.$cm->id.
-        '&amp;chapterid='.$previd.'"><img src="'.$OUTPUT->pix_url('bookquiz/nav_prev', 'mod_game').
-        '" class="bigicon" alt="'.get_string('navprev', 'book').'"/></a>';
+    $chnavigation .= '<a title="' . get_string('navprev', 'book') . '" href="view.php?id=' . $cm->id .
+        '&amp;chapterid=' . $previd . '"><img src="' . $OUTPUT->pix_url('bookquiz/nav_prev', 'mod_game') .
+        '" class="bigicon" alt="' . get_string('navprev', 'book') . '"/></a>';
 } else {
-    $chnavigation .= '<img src="'.$OUTPUT->pix_url('bookquiz/nav_prev_dis', 'mod_game').'" class="bigicon" alt="" />';
+    $chnavigation .= '<img src="' . $OUTPUT->pix_url('bookquiz/nav_prev_dis', 'mod_game') . '" class="bigicon" alt="" />';
 }
 
 if ($nextid) {
-    $chnavigation .= '<a title="'.get_string('navnext', 'book').'" href="view.php?id='.$cm->id.
-        '&amp;chapterid='.$nextid.'"><img src="'.$OUTPUT->pix_url('bookquiz/nav_next', 'mod_game').
-        '" class="bigicon" alt="'.get_string('navnext', 'book').'" /></a>';
+    $chnavigation .= '<a title="' . get_string('navnext', 'book') . '" href="view.php?id=' . $cm->id .
+        '&amp;chapterid=' . $nextid . '"><img src="' . $OUTPUT->pix_url('bookquiz/nav_next', 'mod_game') .
+        '" class="bigicon" alt="' . get_string('navnext', 'book') . '" /></a>';
 } else {
     $sec = '';
-    if ($section = $DB->get_record('course_sections', [ 'id' => $cm->section])) {
+    if ($section = $DB->get_record('course_sections', ['id' => $cm->section])) {
         $sec = $section->section;
     }
-    $chnavigation .= '<a title="'.get_string('navexit', 'book').'" href="../../course/view.php?id='.
-        $course->id.'#section-'.$sec.'"><img src="'.
-        $OUTPUT->pix_url('bookquiz/nav_exit', 'mod_game').'" class="bigicon" alt="'.get_string('navexit', 'book').
+    $chnavigation .= '<a title="' . get_string('navexit', 'book') . '" href="../../course/view.php?id=' .
+        $course->id . '#section-' . $sec . '"><img src="' .
+        $OUTPUT->pix_url('bookquiz/nav_exit', 'mod_game') . '" class="bigicon" alt="' . get_string('navexit', 'book') .
         '" /></a>';
 }
 
@@ -158,15 +158,15 @@ if ($book->disableprinting) {
     $printbook = '';
     $printchapter = '';
 } else {
-    $printbook = '<a title="'.get_string('printbook', 'book').'" href="print.php?id='.$cm->id.
-        '" onclick="this.target=\'_blank\'"><img src="'.
-        $OUTPUT->pix_url('bookquiz/print_book', 'mod_game').
-        '" class="bigicon" alt="'.get_string('printbook', 'book').'"/></a>';
-    $printchapter = '<a title="'.get_string('printchapter', 'book').'" href="print.php?id='.
-        $cm->id.'&amp;chapterid='.$chapter->id.
-        '" onclick="this.target=\'_blank\'"><img src="'.
-        $OUTPUT->pix_url('bookquiz/print_chapter', 'mod_game').'" class="bigicon" alt="'.
-        get_string('printchapter', 'book').'"/></a>';
+    $printbook = '<a title="' . get_string('printbook', 'book') . '" href="print.php?id=' . $cm->id .
+        '" onclick="this.target=\'_blank\'"><img src="' .
+        $OUTPUT->pix_url('bookquiz/print_book', 'mod_game') .
+        '" class="bigicon" alt="' . get_string('printbook', 'book') . '"/></a>';
+    $printchapter = '<a title="' . get_string('printchapter', 'book') . '" href="print.php?id=' .
+        $cm->id . '&amp;chapterid=' . $chapter->id .
+        '" onclick="this.target=\'_blank\'"><img src="' .
+        $OUTPUT->pix_url('bookquiz/print_chapter', 'mod_game') . '" class="bigicon" alt="' .
+        get_string('printchapter', 'book') . '"/></a>';
 }
 
 
@@ -174,27 +174,21 @@ if ($book->disableprinting) {
  * Book display HTML code
  * =====================================================
  */
-echo "OK";
-?>
-<table border="0" cellspacing="0" width="100%" valign="top" cellpadding="2">
+echo '<table border="0" cellspacing="0" width="100%" valign="top" cellpadding="2">';
 
-<!-- subchapter title and upper navigation row //-->
-<tr>
-    <td width="<?php echo  10;?>" valign="bottom">
-    </td>
-    <td valign="top">
-        <table border="0" cellspacing="0" width="100%" valign="top" cellpadding="0">
-        <tr>
-            <td align="right"><?php echo 'help'.$chnavigation ?></td>
-        </tr>
-        </table>
-    </td>
-</tr>
+echo '<tr>';
+echo '<td width="10" valign="bottom"></td>';
+echo '<td valign="top">';
+echo '<table border="0" cellspacing="0" width="100%" valign="top" cellpadding="0">';
+echo '<tr>';
+echo '<td align="right">' . 'help' . $chnavigation . '</td>';
+echo '</tr>';
+echo '</table>';
+echo '</td>';
+echo '</tr>';
 
-<!-- toc and chapter row //-->
-<tr>
-    <td width="<?php echo $tocwidth ?>" valign="top" align="left">
-<?php
+echo '<tr>';
+echo '<td width="' . s($tocwidth) . '" valign="top" align="left">';
 echo $OUTPUT->box_start('generalbox');
 echo $toc;
 echo $OUTPUT->box_end();
@@ -203,34 +197,33 @@ if ($allowedit && $edit) {
     helpbutton('faq', get_string('faq', 'book'), 'book', true, true);
     echo '</font>';
 }
-?>
-    </td>
-    <td valign="top" align="right">
-<?php
+echo '</td>';
+
+echo '<td valign="top" align="right">';
 echo $OUTPUT->box_start('generalbox');
+
 $content = '';
 if (!$book->customtitles) {
     if ($currsubtitle == '&nbsp;') {
-        $content .= '<p class="book_chapter_title">'.$currtitle.'</p>';
+        $content .= '<p class="book_chapter_title">' . $currtitle . '</p>';
     } else {
-        $content .= '<p class="book_chapter_title">'.$currtitle.'<br />'.$currsubtitle.'</p>';
+        $content .= '<p class="book_chapter_title">' . $currtitle . '<br />' . $currsubtitle . '</p>';
     }
 }
 
 $content .= $chapter->content;
 
-$nocleanoption = new stdClass;
+$nocleanoption = new stdClass();
 $nocleanoption->noclean = true;
 echo '<div class="book_content">';
 echo format_text($content, FORMAT_HTML, $nocleanoption, $course->id);
 echo '</div>';
 echo $OUTPUT->box_end();
-// Lower navigation.
-echo '<p>'.$chnavigation.'</p>';
-?>
-    </td>
-</tr>
-</table>
+echo '<p>' . $chnavigation . '</p>';
+echo '</td>';
+echo '</tr>';
+echo '</table>';
 
-<?php
+echo $OUTPUT->footer($course);
+
 echo $OUTPUT->footer($course);

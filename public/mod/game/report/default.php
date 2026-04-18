@@ -45,7 +45,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class game_default_report {
-
     /**
      * Display
      *
@@ -75,14 +74,20 @@ class game_default_report {
         $strgame = get_string("modulename", "game");
 
         // Print the page header.
-        if (function_exists( 'build_navigation')) {
+        if (function_exists('build_navigation')) {
             $navigation = build_navigation('', $cm);
-            echo $OUTPUT->heading( $course->shortname, $course->shortname, $navigation);
+            echo $OUTPUT->heading($course->shortname, $course->shortname, $navigation);
         } else {
-            echo $OUTPUT->heading(format_string($game->name), "",
-                     "<a href=\"index.php?id=$course->id\">$strgames</a>
-                      -> ".format_string($game->name),
-                     '', $meta, true, update_module_button($cm->id, $course->id, $strgame), navmenu($course, $cm));
+            echo $OUTPUT->heading(
+                format_string($game->name),
+                "",
+                "<a href=\"index.php?id=$course->id\">$strgames</a> -> " . format_string($game->name),
+                '',
+                $meta,
+                true,
+                update_module_button($cm->id, $course->id, $strgame),
+                navmenu($course, $cm)
+            );
         }
 
         // Print the tabs.

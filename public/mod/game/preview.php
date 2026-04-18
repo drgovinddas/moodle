@@ -15,12 +15,15 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This page prints a particular attempt of game
+ * Preview page for game attempts.
+ *
+ * This page prints a particular attempt of a game instance.
  *
  * @package    mod_game
  * @copyright  2007 Vasilis Daloukas
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
 require_once("../../config.php");
 
 require_login();
@@ -28,16 +31,16 @@ require_login();
 require_once("lib.php");
 require_once("locallib.php");
 
-require_once( "hangman/play.php");
-require_once( "cross/play.php");
-require_once( "cryptex/play.php");
-require_once( "millionaire/play.php");
-require_once( "sudoku/play.php");
-require_once( "bookquiz/play.php");
+require_once("hangman/play.php");
+require_once("cross/play.php");
+require_once("cryptex/play.php");
+require_once("millionaire/play.php");
+require_once("sudoku/play.php");
+require_once("bookquiz/play.php");
 
-require_once( "headergame.php");
+require_once("headergame.php");
 
-$context = game_get_context_module_instance( $cm->id);
+$context = game_get_context_module_instance($cm->id);
 
 if (!has_capability('mod/game:viewreports', $context)) {
     throw new moodle_exception('only_teachers', 'game');
@@ -48,9 +51,9 @@ $gamekind = required_param('gamekind', PARAM_ALPHANUM);
 $update = required_param('update', PARAM_INT);
 
 $attemptid = required_param('attemptid', PARAM_INT);
-$attempt = $DB->get_record( 'game_attempts', ['id' => $attemptid]);
-$game = $DB->get_record( 'game', [ 'id' => $attempt->gameid]);
-$detail = $DB->get_record( 'game_'.$gamekind, [ 'id' => $attemptid]);
+$attempt = $DB->get_record('game_attempts', ['id' => $attemptid]);
+$game = $DB->get_record('game', [ 'id' => $attempt->gameid]);
+$detail = $DB->get_record('game_' . $gamekind, [ 'id' => $attemptid]);
 $solution = ($action == 'solution');
 
 $PAGE->navbar->add(get_string('preview', 'game'));
@@ -63,24 +66,50 @@ $showhtmlsolutions = false;
 $showhtmlprintbutton = true;
 $showstudentguess = true;
 
-switch( $gamekind) {
+switch ($gamekind) {
     case 'cross':
         $g = '';
-        game_cross_play( $cm, $game, $attempt, $detail, $g, $onlyshow, $solution,
-            $endofgame, $print, $checkbutton, $showhtmlsolutions, $showhtmlprintbutton,
-            $showstudentguess, $context, $course);
+        game_cross_play(
+            $cm,
+            $game,
+            $attempt,
+            $detail,
+            $g,
+            $onlyshow,
+            $solution,
+            $endofgame,
+            $print,
+            $checkbutton,
+            $showhtmlsolutions,
+            $showhtmlprintbutton,
+            $showstudentguess,
+            $context,
+            $course
+        );
         break;
     case 'sudoku':
-        game_sudoku_play( $cm, $game, $attempt, $detail, $onlyshow, $solution, $context, $course);
+        game_sudoku_play($cm, $game, $attempt, $detail, $onlyshow, $solution, $context, $course);
         break;
     case 'hangman':
         $preview = ($action == 'preview');
-        game_hangman_play( $update, $game, $attempt, $detail, $preview, $solution, $context, $course);
+        game_hangman_play($update, $game, $attempt, $detail, $preview, $solution, $context, $course);
         break;
     case 'cryptex':
-        $crossm = $DB->get_record( 'game_cross', ['id' => $attemptid]);
-        game_cryptex_play( $cm, $game, $attempt, $detail, $crossm, false, true, $solution, $context,
-            $print, $showhtmlprintbutton, $course);
+        $crossm = $DB->get_record('game_cross', ['id' => $attemptid]);
+        game_cryptex_play(
+            $cm,
+            $game,
+            $attempt,
+            $detail,
+            $crossm,
+            false,
+            true,
+            $solution,
+            $context,
+            $print,
+            $showhtmlprintbutton,
+            $course
+        );
         break;
 }
 

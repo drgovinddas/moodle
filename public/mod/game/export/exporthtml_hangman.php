@@ -24,21 +24,11 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-?>
-<script type="text/javascript">
-
-// Hangman for Moodle by Vasilis Daloukas.
-// The script is based on HangMan II script- By Chris Fortey (http://www.c-g-f.net/)
-
-var can_play = true;
-<?php
-
+$exportattachment = ($html->type == 'hangmanp');
 $destdir = game_export_createtempdir();
-
-$exportattachment = ( $html->type == 'hangmanp');
-$map = game_exmportjavame_getanswers( $game, $context, $exportattachment, $destdir, $files);
+$map = game_exmportjavame_getanswers($game, $context, $exportattachment, $destdir, $files);
 if ($map == false) {
-    throw new moodle_exception( 'hangman_error', 'game', 'No Questions');
+    throw new moodle_exception('hangman_error', 'game', 'No Questions');
 }
 
 $questions = '';
@@ -47,13 +37,11 @@ $lang = '';
 $allletters = '';
 $images = '';
 foreach ($map as $line) {
-    $answer = game_upper( $line->answer);
+    $answer = game_upper($line->answer);
     if ($game->param7) {
-        // Have to delete space.
         $answer = str_replace(' ', '', $answer);
     }
     if ($game->param8) {
-        // Have to deletε -.
         $answer = str_replace('-', '', $answer);
     }
 
@@ -61,30 +49,30 @@ foreach ($map as $line) {
         $lang = $game->language;
 
         if ($lang == '') {
-            $lang = game_detectlanguage( $answer);
+            $lang = game_detectlanguage($answer);
         }
         if ($lang == '') {
             $lang = current_language();
         }
-        $allletters = game_getallletters( $answer, $lang);
+        $allletters = game_getallletters($answer, $lang);
     }
 
-    if (game_getallletters( $answer, $lang) != $allletters) {
+    if (game_getallletters($answer, $lang) != $allletters) {
         continue;
     }
 
     if ($html->type == 'hangmanp') {
         $file = $line->attachment;
-        $pos = strrpos( $file, '.');
-        if ($pos == false) {
+        $pos = strrpos($file, '.');
+        if ($pos === false) {
             continue;
         }
     }
 
     if ($html->type == 'hangmanp') {
         $src = $line->attachment;
-        $pos = strrpos( $file, '.');
-        if ($pos == false) {
+        $pos = strrpos($file, '.');
+        if ($pos === false) {
             continue;
         }
     }
@@ -96,17 +84,17 @@ foreach ($map as $line) {
     if ($words != '') {
         $words .= ', ';
     }
-    $questions .= '"'.base64_encode( $line->question).'"';
-    $words .= '"'.base64_encode( $line->answer).'"';
+    $questions .= '"' . base64_encode($line->question) . '"';
+    $words .= '"' . base64_encode($line->answer) . '"';
 
     if ($html->type == 'hangmanp') {
-        $file = $line->id.substr( $file, $pos);
-        game_export_javame_smartcopyimage( $src, $destdir.'/'.$file, $html->maxpicturewidth, $html->maxpictureheight);
+        $file = $line->id . substr($file, $pos);
+        game_export_javame_smartcopyimage($src, $destdir . '/' . $file, $html->maxpicturewidth, $html->maxpictureheight);
 
         if ($images != '') {
             $images .= ', ';
         }
-        $images .= '"'.$file.'"';
+        $images .= '"' . $file . '"';
     }
 }
 
@@ -118,182 +106,171 @@ if ($game->param8) {
     $allletters .= '-';
 }
 
-echo "var questions = new Array($questions);\r";
-echo "var words = new Array($words);\r";
-if ($html->type == 'hangmanp') {
-    echo "var images = new Array($images);\r";
-}
-?>
-
-var to_guess = "";
-var display_word = "";
-var used_letters = "";
-var wrong_guesses = 0;
-var used_letters_all = "";
-var all_letters = new Array(<?php
-$len = game_strlen( $allletters);
+$lettersarray = [];
+$len = game_strlen($allletters);
 for ($i = 0; $i < $len; $i++) {
-    if ($i > 0) {
-        echo ',';
-    }
-    echo '"'.game_substr( $allletters, $i, 1).'"';
-}
-?>);
-
-function selectLetter(l)
-{
-    if (can_play == false)
-    {
-    }
-
-    if (used_letters.indexOf(l) != -1)
-    {
-        return;
-    }
-
-    used_letters_all += l;
-
-    if( to_guess.indexOf(l) == -1) {
-        used_letters += l;
-        document.getElementById('usedLetters').innerHTML = used_letters;
-    }
-
-    if (to_guess.indexOf(l) != -1) {
-        // correct letter guess
-        pos = 0;
-        temp_mask = display_word;
-
-        while (to_guess.indexOf(l, pos) != -1) {
-            pos = to_guess.indexOf(l, pos);
-            end = pos + 1;
-
-            start_text = temp_mask.substring(0, pos);
-            end_text = temp_mask.substring(end, temp_mask.length);
-
-            temp_mask = start_text + l + end_text;
-            pos = end;
-        }
-
-        display_word = temp_mask;
-        document.getElementById('displayWord').innerHTML=display_word;
-
-        if (display_word.indexOf("#") == -1) {
-            // won
-            alert( "<?php echo game_get_string_lang( 'win', 'mod_game', $lang); ?>");
-            can_play = false;
-            reset();
-        }
-    } else {
-        wrong_guesses++;
-
-<?php
-if ($html->type != 'hangmanp') {
-?>eval("document.hm.src=\"hangman_" + wrong_guesses + ".jpg\"");
-        // Ιncortect letter guess.
-        eval("document.hm.src=\"hangman_" + wrong_guesses + ".jpg\"");
-    <?php
-}
-    ?>
-        if (wrong_guesses == <?php echo $game->param10 + 1;?>) {
-            // lost
-            alert( "<?php echo strip_tags( game_get_string_lang( 'hangman_loose', 'mod_game', $lang)); ?>");
-            can_play = false;
-            reset();
-        }
-    }
-    
-    showallletters();
+    $lettersarray[] = game_substr($allletters, $i, 1);
 }
 
-function stripHTML(oldString) {
+$winmsg = game_get_string_lang('win', 'mod_game', $lang);
+$loosemsg = strip_tags(game_get_string_lang('hangman_loose', 'mod_game', $lang));
+$newlabel = game_get_string_lang('html_hangman_new', 'mod_game', $lang);
+$maxwrong = $game->param10 + 1;
+$startimage = ($html->type == 'hangmanp' ? '' : 'hangman_0.jpg');
+$ishangmanp = ($html->type == 'hangmanp' ? 'true' : 'false');
 
-  return oldString.replace(/<&#91;^>&#93;*>/g, "");
-  
-}
-
-function reset() {
-    selectWord();
-
-    document.getElementById('usedLetters').innerHTML = "&nbsp;";
-    used_letters = "";
-    used_letters_all = "";
-    wrong_guesses = 0;
-    showallletters();
-
-<?php
-if ($html->type != 'hangmanp') {
-    echo '    document.hm.src="hangman_0.jpg"'."\r";
-}
 ?>
+<script type="text/javascript">
+    // Hangman for Moodle by Vasilis Daloukas.
+    // The script is based on HangMan II script by Chris Fortey.
 
-}
+    var can_play = true;
+    var questions = new Array(<?php echo $questions; ?>);
+    var words = new Array(<?php echo $words; ?>);
+    <?php if ($ishangmanp) { ?>
+    var images = new Array(<?php echo $images; ?>);
+    <?php } ?>
 
-function showallletters() {
-    var letters = "";
-    var next =  all_letters.length / 4;
-    var letter = "";
-    
-    for( i=0; i < all_letters.length; i++) {
-        if( i > next) {
-            next += all_letters.length / 4;
-            letters += " ";
+    var ishangmanp = <?php echo $ishangmanp; ?>;
+    var maxwrong = <?php echo $maxwrong; ?>;
+    var winmsg = <?php echo json_encode($winmsg); ?>;
+    var loosemsg = <?php echo json_encode($loosemsg); ?>;
+    var all_letters = <?php echo json_encode($lettersarray); ?>;
+
+    var to_guess = "";
+    var display_word = "";
+    var used_letters = "";
+    var wrong_guesses = 0;
+    var used_letters_all = "";
+
+    function selectLetter(l) {
+        if (can_play === false) {
         }
-        
-        letter = all_letters[ i];
-        if( used_letters_all.length > 0) {
-            if( used_letters_all.indexOf( letter) > -1) {
-                continue;
+
+        if (used_letters.indexOf(l) !== -1) {
+            return;
+        }
+
+        used_letters_all += l;
+
+        if (to_guess.indexOf(l) === -1) {
+            used_letters += l;
+            document.getElementById('usedLetters').innerHTML = used_letters;
+        }
+
+        if (to_guess.indexOf(l) !== -1) {
+            pos = 0;
+            temp_mask = display_word;
+
+            while (to_guess.indexOf(l, pos) !== -1) {
+                pos = to_guess.indexOf(l, pos);
+                end = pos + 1;
+
+                start_text = temp_mask.substring(0, pos);
+                end_text = temp_mask.substring(end, temp_mask.length);
+
+                temp_mask = start_text + l + end_text;
+                pos = end;
+            }
+
+            display_word = temp_mask;
+            document.getElementById('displayWord').innerHTML = display_word;
+
+            if (display_word.indexOf("#") === -1) {
+                alert(winmsg);
+                can_play = false;
+                reset();
+            }
+        } else {
+            wrong_guesses++;
+
+            if (!ishangmanp) {
+                document.hm.src = "hangman_" + wrong_guesses + ".jpg";
+            }
+
+            if (wrong_guesses === maxwrong) {
+                alert(loosemsg);
+                can_play = false;
+                reset();
             }
         }
 
-        letters = letters + "<a href=\"javascript:selectLetter('" + letter + "');\">" + letter + "</a>"
-    }
-    document.getElementById( "letters").innerHTML = letters;
-}
-
-function selectWord() {
-    can_play = true;
-    random_number = Math.round(Math.random() * (words.length - 1));
-    to_guess =  Base64.decode( words[random_number]);
-    to_question = Base64.decode( questions[random_number]);
-
-    // Display masked word.
-    masked_word = createMask(to_guess);
-    document.getElementById('displayWord').innerHTML=masked_word;
-    
-    display_word = masked_word;
-    
-<?php
-if ($html->type == 'hangmanp') {
-    echo "    document.hm.src = images[ random_number];\r";
-} else {
-    echo "    document.getElementById('question').innerHTML=to_question;\r";
-}
-?>
-}
-
-function createMask(m)
-{
-    mask = "";
-    word_lenght = m.length;
-
-
-    for (i = 0; i < word_lenght; i++) {
-        mask += "#";
+        showallletters();
     }
 
-    return mask;
-}
+    function stripHTML(oldString) {
+        return oldString.replace(/<&#91;^>&#93;*>/g, "");
+    }
 
-/**
-*
-*  Base64 encode / decode
-*  http://www.webtoolkit.info/
-*
-**/
- 
+    function reset() {
+        selectWord();
+
+        document.getElementById('usedLetters').innerHTML = "&nbsp;";
+        used_letters = "";
+        used_letters_all = "";
+        wrong_guesses = 0;
+        showallletters();
+
+        if (!ishangmanp) {
+            document.hm.src = "hangman_0.jpg";
+        }
+    }
+
+    function showallletters() {
+        var letters = "";
+        var next = all_letters.length / 4;
+        var letter = "";
+
+        for (i = 0; i < all_letters.length; i++) {
+            if (i > next) {
+                next += all_letters.length / 4;
+                letters += " ";
+            }
+
+            letter = all_letters[i];
+            if (used_letters_all.length > 0) {
+                if (used_letters_all.indexOf(letter) > -1) {
+                    continue;
+                }
+            }
+
+            letters = letters + "<a href=\"javascript:selectLetter('" + letter + "');\">" + letter + "</a>";
+        }
+        document.getElementById("letters").innerHTML = letters;
+    }
+
+    function selectWord() {
+        can_play = true;
+        random_number = Math.round(Math.random() * (words.length - 1));
+        to_guess = Base64.decode(words[random_number]);
+        to_question = Base64.decode(questions[random_number]);
+
+        masked_word = createMask(to_guess);
+        document.getElementById('displayWord').innerHTML = masked_word;
+        display_word = masked_word;
+
+        if (ishangmanp) {
+            document.hm.src = images[random_number];
+        } else {
+            document.getElementById('question').innerHTML = to_question;
+        }
+    }
+
+    function createMask(m) {
+        mask = "";
+        word_lenght = m.length;
+
+        for (i = 0; i < word_lenght; i++) {
+            mask += "#";
+        }
+
+        return mask;
+    }
+
+    // Base64 encode / decode.
+    // Source adapted from webtoolkit.
 var Base64 = {
- 
+
     // Private property.
     _keyStr : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
 
@@ -306,7 +283,7 @@ var Base64 = {
 
         input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
 
-        while (i < input.length) { 
+        while (i < input.length) {
             enc1 = this._keyStr.indexOf(input.charAt(i++));
             enc2 = this._keyStr.indexOf(input.charAt(i++));
             enc3 = this._keyStr.indexOf(input.charAt(i++));
@@ -318,26 +295,26 @@ var Base64 = {
 
             output = output + String.fromCharCode(chr1);
 
-            if (enc3 != 64) {
+            if (enc3 !== 64) {
                 output = output + String.fromCharCode(chr2);
             }
-            if (enc4 != 64) {
+            if (enc4 !== 64) {
                 output = output + String.fromCharCode(chr3);
             }
         }
 
         output = Base64._utf8_decode(output);
 
-        return output; 
-    }, 
- 
+        return output;
+    },
+
     // Private method for UTF-8 decoding.
     _utf8_decode : function (utftext) {
         var string = "";
         var i = 0;
         var c = c1 = c2 = 0;
 
-        while ( i < utftext.length ) {
+        while (i < utftext.length ) {
             c = utftext.charCodeAt(i);
 
             if (c < 128) {
@@ -352,18 +329,18 @@ var Base64 = {
                 c3 = utftext.charCodeAt(i+2);
                 string += String.fromCharCode(((c & 15) << 12) | ((c2 & 63) << 6) | (c3 & 63));
                 i += 3;
-            } 
+            }
         }
 
         return string;
-    } 
+    }
 }
 </script>
 </head>
 
 <div id="question"></div>
-<img src="<?php echo ($html->type == 'hangmanp' ? '' : 'hangman_0.jpg');?>" name="hm"> 
-<a href="javascript:reset();"><?php echo game_get_string_lang( 'html_hangman_new', 'mod_game', $lang); ?></a>
+<?php echo '<img src="' . s($startimage) . '" name="hm">'; ?>
+<?php echo '<a href="javascript:reset();">' . s($newlabel) . '</a>'; ?>
 <form name="game">
 <div id="displayWord"> </div>
 <div id="usedLetters"> </div>

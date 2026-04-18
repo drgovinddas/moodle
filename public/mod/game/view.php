@@ -15,32 +15,32 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * This file is the entry point to the game module. All pages are rendered from here
+ * This file is the entry point to the game module. All pages are rendered from here.
  *
- * @package mod_game
- * @copyright 2007 Vasilis Daloukas
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or late
+ * @package    mod_game
+ * @copyright  2007 Vasilis Daloukas
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require_once(dirname(__FILE__) . '/../../config.php');
-require_once($CFG->libdir.'/gradelib.php');
-require_once($CFG->dirroot.'/mod/game/locallib.php');
+require_once($CFG->libdir . '/gradelib.php');
+require_once($CFG->dirroot . '/mod/game/locallib.php');
 
 $id = optional_param('id', 0, PARAM_INT); // Course Module ID.
 
 if (! $cm = get_coursemodule_from_id('game', $id)) {
-    throw new moodle_exception( 'game_error', 'game', 'invalidcoursemodule');
+    throw new moodle_exception('game_error', 'game', 'invalidcoursemodule');
 }
 if (! $course = $DB->get_record('course', ['id' => $cm->course])) {
-    throw new moodle_exception( 'game_error', 'game', 'coursemisconf');
+    throw new moodle_exception('game_error', 'game', 'coursemisconf');
 }
 if (! $game = $DB->get_record('game', ['id' => $cm->instance])) {
-    throw new moodle_exception( 'game_error', 'game', 'invalidcoursemodule');
+    throw new moodle_exception('game_error', 'game', 'invalidcoursemodule');
 }
 
 // Check login and get context.
 require_login($course->id, false, $cm);
-$context = game_get_context_module_instance( $cm->id);
+$context = game_get_context_module_instance($cm->id);
 require_capability('mod/game:view', $context);
 
 $timenow = time();
@@ -68,7 +68,7 @@ if (has_capability('mod/game:manage', $context)) {
 
 // Log this request.
 if (game_use_events()) {
-    require( 'classes/event/course_module_viewed.php');
+    require('classes/event/course_module_viewed.php');
         \mod_game\event\course_module_viewed::viewed($game, $context)->trigger();
 } else {
     add_to_log($course->id, 'game', 'view', "view.php?id=$cm->id", $game->id, $cm->id);
@@ -80,8 +80,8 @@ $completion->set_module_viewed($cm);
 
 // Here have to check if not need summarize.
 if ($game->disablesummarize) {
-    if (game_can_start_new_attempt( $game)) {
-        require_once( 'attempt.php');
+    if (game_can_start_new_attempt($game)) {
+        require_once('attempt.php');
         die;
     }
 }
@@ -97,11 +97,11 @@ if ($edit != -1 && $PAGE->user_allowed_editing()) {
 $title = $course->shortname . ': ' . format_string($game->name);
 
 if ($PAGE->user_allowed_editing() && !empty($CFG->showblocksonmodpages)) {
-    $buttons = '<table><tr><td><form method="get" action="view.php"><div>'.
-        '<input type="hidden" name="id" value="'.$cm->id.'" />'.
-        '<input type="hidden" name="edit" value="'.($PAGE->user_is_editing() ? 'off' : 'on').'" />'.
-        '<input type="submit" value="'.
-        get_string($PAGE->user_is_editing() ? 'blockseditoff' : 'blocksediton').
+    $buttons = '<table><tr><td><form method="get" action="view.php"><div>' .
+        '<input type="hidden" name="id" value="' . $cm->id . '" />' .
+        '<input type="hidden" name="edit" value="' . ($PAGE->user_is_editing() ? 'off' : 'on') . '" />' .
+        '<input type="submit" value="' .
+        get_string($PAGE->user_is_editing() ? 'blockseditoff' : 'blocksediton') .
         '" /></div></form></td></tr></table>';
     $PAGE->set_button($buttons);
 }
@@ -116,7 +116,7 @@ echo $OUTPUT->heading(format_string($game->name));
 
 // Display information about this game.
 echo $OUTPUT->box_start('quizinfo');
-echo $game->intro.'<br>';
+echo $game->intro . '<br>';
 if ($game->attempts != 1) {
     echo get_string('gradingmethod', 'quiz', game_get_grading_option_name($game->grademethod));
 }
@@ -125,9 +125,9 @@ echo $OUTPUT->box_end();
 // Show number of attempts summary to those who can view reports.
 if (has_capability('mod/game:viewreports', $context)) {
     if ($strattemptnum = game_get_user_attempts($game->id, $USER->id)) {
-        echo get_string( 'attempts', 'game').': '.count( $strattemptnum);
+        echo get_string('attempts', 'game') . ': ' . count($strattemptnum);
         if ($game->maxattempts) {
-            echo ' ('.get_string( 'max', 'quiz').': '.$game->maxattempts.')';
+            echo ' (' . get_string('max', 'quiz') . ': ' . $game->maxattempts . ')';
         }
     }
 }
@@ -168,7 +168,7 @@ if ($attempts) {
     echo $OUTPUT->heading(get_string('summaryofattempts', 'quiz'));
 
     // Work out which columns we need, taking account what data is available in each attempt.
-    list($someoptions, $alloptions) = game_get_combined_reviewoptions($game, $attempts, $context);
+    [$someoptions, $alloptions] = game_get_combined_reviewoptions($game, $attempts, $context);
 
     $attemptcolumn = $game->attempts != 1;
 
@@ -191,7 +191,7 @@ if ($attempts) {
     $table->size[] = '';
 
     if ($gradecolumn) {
-        $table->head[] = get_string('grade', 'game') . ' / ' . game_format_grade( $game, $game->grade);
+        $table->head[] = get_string('grade', 'game') . ' / ' . game_format_grade($game, $game->grade);
         $table->align[] = 'center';
         $table->size[] = '';
     }
@@ -235,9 +235,11 @@ if ($attempts) {
             if ($attemptoptions->scores) {
                 $formattedgrade = game_format_grade($game, $attemptgrade);
                 // Highlight the highest grade if appropriate.
-                if ($overallstats && !$attempt->preview && $numattempts > 1 && !is_null($mygrade) &&
-                    $attemptgrade == $mygrade && $game->grademethod == QUIZ_GRADEHIGHEST) {
-                        $table->rowclasses[$attempt->attempt] = 'bestrow';
+                if (
+                    $overallstats && !$attempt->preview && $numattempts > 1 && !is_null($mygrade) &&
+                    $attemptgrade == $mygrade && $game->grademethod == QUIZ_GRADEHIGHEST
+                ) {
+                    $table->rowclasses[$attempt->attempt] = 'bestrow';
                 }
 
                 $row[] = $formattedgrade;
@@ -262,7 +264,7 @@ if ($numattempts && $gradecolumn && !is_null($mygrade)) {
     $resultinfo = '';
 
     if ($overallstats) {
-        $a = new stdClass;
+        $a = new stdClass();
         $a->grade = game_format_grade($game, $mygrade);
         $a->maxgrade = game_format_grade($game, $game->grade);
         $a = get_string('outofshort', 'quiz', $a);
@@ -270,12 +272,12 @@ if ($numattempts && $gradecolumn && !is_null($mygrade)) {
     }
 
     if ($mygradeoverridden) {
-        $resultinfo .= '<p class="overriddennotice">'.get_string('overriddennotice', 'grades')."</p>\n";
+        $resultinfo .= '<p class="overriddennotice">' . get_string('overriddennotice', 'grades') . "</p>\n";
     }
 
     if ($gradebookfeedback) {
         $resultinfo .= $OUTPUT->heading(get_string('comment', 'game'), 3, 'main');
-        $resultinfo .= '<p class="gameteacherfeedback">'.$gradebookfeedback."</p>\n";
+        $resultinfo .= '<p class="gameteacherfeedback">' . $gradebookfeedback . "</p>\n";
     }
 
     if ($resultinfo) {
@@ -293,7 +295,7 @@ if ($unfinished) {
     }
 } else {
     // Game is finished. Check if max number of attempts is reached.
-    if (!game_can_start_new_attempt( $game)) {
+    if (!game_can_start_new_attempt($game)) {
         $canattempt = false;
     }
 
@@ -318,7 +320,7 @@ if ($buttontext) {
 
     // Show the start button, in a div that is initially hidden.
     echo '<div id="gamestartbuttondiv">';
-    $url = new moodle_url($CFG->wwwroot.'/mod/game/attempt.php', ['id' => $id]);
+    $url = new moodle_url($CFG->wwwroot . '/mod/game/attempt.php', ['id' => $id]);
     $button = new single_button($url, $buttontext);
     echo $OUTPUT->render($button);
     echo "</div>\n";
@@ -329,14 +331,14 @@ echo $OUTPUT->box_end();
 
 if ($game->highscore > 0) {
     // Display high score.
-    game_highscore( $game);
+    game_highscore($game);
 }
 
 if (has_capability('mod/game:manage', $context)) {
-    require( 'check.php');
-    $s = game_check_common_problems( $context, $game);
+    require('check.php');
+    $s = game_check_common_problems($context, $game);
     if ($s != '') {
-        echo '<br>'.$s;
+        echo '<br>' . $s;
     }
 }
 
@@ -347,16 +349,16 @@ echo $OUTPUT->footer();
  *
  * @param stdClass $game
  */
-function game_highscore( $game) {
+function game_highscore($game) {
     global $CFG, $DB, $OUTPUT;
 
-    $sql = "SELECT userid, MAX(score) as maxscore".
-    " FROM {$CFG->prefix}game_attempts ".
-    " WHERE gameid={$game->id} AND score > 0".
-    " GROUP BY userid".
+    $sql = "SELECT userid, MAX(score) as maxscore" .
+    " FROM {$CFG->prefix}game_attempts " .
+    " WHERE gameid={$game->id} AND score > 0" .
+    " GROUP BY userid" .
     " ORDER BY max(score) DESC";
     $score = 0;
-    $recs = $DB->get_records_sql( $sql);
+    $recs = $DB->get_records_sql($sql);
     foreach ($recs as $rec) {
         $score = $rec->maxscore;
     }
@@ -364,15 +366,15 @@ function game_highscore( $game) {
         return;
     }
 
-    $sql = "SELECT u.id, u.lastname, u.firstname, MAX(ga.score) as maxscore".
-    " FROM {$CFG->prefix}user u, {$CFG->prefix}game_attempts ga ".
-    " WHERE ga.gameid={$game->id} AND ga.userid = u.id".
-    " GROUP BY u.id,u.lastname,u.firstname".
-    " HAVING MAX(ga.score) >= $score".
+    $sql = "SELECT u.id, u.lastname, u.firstname, MAX(ga.score) as maxscore" .
+    " FROM {$CFG->prefix}user u, {$CFG->prefix}game_attempts ga " .
+    " WHERE ga.gameid={$game->id} AND ga.userid = u.id" .
+    " GROUP BY u.id,u.lastname,u.firstname" .
+    " HAVING MAX(ga.score) >= $score" .
     " ORDER BY MAX(ga.score) DESC";
 
-    $recs = $DB->get_records_sql( $sql, null, 0, $game->highscore);
-    if (count( $recs) == 0) {
+    $recs = $DB->get_records_sql($sql, null, 0, $game->highscore);
+    if (count($recs) == 0) {
         return false;
     }
 
@@ -394,13 +396,13 @@ function game_highscore( $game) {
     foreach ($recs as $rec) {
         echo "<tr>";
         $row = [];
-        $row[] = $rec->firstname.' '.$rec->lastname;
-        $row[] = round( $rec->maxscore * 100).' %';
+        $row[] = $rec->firstname . ' ' . $rec->lastname;
+        $row[] = round($rec->maxscore * 100) . ' %';
 
         $table->data[$rec->id] = $row;
     }
 
-    echo '<br>'.$OUTPUT->heading(get_string('col_highscores', 'game'));
+    echo '<br>' . $OUTPUT->heading(get_string('col_highscores', 'game'));
 
     echo html_writer::table($table);
 }

@@ -24,15 +24,16 @@
 
 namespace mod_game\privacy;
 
-use \core_privacy\local\request\writer;
-use \core_privacy\local\request\transform;
-use \core_privacy\local\request\contextlist;
-use \core_privacy\local\request\approved_userlist;
-use \core_privacy\local\request\userlist;
-use \core_privacy\local\request\approved_contextlist;
-use \core_privacy\local\request\deletion_criteria;
-use \core_privacy\local\metadata\collection;
-use \core_privacy\manager;
+use core_comment\privacy\provider as providerAlias;
+use core_privacy\local\request\core_userlist_provider;
+use core_privacy\local\request\writer;
+use core_privacy\local\request\transform;
+use core_privacy\local\request\contextlist;
+use core_privacy\local\request\approved_userlist;
+use core_privacy\local\request\userlist;
+use core_privacy\local\request\approved_contextlist;
+use core_privacy\local\request\deletion_criteria;
+use core_privacy\local\metadata\collection;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -48,18 +49,16 @@ require_once($CFG->dirroot . '/mod/game/locallib.php');
 class provider implements
     // This plugin has data.
     \core_privacy\local\metadata\provider,
-    \core_privacy\local\request\core_userlist_provider,
-
+    \core_privacy\local\request\plugin\provider,
+    core_userlist_provider {
     // This plugin currently implements the original plugin_provider interface.
-    \core_privacy\local\request\plugin\provider {
-
     /**
      * Get the list of contexts that contain user information for the specified user.
      *
      * @param   collection  $items  The collection to add metadata to.
      * @return  collection  The array of metadata
      */
-    public static function get_metadata(collection $items) : collection {
+    public static function get_metadata(collection $items): collection {
         // The table 'game' stores a record for each game.
         // It does not contain user personal data, but data is returned from it for contextual requirements.
 
@@ -188,8 +187,7 @@ class provider implements
      * @param   int             $userid The user to search.
      * @return  contextlist     $contextlist The contextlist containing the list of contexts used in this plugin.
      */
-    public static function get_contexts_for_userid(int $userid) : contextlist {
-
+    public static function get_contexts_for_userid(int $userid): contextlist {
         // Select the context of any game attempt where a user has an attempt, plus the related usages.
         $sql = "SELECT c.id
                   FROM {context} c
@@ -221,7 +219,7 @@ class provider implements
 
         $user = $contextlist->get_user();
         $userid = $user->id;
-        list($contextsql, $contextparams) = $DB->get_in_or_equal($contextlist->get_contextids(), SQL_PARAMS_NAMED);
+        [$contextsql, $contextparams] = $DB->get_in_or_equal($contextlist->get_contextids(), SQL_PARAMS_NAMED);
 
         $sql = "SELECT
                     g.*,
@@ -247,8 +245,8 @@ class provider implements
         // Fetch the individual games.
         $games = $DB->get_recordset_sql($sql, $params);
         foreach ($games as $game) {
-            list($course, $cm) = get_course_and_cm_from_cmid($game->cmid, 'game');
-            $context = game_get_context_module_instance( $cm->id);
+            [$course, $cm] = get_course_and_cm_from_cmid($game->cmid, 'game');
+            $context = game_get_context_module_instance($cm->id);
 
             $gamedata = \core_privacy\local\request\helper::get_context_data($context, $contextlist->get_user());
 
@@ -287,7 +285,7 @@ class provider implements
         }
 
         // This will delete all attempts and game grades for this game.
-        game_delete_instance( $cm->instance);
+        game_delete_instance($cm->instance);
     }
 
     /**
@@ -313,7 +311,7 @@ class provider implements
             $user = $contextlist->get_user();
 
             // This will delete all attempts and game grades for this game.
-            game_delete_user_attempts( $cm->instance, $user);
+            game_delete_user_attempts($cm->instance, $user);
         }
     }
 
@@ -326,7 +324,7 @@ class provider implements
         global $DB;
 
         $userid = $contextlist->get_user()->id;
-        list($contextsql, $contextparams) = $DB->get_in_or_equal($contextlist->get_contextids(), SQL_PARAMS_NAMED);
+        [$contextsql, $contextparams] = $DB->get_in_or_equal($contextlist->get_contextids(), SQL_PARAMS_NAMED);
 
         $sql = "SELECT
                     c.id AS contextid,
@@ -344,7 +342,7 @@ class provider implements
         $attempts = $DB->get_recordset_sql($sql, $params);
         foreach ($attempts as $attempt) {
             $attemptsubcontext = helper::get_game_attempt_subcontext($attempt, $contextlist->get_user());
-            $context = game_get_context_module_instance( $attempt->cmid);
+            $context = game_get_context_module_instance($attempt->cmid);
 
             // Store the game attempt data.
             $data = (object) [];
@@ -362,27 +360,27 @@ class provider implements
             $data->attempts = $attempt->attempts;
             $data->language = $attempt->language;
 
-            switch( $attempt->gamekind) {
+            switch ($attempt->gamekind) {
                 case 'bookquiz':
-                    self::export_game_attempts_bookquiz( $attempt, $data);
+                    self::export_game_attempts_bookquiz($attempt, $data);
                     break;
                 case 'cross':
-                    self::export_game_attempts_cross( $attempt, $data);
+                    self::export_game_attempts_cross($attempt, $data);
                     break;
                 case 'cryptex':
-                    self::export_game_attempts_cryptex( $attempt, $data);
+                    self::export_game_attempts_cryptex($attempt, $data);
                     break;
                 case 'hangman':
-                    self::export_game_attempts_hangman( $attempt, $data);
+                    self::export_game_attempts_hangman($attempt, $data);
                     break;
                 case 'hiddenpicture':
-                    self::export_game_attempts_hiddenpicture( $attempt, $data);
+                    self::export_game_attempts_hiddenpicture($attempt, $data);
                     break;
                 case 'snakes':
-                    self::export_game_attempts_snakes( $attempt, $data);
+                    self::export_game_attempts_snakes($attempt, $data);
                     break;
                 case 'sudoku':
-                    self::export_game_attempts_sudoku( $attempt, $data);
+                    self::export_game_attempts_sudoku($attempt, $data);
                     break;
             }
 
@@ -397,17 +395,17 @@ class provider implements
      * @param stdClass $attempt The attempt to be exported.
      * @param stdClass $data    The data to be returned
      */
-    private static function export_game_attempts_bookquiz( $attempt, &$data) {
+    private static function export_game_attempts_bookquiz($attempt, &$data) {
         global $CFG, $DB;
 
         $sql = "SELECT * FROM {$CFG->prefix}game_bookquiz WHERE id={$attempt->id}";
-        $bookquiz = $DB->get_record_sql( $sql);
+        $bookquiz = $DB->get_record_sql($sql);
         if ($bookquiz === false) {
             return;
         }
         if ($bookquiz->lastchapterid != 0) {
             $sql = "SELECT title FROM {$CFG->prefix}book_chapters WHERE id={$bookquiz->lastchapterid}";
-            $rec = $DB->get_record_sql( $sql);
+            $rec = $DB->get_record_sql($sql);
             if ($rec != false) {
                 $data->bookquiz_lastchapter = $rec->title;
             }
@@ -420,11 +418,11 @@ class provider implements
      * @param stdClass $attempt The attempt to be exported.
      * @param stdClass $data    The data to be returned
      */
-    private static function export_game_attempts_cross( $attempt, &$data) {
+    private static function export_game_attempts_cross($attempt, &$data) {
         global $CFG, $DB;
 
         $sql = "SELECT * FROM {$CFG->prefix}game_cross WHERE id={$attempt->id}";
-        $cross = $DB->get_record_sql( $sql);
+        $cross = $DB->get_record_sql($sql);
         if ($cross === false) {
             return;
         }
@@ -447,11 +445,11 @@ class provider implements
      * @param stdClass $attempt The attempt to be exported.
      * @param stdClass $data    The data to be returned
      */
-    private static function export_game_attempts_cryptex( $attempt, &$data) {
+    private static function export_game_attempts_cryptex($attempt, &$data) {
         global $CFG, $DB;
 
         $sql = "SELECT * FROM {$CFG->prefix}game_cryptex WHERE id={$attempt->id}";
-        $cryptex = $DB->get_record_sql( $sql);
+        $cryptex = $DB->get_record_sql($sql);
         if ($cryptex === false) {
             return;
         }
@@ -464,11 +462,11 @@ class provider implements
      * @param stdClass $attempt The attempt to be exported.
      * @param stdClass $data    The data to be returned
      */
-    private static function export_game_attempts_hangman( $attempt, &$data) {
+    private static function export_game_attempts_hangman($attempt, &$data) {
         global $CFG, $DB;
 
         $sql = "SELECT * FROM {$CFG->prefix}game_hangman WHERE id={$attempt->id}";
-        $hangman = $DB->get_record_sql( $sql);
+        $hangman = $DB->get_record_sql($sql);
         if ($hangman === false) {
             return;
         }
@@ -487,11 +485,11 @@ class provider implements
      * @param stdClass $attempt The attempt to be exported.
      * @param stdClass $data    The data to be returned
      */
-    private static function export_game_attempts_hiddenpicture( $attempt, &$data) {
+    private static function export_game_attempts_hiddenpicture($attempt, &$data) {
         global $CFG, $DB;
 
         $sql = "SELECT * FROM {$CFG->prefix}game_hiddenpicture WHERE id={$attempt->id}";
-        $hiddenpicture = $DB->get_record_sql( $sql);
+        $hiddenpicture = $DB->get_record_sql($sql);
         if ($hiddenpicture === false) {
             return;
         }
@@ -506,11 +504,11 @@ class provider implements
      * @param stdClass $attempt The attempt to be exported.
      * @param stdClass $data    The data to be returned
      */
-    private static function export_game_attempts_millionaire( $attempt, &$data) {
+    private static function export_game_attempts_millionaire($attempt, &$data) {
         global $CFG, $DB;
 
         $sql = "SELECT * FROM {$CFG->prefix}game_millionaire WHERE id={$attempt->id}";
-        $millionaire = $DB->get_record_sql( $sql);
+        $millionaire = $DB->get_record_sql($sql);
         if ($millionaire === false) {
             return;
         }
@@ -525,11 +523,11 @@ class provider implements
      * @param stdClass $attempt The attempt to be exported.
      * @param stdClass $data    The data to be returned
      */
-    private static function export_game_attempts_snakes( $attempt, &$data) {
+    private static function export_game_attempts_snakes($attempt, &$data) {
         global $CFG, $DB;
 
         $sql = "SELECT * FROM {$CFG->prefix}game_snakes WHERE id={$attempt->id}";
-        $snakes = $DB->get_record_sql( $sql);
+        $snakes = $DB->get_record_sql($sql);
         if ($snakes === false) {
             return;
         }
@@ -545,11 +543,11 @@ class provider implements
      * @param stdClass $attempt The attempt to be exported.
      * @param stdClass $data    The data to be returned
      */
-    private static function export_game_attempts_sudoku( $attempt, &$data) {
+    private static function export_game_attempts_sudoku($attempt, &$data) {
         global $CFG, $DB;
 
         $sql = "SELECT * FROM {$CFG->prefix}game_sudoku WHERE id={$attempt->id}";
-        $sudoku = $DB->get_record_sql( $sql);
+        $sudoku = $DB->get_record_sql($sql);
         if ($sudoku === false) {
             return;
         }
@@ -558,7 +556,6 @@ class provider implements
         $data->sudoku_opened = $sudoku->opened;
         $data->sudoku_guess = $sudoku->guess;
     }
-
 
     /**
      * Get the list of users who have data within a context.
@@ -575,7 +572,7 @@ class provider implements
         $params = [
             'contextid' => $context->id,
             'contextlevel' => CONTEXT_MODULE,
-            'modname' => 'game'
+            'modname' => 'game',
         ];
 
         // Find users with game attempt entries.
@@ -623,20 +620,16 @@ class provider implements
         $userlist->add_from_sql('userid', $sql, $params);
 
         // Find users with game attempts.
-        \core_comment\privacy\provider::get_users_in_context_from_sql($userlist, 'com', 'mod_game', 'game_attempts',
-                $context->id);
+        providerAlias::get_users_in_context_from_sql($userlist, 'com', 'mod_game', 'game_attempts', $context->id);
 
         // Find users with game grades.
-        \core_comment\privacy\provider::get_users_in_context_from_sql($userlist, 'com', 'mod_game', 'game_grades',
-                $context->id);
+        providerAlias::get_users_in_context_from_sql($userlist, 'com', 'mod_game', 'game_grades', $context->id);
 
         // Find users with game queries.
-        \core_comment\privacy\provider::get_users_in_context_from_sql($userlist, 'com', 'mod_game', 'game_queries',
-                $context->id);
+        providerAlias::get_users_in_context_from_sql($userlist, 'com', 'mod_game', 'game_queries', $context->id);
 
         // Find users with game queries.
-        \core_comment\privacy\provider::get_users_in_context_from_sql($userlist, 'com', 'mod_game', 'game_repetitions',
-                $context->id);
+        providerAlias::get_users_in_context_from_sql($userlist, 'com', 'mod_game', 'game_repetitions', $context->id);
     }
 
 
@@ -652,7 +645,7 @@ class provider implements
         $cm = $DB->get_record('course_modules', ['id' => $context->instanceid]);
         $game = $DB->get_record('game', ['id' => $cm->instance]);
 
-        list($userinsql, $userinparams) = $DB->get_in_or_equal($userlist->get_userids(), SQL_PARAMS_NAMED);
+        [$userinsql, $userinparams] = $DB->get_in_or_equal($userlist->get_userids(), SQL_PARAMS_NAMED);
         $params = array_merge(['gameid' => $game->id], $userinparams);
         $sql = "gameid = :gameid AND userid {$userinsql}";
 
@@ -661,5 +654,4 @@ class provider implements
         $DB->delete_records_select('game_queries', $sql, $params);
         $DB->delete_records_select('game_repetitions', $sql, $params);
     }
-
 }
