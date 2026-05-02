@@ -237,6 +237,21 @@ class flavour_edit_form extends \moodleform {
         $mform->addRule('look_brandcolor', get_string('validateerror', 'admin'), 'theme_boost_union_colorpicker_rule');
         $mform->addHelpButton('look_brandcolor', 'flavoursbrandcolor', 'theme_boost_union');
 
+        // Add branded gray tones select element.
+        $brandedgreyoption = [
+            THEME_BOOST_UNION_SETTING_SELECT_NOCHANGE => get_string('nochange', 'theme_boost_union'),
+            THEME_BOOST_UNION_SETTING_SELECT_YES => get_string('yes'),
+            THEME_BOOST_UNION_SETTING_SELECT_NO => get_string('no'),
+        ];
+        $mform->addElement(
+            'select',
+            'look_brandedgraytones',
+            get_string('flavoursbrandedgraytones', 'theme_boost_union'),
+            $brandedgreyoption
+        );
+        $mform->setDefault('look_brandedgraytones', THEME_BOOST_UNION_SETTING_SELECT_NOCHANGE);
+        $mform->addHelpButton('look_brandedgraytones', 'flavoursbrandedgraytones', 'theme_boost_union');
+
         // Add link colors heading.
         $context = new \stdClass();
         $context->title = get_string('linkcolorsheading', 'theme_boost_union', null, true);
@@ -371,10 +386,10 @@ class flavour_edit_form extends \moodleform {
                         get_string('navbarcolorsetting_light', 'theme_boost_union'),
                 THEME_BOOST_UNION_SETTING_NAVBARCOLOR_DARK =>
                         get_string('navbarcolorsetting_dark', 'theme_boost_union'),
-                THEME_BOOST_UNION_SETTING_NAVBARCOLOR_PRIMARYLIGHT =>
-                        get_string('navbarcolorsetting_primarylight', 'theme_boost_union'),
-                THEME_BOOST_UNION_SETTING_NAVBARCOLOR_PRIMARYDARK =>
-                        get_string('navbarcolorsetting_primarydark', 'theme_boost_union'), ];
+                THEME_BOOST_UNION_SETTING_NAVBARCOLOR_COLOREDLIGHT =>
+                        get_string('navbarcolorsetting_coloredlight', 'theme_boost_union'),
+                THEME_BOOST_UNION_SETTING_NAVBARCOLOR_COLOREDDARK =>
+                        get_string('navbarcolorsetting_coloreddark', 'theme_boost_union'), ];
         $navbarcolorselect = $mform->addElement(
             'select',
             'look_navbarcolor',
@@ -384,6 +399,18 @@ class flavour_edit_form extends \moodleform {
         $mform->setType('look_navbarcolor', PARAM_TEXT);
         $navbarcolorselect->setSelected([THEME_BOOST_UNION_SETTING_SELECT_NOCHANGE]);
         $mform->addHelpButton('look_navbarcolor', 'flavoursnavbarcolor', 'theme_boost_union');
+
+        // Add navbar tint as colorpicker element.
+        $this->check_slasharguments_warning($mform);
+        $mform->addElement(
+            'theme_boost_union_colorpicker',
+            'look_navbartint',
+            get_string('flavoursnavbartint', 'theme_boost_union'),
+            ['id' => 'colourpicker_navbartint']
+        );
+        $mform->setType('look_navbartint', PARAM_TEXT);
+        $mform->addRule('look_navbartint', get_string('validateerror', 'admin'), 'theme_boost_union_colorpicker_rule');
+        $mform->addHelpButton('look_navbartint', 'flavoursnavbartint', 'theme_boost_union');
 
         // Add SCSS heading.
         $context = new \stdClass();

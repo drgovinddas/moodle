@@ -267,6 +267,71 @@ Feature: Configuring the theme_boost_union plugin on the "Flavours" page, applyi
     Then DOM element ".mytesttext" should have computed style "color" "rgb(255, 0, 0)"
 
   @javascript
+  Scenario Outline: Flavours: Branded gray tones - Enable branded gray tones (with no global setting being set before)
+    Given the following config values are set as admin:
+      | config     | value   | plugin            |
+      | brandcolor | #FF0000 | theme_boost_union |
+    And the following "theme_boost_union > flavours" exist:
+      | title                | applytocategories_ids | look_brandedgraytones |
+      | My shiny new flavour | CAT1                  | <brandedgraytones>    |
+    And the following "activities" exist:
+      | activity | name      | intro                                                       | course |
+      | label    | Label one | <span class="mytesttext text-secondary">My test text</span> | C1     |
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    And I should see "My test text"
+    Then DOM element ".mytesttext" should have computed style "color" "<expectedcolor>"
+
+    Examples:
+      | brandedgraytones | expectedcolor      |
+      | yes              | rgb(195, 182, 182) |
+      | no               | rgb(206, 212, 218) |
+
+  @javascript
+  Scenario Outline: Flavours: Branded gray tones - Enable branded gray tones (with the global setting being overridden)
+    Given the following config values are set as admin:
+      | config           | value   | plugin            |
+      | brandcolor       | #FF0000 | theme_boost_union |
+      | brandedgraytones | no      | theme_boost_union |
+    And the following "theme_boost_union > flavours" exist:
+      | title                | applytocategories_ids | look_brandedgraytones |
+      | My shiny new flavour | CAT1                  | <brandedgraytones>    |
+    And the following "activities" exist:
+      | activity | name      | intro                                                       | course |
+      | label    | Label one | <span class="mytesttext text-secondary">My test text</span> | C1     |
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    And I should see "My test text"
+    Then DOM element ".mytesttext" should have computed style "color" "<expectedcolor>"
+
+    Examples:
+      | brandedgraytones | expectedcolor      |
+      | yes              | rgb(195, 182, 182) |
+      | no               | rgb(206, 212, 218) |
+
+  @javascript
+  Scenario Outline: Flavours: Branded gray tones - Do not change the branded gray tones setting (with a global setting being served properly)
+    Given the following config values are set as admin:
+      | config           | value              | plugin            |
+      | brandcolor       | #FF0000            | theme_boost_union |
+      | brandedgraytones | <brandedgraytones> | theme_boost_union |
+    And the following "theme_boost_union > flavours" exist:
+      | title                | applytocategories_ids | look_brandedgraytones |
+      | My shiny new flavour | CAT1                  | nochange              |
+    And the following "activities" exist:
+      | activity | name      | intro                                                       | course |
+      | label    | Label one | <span class="mytesttext text-secondary">My test text</span> | C1     |
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    And I should see "My test text"
+    Then DOM element ".mytesttext" should have computed style "color" "<expectedcolor>"
+
+    Examples:
+      | brandedgraytones | expectedcolor      |
+      | yes              | rgb(195, 182, 182) |
+      | no               | rgb(206, 212, 218) |
+
+  @javascript
   Scenario: Flavours: Link color - Set the link color (with a global color not having been set before)
     Given the following config values are set as admin:
       | config     | value       | plugin            |
@@ -513,8 +578,8 @@ Feature: Configuring the theme_boost_union plugin on the "Flavours" page, applyi
       | setting      | classes    | databstheme     |
       | light        | bg-body    | not be set      |
       | dark         | bg-dark    | contain "dark"  |
-      | primarylight | bg-primary | contain "light" |
-      | primarydark  | bg-primary | contain "dark"  |
+      | coloredlight | bg-primary | contain "light" |
+      | coloreddark  | bg-primary | contain "dark"  |
 
   Scenario Outline: Setting: Navbar color - Set the navbar color (with the global setting being overridden)
     Given the following config values are set as admin:
@@ -550,6 +615,69 @@ Feature: Configuring the theme_boost_union plugin on the "Flavours" page, applyi
     Examples:
       | setting | classes | databstheme    |
       | dark    | bg-dark | contain "dark" |
+
+  @javascript
+  Scenario: Setting: Navbar tint - Set the navbar tint color in a flavour (with no global tint having been set before)
+    Given the following config values are set as admin:
+      | config      | value       | plugin            |
+      | navbarcolor | coloreddark | theme_boost_union |
+    And the following "theme_boost_union > flavours" exist:
+      | title                | applytocategories_ids | look_navbartint |
+      | My shiny new flavour | CAT1                  | #FF0000         |
+    And the theme cache is purged and the theme is reloaded
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    # Reloading the page is necessary to ensure that the navbar color is applied, as sometimes it might not appear on the first load due to caching.
+    And I reload the page
+    Then DOM element ".navbar" should have computed style "background-color" "rgb(255, 0, 0)"
+
+  @javascript
+  Scenario: Setting: Navbar tint - Set the navbar tint color (with the global setting being overridden)
+    Given the following config values are set as admin:
+      | config      | value        | plugin            |
+      | navbarcolor | coloredlight | theme_boost_union |
+      | navbartint  | #FFFFFF      | theme_boost_union |
+    And the following "theme_boost_union > flavours" exist:
+      | title                | applytocategories_ids | look_navbartint |
+      | My shiny new flavour | CAT1                  | #FF0000         |
+    And the theme cache is purged and the theme is reloaded
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    # Reloading the page is necessary to ensure that the navbar color is applied, as sometimes it might not appear on the first load due to caching.
+    And I reload the page
+    Then DOM element ".navbar" should have computed style "background-color" "rgb(255, 0, 0)"
+
+  @javascript
+  Scenario: Setting: Navbar tint - Do not set the navbar tint (with a global setting being served properly)
+    Given the following config values are set as admin:
+      | config      | value        | plugin            |
+      | navbarcolor | coloredlight | theme_boost_union |
+      | navbartint  | #FF0000      | theme_boost_union |
+    And the following "theme_boost_union > flavours" exist:
+      | title                | applytocategories_ids |
+      | My shiny new flavour | CAT1                  |
+    And the theme cache is purged and the theme is reloaded
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    # Reloading the page is necessary to ensure that the navbar color is applied, as sometimes it might not appear on the first load due to caching.
+    And I reload the page
+    Then DOM element ".navbar" should have computed style "background-color" "rgb(255, 0, 0)"
+
+  @javascript
+  Scenario: Setting: Navbar tint - Use the primary brand color as fallback when no tint is set in global settings or flavour
+    Given the following config values are set as admin:
+      | config      | value        | plugin            |
+      | navbarcolor | coloredlight | theme_boost_union |
+      | brandcolor  | #FF0000      | theme_boost_union |
+    And the following "theme_boost_union > flavours" exist:
+      | title                | applytocategories_ids |
+      | My shiny new flavour | CAT1                  |
+    And the theme cache is purged and the theme is reloaded
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    # Reloading the page is necessary to ensure that the navbar color is applied, as sometimes it might not appear on the first load due to caching.
+    And I reload the page
+    Then DOM element ".navbar" should have computed style "background-color" "rgb(255, 0, 0)"
 
   @javascript
   Scenario: Flavours: Raw (initial) SCSS - Add custom SCSS to the page

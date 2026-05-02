@@ -618,6 +618,14 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
         $setting->set_updatedcallback('theme_reset_all_caches');
         $tab->add($setting);
 
+        // Setting: Use branded gray tones.
+        $name = 'theme_boost_union/brandedgraytones';
+        $title = get_string('brandedgraytones', 'theme_boost_union', null, true);
+        $description = get_string('brandedgraytones_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_configselect($name, $title, $description, THEME_BOOST_UNION_SETTING_SELECT_NO, $yesnooption);
+        $setting->set_updatedcallback('theme_reset_all_caches');
+        $tab->add($setting);
+
         // Heading: Link colors.
         $name = 'theme_boost_union/linkcolorsheading';
         $title = get_string('linkcolorsheading', 'theme_boost_union', null, true);
@@ -711,10 +719,10 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
                         get_string('navbarcolorsetting_light', 'theme_boost_union'),
                 THEME_BOOST_UNION_SETTING_NAVBARCOLOR_DARK =>
                         get_string('navbarcolorsetting_dark', 'theme_boost_union'),
-                THEME_BOOST_UNION_SETTING_NAVBARCOLOR_PRIMARYLIGHT =>
-                        get_string('navbarcolorsetting_primarylight', 'theme_boost_union'),
-                THEME_BOOST_UNION_SETTING_NAVBARCOLOR_PRIMARYDARK =>
-                        get_string('navbarcolorsetting_primarydark', 'theme_boost_union'), ];
+                THEME_BOOST_UNION_SETTING_NAVBARCOLOR_COLOREDLIGHT =>
+                        get_string('navbarcolorsetting_coloredlight', 'theme_boost_union'),
+                THEME_BOOST_UNION_SETTING_NAVBARCOLOR_COLOREDDARK =>
+                        get_string('navbarcolorsetting_coloreddark', 'theme_boost_union'), ];
         $setting = new admin_setting_configselect(
             $name,
             $title,
@@ -722,7 +730,23 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             THEME_BOOST_UNION_SETTING_NAVBARCOLOR_LIGHT,
             $navbarcoloroptions
         );
+        $setting->set_updatedcallback('theme_reset_all_caches');
         $tab->add($setting);
+
+        // Setting: Navbar tint.
+        $name = 'theme_boost_union/navbartint';
+        $title = get_string('navbartintsetting', 'theme_boost_union', null, true);
+        $description = get_string('navbartintsetting_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_configcolourpicker($name, $title, $description, '');
+        $setting->set_updatedcallback('theme_reset_all_caches');
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/navbartint',
+            'theme_boost_union/navbarcolor',
+            'in',
+            THEME_BOOST_UNION_SETTING_NAVBARCOLOR_LIGHT . '|' .
+            THEME_BOOST_UNION_SETTING_NAVBARCOLOR_DARK
+        );
 
         // Add tab to settings page.
         $page->add($tab);
@@ -1235,6 +1259,12 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             'eq',
             'vertical'
         );
+        $page->hide_if(
+            'theme_boost_union/loginlocalloginlabel',
+            'theme_boost_union/loginlocalloginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
 
         // Setting: Local login instruction.
         $name = 'theme_boost_union/loginlocalshowinstruction';
@@ -1371,6 +1401,18 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             'eq',
             'vertical'
         );
+        $page->hide_if(
+            'theme_boost_union/loginidploginlabel',
+            'theme_boost_union/loginidploginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+        $page->hide_if(
+            'theme_boost_union/loginidploginlabel',
+            'theme_boost_union/loginidpsplit',
+            'eq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
 
         // Setting: IDP login instruction.
         $name = 'theme_boost_union/loginidpshowinstruction';
@@ -1428,6 +1470,82 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             'neq',
             THEME_BOOST_UNION_SETTING_SELECT_YES
         );
+
+        // Heading: Login provider: IDP (Expert settings).
+        $name = 'theme_boost_union/loginprovideridpexpertheading';
+        $title = get_string('loginprovideridpexpertheading', 'theme_boost_union', null, true);
+        $setting = new admin_setting_heading($name, $title, null);
+        $tab->add($setting);
+
+        // Setting: Split per identity provider.
+        $name = 'theme_boost_union/loginidpsplit';
+        $title = get_string('loginidpsplitsetting', 'theme_boost_union', null, true);
+        $description = get_string('loginidpsplitsetting_desc', 'theme_boost_union', null, true);
+        $setting = new admin_setting_configselect(
+            $name,
+            $title,
+            $description,
+            THEME_BOOST_UNION_SETTING_SELECT_NO,
+            $yesnooption
+        );
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginidpsplit',
+            'theme_boost_union/loginidploginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Setting: Use internal Shibboleth WAYF.
+        $loginshibbolethinternaloptions = [
+            THEME_BOOST_UNION_SETTING_SELECT_NO =>
+                get_string('no'),
+            THEME_BOOST_UNION_SETTING_SHIBBOLETH_CONFIG =>
+                get_string('loginshibbolethinternalwayfsettingconfig', 'theme_boost_union'),
+            THEME_BOOST_UNION_SETTING_SHIBBOLETH_CODE =>
+                get_string('loginshibbolethinternalwayfsettingcode', 'theme_boost_union'),
+        ];
+        $name = 'theme_boost_union/loginshibbolethinternalwayf';
+        $title = get_string('loginshibbolethinternalwayfsetting', 'theme_boost_union', null, true);
+        $shibloginurl = new core\url('/auth/shibboleth/login.php');
+        $shibsettingsurl = new core\url('/admin/settings.php', ['section' => 'authsettingshibboleth']);
+        $shibwayfurl = new core\url('/admin/search.php', ['query' => 'alt_login']);
+        $description = get_string(
+            'loginshibbolethinternalwayfsetting_desc',
+            'theme_boost_union',
+            ['settingsurl' => $shibsettingsurl->out(), 'loginurl' => $shibloginurl->out(), 'shibwayfurl' => $shibwayfurl->out()],
+            true
+        );
+        $setting = new admin_setting_configselect(
+            $name,
+            $title,
+            $description,
+            THEME_BOOST_UNION_SETTING_SELECT_NO,
+            $loginshibbolethinternaloptions
+        );
+        $setting->set_updatedcallback('theme_reset_all_caches');
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/loginshibbolethinternalwayf',
+            'theme_boost_union/loginidploginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
+        );
+
+        // Setting: Internal WAYF JavaScript code.
+        $name = 'theme_boost_union/internalshibbolethwayfcode';
+        $title = get_string('internalshibbolethwayfcodesetting', 'theme_boost_union', null, true);
+        $description = get_string('internalshibbolethwayfcodesetting_desc', 'theme_boost_union', null, true);
+        $description .= ' ' . get_string('internalshibbolethwayfcodesetting_providers', 'theme_boost_union', null, true);
+        $setting = new admin_setting_configtextarea($name, $title, $description, '', PARAM_RAW);
+        $tab->add($setting);
+        $page->hide_if(
+            'theme_boost_union/internalshibbolethwayfcode',
+            'theme_boost_union/loginshibbolethinternalwayf',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SHIBBOLETH_CODE
+        );
+
 
         // Heading: Login provider: Self registration.
         $name = 'theme_boost_union/loginproviderselfregistrationheading';
@@ -1512,6 +1630,12 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             'theme_boost_union/loginlayout',
             'eq',
             'vertical'
+        );
+        $page->hide_if(
+            'theme_boost_union/loginselfregistrationloginlabel',
+            'theme_boost_union/loginselfregistrationenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
         );
 
         // Setting: Self registration instruction.
@@ -1648,6 +1772,12 @@ if ($hassiteconfig || has_capability('theme/boost_union:configure', context_syst
             'theme_boost_union/loginlayout',
             'eq',
             'vertical'
+        );
+        $page->hide_if(
+            'theme_boost_union/loginguestloginlabel',
+            'theme_boost_union/loginguestloginenable',
+            'neq',
+            THEME_BOOST_UNION_SETTING_SELECT_YES
         );
 
         // Setting: Guest login instruction.

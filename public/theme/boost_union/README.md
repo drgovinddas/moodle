@@ -128,6 +128,10 @@ With this setting, you control the positioning of the background image within th
 
 This color is used for accent and highlighting purposes across the site and is also used as basis for calculating gradated brand colors. Furthermore, it is used for links and buttons unless you set distinct colors for links and buttons.
 
+###### Use branded gray tones
+
+With this setting, the Bootstrap gray tones used throughout the theme are derived from the primary brand color instead of neutral grays. This creates a subtle color harmony across all gray elements on the page.
+
 ##### Link colors
 
 ###### Link brand color
@@ -155,6 +159,10 @@ If you have a very long sitename and want to prevent it from breaking the navbar
 ###### Navbar color
 
 With this setting, you can change the navbar color from the default light navbar to a dark one or a colored one.
+
+###### Navbar tint
+
+With this setting, you can define the color of the colored navbar. This setting is only effective if the navbar color is set to one of the 'Colored navbar' options above.
 
 #### Tab "Activity Branding"
 

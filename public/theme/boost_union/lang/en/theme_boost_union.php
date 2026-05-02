@@ -188,6 +188,9 @@ $string['brandcolorsheading'] = 'Brand colors';
 // ... ... Setting: Primary brand color.
 $string['brandcolor'] = 'Primary brand color';
 $string['brandcolor_desc'] = 'The primary brand color. It is used for accent and highlighting purposes across the site and is also used as basis for calculating gradated brand colors. Furthermore, it is used for links and buttons unless you set distinct colors for links and buttons in the settings below.';
+// ... ... Setting: Use branded gray tones.
+$string['brandedgraytones'] = 'Use branded gray tones';
+$string['brandedgraytones_desc'] = 'With this setting, the Bootstrap gray tones used throughout the theme are derived from the primary brand color instead of neutral grays. This creates a subtle color harmony across all gray elements on the page. Please note: This setting only takes effect if a primary brand color is configured above.';
 // ... Section: Link colors.
 $string['linkcolorsheading'] = 'Link colors';
 // ... ... Setting: Link brand color.
@@ -222,8 +225,11 @@ $string['navbarcolorsetting'] = 'Navbar color';
 $string['navbarcolorsetting_desc'] = 'With this setting, you can change the navbar color from the default light navbar to a dark one or a colored one.';
 $string['navbarcolorsetting_light'] = 'Light navbar with dark font color (unchanged as presented by Moodle core)';
 $string['navbarcolorsetting_dark'] = 'Dark navbar with light font color';
-$string['navbarcolorsetting_primarydark'] = 'Primary color navbar with light font color';
-$string['navbarcolorsetting_primarylight'] = 'Primary color navbar with dark font color';
+$string['navbarcolorsetting_coloreddark'] = 'Colored navbar with light font color';
+$string['navbarcolorsetting_coloredlight'] = 'Colored navbar with dark font color';
+// ... ... Setting: Navbar tint.
+$string['navbartintsetting'] = 'Navbar tint';
+$string['navbartintsetting_desc'] = 'With this setting, you can define the color of the colored navbar. This setting is only effective if the navbar color is set to one of the \'Colored navbar\' options above. If no color is defined here, the primary brand color will be used as a fallback.';
 
 // Settings: Activity branding tab.
 $string['activitybrandingtab'] = 'Activity branding';
@@ -422,6 +428,20 @@ $string['loginidpinstructioncontent'] = 'IDP login instruction content';
 $string['loginidpinstructioncontent_desc'] = 'With this setting, you can specify custom instructions for the IDP login provider. This allows you to provide users with additional information about how to log in via identity providers.';
 $string['loginidpinstructionposition'] = 'IDP login instruction position';
 $string['loginidpinstructionposition_desc'] = 'With this setting, you can specify where the IDP login instructions should be shown relative to the login buttons.';
+// ... Section: Login provider: IDP (Expert settings).
+$string['loginprovideridpexpertheading'] = 'Login provider: IDP (Expert settings)';
+// ... ... Setting: Split per identity provider.
+$string['loginidpsplitsetting'] = 'Split per identity provider';
+$string['loginidpsplitsetting_desc'] = 'If enabled, each identity provider login option appears in its own tab, accordion panel or section. In tab and accordion layouts, the provider name is used as the label. The IDP intro text and visibility settings still apply within each panel or block. If disabled, all identity providers stay in a single tab, panel, or vertical section.';
+// ... ... Setting: Use internal Shibboleth WAYF.
+$string['loginshibbolethinternalwayfsetting'] = 'Use internal Shibboleth WAYF';
+$string['loginshibbolethinternalwayfsetting_desc'] = 'With this setting, you can replace a Shibboleth login button with an internal WAYF (Where Are You From) form. This allows you to provide a seamless login experience for Shibboleth users without forcing them to leave the login page.<br />If set to "Yes (based on the \'auth_shibboleth\' configuration)", the Shibboleth login button is replaced by the same organisation (IdP) selector as used on the <a href="{$a->loginurl}">Shibboleth authentication plugin\'s internal login page</a>. The list of organisations comes from the <a href="{$a->settingsurl}">Shibboleth authentication plugin\'s \'Identity providers\' configuration</a>. If that list is empty or Shibboleth authentication is not enabled at all, this setting does not have any effect and IDP buttons are shown as normal.<br />If set to "Yes (based on embedded JavaScript code)", the WAYF code can be configured manually in the \'Embedded WAYF JavaScript code\' setting. See the description of that setting for details. Please note that the embedded JavaScript code needs to be able to trigger the login process on the login page by redirecting the user to the correct URL with the correct parameters when an IdP is selected. This setting is especially targetted at Moodle instances which are connected to <a href="https://help.switch.ch/aai/guides/discovery/embedded-wayf/">SWITCH AAI</a> where such a JavaScript code is officially provided.';
+$string['loginshibbolethinternalwayfsettingconfig'] = 'Yes (based on the \'auth_shibboleth\' configuration)';
+$string['loginshibbolethinternalwayfsettingcode'] = 'Yes (based on embedded JavaScript code)';
+// ... ... Setting: Internal WAYF JavaScript code.
+$string['internalshibbolethwayfcodesetting'] = 'Internal WAYF JavaScript code';
+$string['internalshibbolethwayfcodesetting_desc'] = 'With this setting, you can embed custom JavaScript code which renders a WAYF element directly on the login page independent from the configuration of \'auth_shibboleth\'. Please note that you need to provide the complete JavaScript code including the necessary HTML elements and event handlers for the WAYF functionality. The code will be cleaned to remove malicious code during output, but apart from that it will be output as is. This setting only takes effect if the "Yes (based on JavaScript code)" option is selected in the "Use internal Shibboleth WAYF" setting above.';
+$string['internalshibbolethwayfcodesetting_providers'] = 'This setting is especially targetted at Moodle instances which are connected to <a href="https://help.switch.ch/aai/guides/discovery/embedded-wayf/">SWITCH AAI</a> where such <a href="https://rr.aai.switch.ch/gen_embedding_code.php">JavaScript code is officially provided</a>. However, you can also use this setting to embed custom JavaScript code for other identity providers if you like to craft your own internal WAYF solution.';
 // ... Section: Login provider: Self registration.
 $string['loginproviderselfregistrationheading'] = 'Login provider: Self registration';
 // ... ... Setting: Self registration.
@@ -1587,6 +1607,8 @@ $string['flavourslinkcolor'] = 'Link brand color';
 $string['flavourslinkcolor_help'] = 'With this setting, the flavour will override the link color which is configured in Boost Union\'s look settings.';
 $string['flavoursbuttonbrandcolor'] = 'Button brand color';
 $string['flavoursbuttonbrandcolor_help'] = 'With this setting, the flavour will override the button brand color which is configured in Boost Union\'s look settings.';
+$string['flavoursbrandedgraytones'] = 'Use branded gray tones';
+$string['flavoursbrandedgraytones_help'] = 'With this setting, the flavour will override the branded gray tones setting which is configured in Boost Union\'s look settings.';
 $string['flavourscreateflavour'] = 'Create flavour';
 $string['flavourscustomscss'] = 'Raw SCSS';
 $string['flavourscustomscss_help'] = 'With this setting, you can write custom SCSS for the flavour. It will be appended to the stack of CSS code which is shipped to the browser as soon as the flavour applies.';
@@ -1613,6 +1635,8 @@ $string['flavourslogocompact'] = 'Compact logo';
 $string['flavourslogocompact_help'] = 'With this setting, the flavour will override the logo which is configured in Boost Union\'s look settings.';
 $string['flavoursnavbarcolor'] = 'Navbar color';
 $string['flavoursnavbarcolor_help'] = 'With this setting, the flavour will override the navbar color which is configured in Boost Union\'s look settings.';
+$string['flavoursnavbartint'] = 'Navbar tint';
+$string['flavoursnavbartint_help'] = 'With this setting, the flavour will override the navbar tint color which is configured in Boost Union\'s look settings. This setting is only effective if the navbar color is set to one of the \'Colored navbar\' options.';
 $string['flavoursnotificationcreated'] = 'The flavour was created successfully';
 $string['flavoursnotificationdeleted'] = 'The flavour was deleted successfully';
 $string['flavoursnotificationedited'] = 'The flavour was edited successfully';
@@ -1965,3 +1989,4 @@ $string['upgradenotice_2022080922_notcopied'] = 'The <strong>{$a}</strong> setti
 $string['upgradenotice_2025041410'] = 'The setting "Show hint for guest access" has been updated to support more options. Your existing configuration (which was set to "Yes") has been migrated to the new option "Yes, but only if no guest access password is set".';
 $string['upgradenotice_2025041413'] = 'The setting "courselistinghowfields" has been renamed to "courselistingshowfields" to fix a typo. Your existing configuration has been migrated to the new setting name.';
 $string['upgradenotice_2025041416'] = 'Smart menu dividers are now available as a dedicated menu item type. Existing dividers (created using heading type with hash signs) have been automatically converted to the new divider type.';
+$string['upgradenotice_2025100623'] = 'The navbar color options "Primary color navbar with dark font color" and "Primary color navbar with light font color" have been renamed to "Colored navbar with dark font color" and "Colored navbar with light font color". Your existing configuration has been migrated automatically. Additionally, your primary brand color has been transferred to the new "Navbar tint" setting to maintain the previous visual appearance.';

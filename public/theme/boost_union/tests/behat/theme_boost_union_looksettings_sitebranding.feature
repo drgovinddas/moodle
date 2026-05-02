@@ -162,6 +162,26 @@ Feature: Configuring the theme_boost_union plugin for the "Site branding" tab on
     Then DOM element ".mytesttext" should have computed style "color" "rgb(255, 0, 0)"
 
   @javascript
+  Scenario Outline: Setting: Branded gray tones - Set the branded gray tones setting
+    Given the following config values are set as admin:
+      | config           | value              | plugin            |
+      | brandcolor       | #FF0000            | theme_boost_union |
+      | brandedgraytones | <brandedgraytones> | theme_boost_union |
+    And the following "activities" exist:
+      | activity | name      | intro                                                       | course |
+      | label    | Label one | <span class="mytesttext text-secondary">My test text</span> | C1     |
+    And the theme cache is purged and the theme is reloaded
+    When I log in as "admin"
+    And I am on "Course 1" course homepage
+    And I should see "My test text"
+    Then DOM element ".mytesttext" should have computed style "color" "<expectedcolor>"
+
+    Examples:
+      | brandedgraytones | expectedcolor      |
+      | yes              | rgb(195, 182, 182) |
+      |                  | rgb(206, 212, 218) |
+
+  @javascript
   Scenario Outline: Setting: Link color - Set the link color
     Given the following config values are set as admin:
       | config     | value       | plugin            |
@@ -277,5 +297,52 @@ Feature: Configuring the theme_boost_union plugin for the "Site branding" tab on
       | setting      | classes    | databstheme     |
       | light        | bg-body    | not be set      |
       | dark         | bg-dark    | contain "dark"  |
-      | primarylight | bg-primary | contain "light" |
-      | primarydark  | bg-primary | contain "dark"  |
+      | coloredlight | bg-primary | contain "light" |
+      | coloreddark  | bg-primary | contain "dark"  |
+
+  @javascript
+  Scenario Outline: Setting: Navbar tint - Set the navbar tint color (for the colored navbar variants)
+    Given the following config values are set as admin:
+      | config      | value             | plugin            |
+      | navbarcolor | <navbarcolor>     | theme_boost_union |
+      | navbartint  | <configuredcolor> | theme_boost_union |
+    And the theme cache is purged and the theme is reloaded
+    When I log in as "admin"
+    # Reloading the page is necessary to ensure that the navbar color is applied, as sometimes it might not appear on the first load due to caching.
+    And I reload the page
+    Then DOM element ".navbar.bg-primary" should have computed style "background-color" "<expectedcolor>"
+
+    Examples:
+      | navbarcolor  | configuredcolor | expectedcolor    |
+      | coloredlight | #FF0000         | rgb(255, 0, 0)   |
+      | coloreddark  | #FF00FF         | rgb(255, 0, 255) |
+
+  @javascript
+  Scenario Outline: Setting: Navbar tint - Do not apply the tint (countercheck for non-colored navbar variants)
+    Given the following config values are set as admin:
+      | config      | value         | plugin            |
+      | navbarcolor | <navbarcolor> | theme_boost_union |
+      | navbartint  | #FF0000       | theme_boost_union |
+    And the theme cache is purged and the theme is reloaded
+    When I log in as "admin"
+    # Reloading the page is necessary to ensure that the navbar color is applied, as sometimes it might not appear on the first load due to caching.
+    And I reload the page
+    Then DOM element ".navbar" should not have computed style "background-color" "rgb(255, 0, 0)"
+
+    Examples:
+      | navbarcolor |
+      | light       |
+      | dark        |
+
+  @javascript
+  Scenario: Setting: Navbar tint - Use the primary brand color as fallback when no tint is set
+    Given the following config values are set as admin:
+      | config      | value        | plugin            |
+      | navbarcolor | coloredlight | theme_boost_union |
+      | brandcolor  | #FF0000      | theme_boost_union |
+      | navbartint  |              | theme_boost_union |
+    And the theme cache is purged and the theme is reloaded
+    When I log in as "admin"
+    # Reloading the page is necessary to ensure that the navbar color is applied, as sometimes it might not appear on the first load due to caching.
+    And I reload the page
+    Then DOM element ".navbar" should have computed style "background-color" "rgb(255, 0, 0)"
