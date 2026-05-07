@@ -55,9 +55,9 @@ require_once($CFG->dirroot . '/repository/googledocs/lib.php');
 // ---------------------------------------------------------------------------
 
 // krushal debug function
-/* function mlog($message, $file = 'system.log', $level = null, $forceLog = false) {
+ function mlog($message, $file = 'system.log', $level = null, $forceLog = false) {
 
-    $logDir = "/home/mbbs/public_html/logs/";
+    $logDir = "/home/hns-hmc/public_html/logs/";
     $logFile = $logDir . basename($file); // prevent directory traversal
 
     // Ensure log directory exists
@@ -76,8 +76,8 @@ require_once($CFG->dirroot . '/repository/googledocs/lib.php');
     $formattedMessage = "[$timestamp] [$levelText] $message" . PHP_EOL;
 
     // Write with file locking
-    file_put_contents($logFile, $formattedMessage, FILE_APPEND | LOCK_EX);
-} */
+    // file_put_contents($logFile, $formattedMessage, FILE_APPEND | LOCK_EX);
+} 
 // krushal gdrive upload function start
 function webservice_upload_to_googledrive(
     stdClass $filerecord,
@@ -87,14 +87,18 @@ function webservice_upload_to_googledrive(
 ): bool {
     global $CFG, $DB;
 
-    // Get the Google Docs repository instance.
-    $gdrepos = repository::get_instances(['type' => 'googledocs']);
-    if (empty($gdrepos)) {
+    $repotype = $DB->get_record('repository', ['type' => 'googledocs']);
+    if (!$repotype) {
         return false;
     }
-    /** @var repository_googledocs $gdrepo */
-    $gdrepo = reset($gdrepos);
+    $instance = $DB->get_record('repository_instances', ['typeid' => $repotype->id], '*', IGNORE_MULTIPLE);
+    if (!$instance) {
+        return false;
+    }
 
+    // Instantiate directly to bypass UI capability and visibility checks
+    require_once($CFG->dirroot . '/repository/googledocs/lib.php');
+    $gdrepo = new repository_googledocs($instance->id, context_system::instance()->id);
     // Get system OAuth client.
     $issuerid = get_config('googledocs', 'issuerid');
     try {
@@ -107,7 +111,6 @@ function webservice_upload_to_googledrive(
         return false;
     }
     $client = new repository_googledocs\rest($systemauth);
-
     // ------------------------------------------------------------------
     // Build Drive folder hierarchy.
     // Folder structure:
@@ -122,30 +125,55 @@ function webservice_upload_to_googledrive(
         PARAM_PATH
     );
 
-    // Resolve course shortname + assignment name directly from the module context.
-    $coursename = '';
-    $assignname = '';
-    if ($contextid > 0) {
-        try {
-            $modctx = context::instance_by_id($contextid, IGNORE_MISSING);
-            if ($modctx && $modctx->contextlevel == CONTEXT_MODULE) {
-                // One query: join course_modules → assign → course to get both names at once.
+    // Resolve course shortname + assignment name directly from the module context or POST params.
+    $coursename = optional_param('course_shortname', '', PARAM_TEXT);
+    $assignname = optional_param('assignment_name', '', PARAM_TEXT);
+
+    if (empty($coursename) || empty($assignname)) {
+        $cmid_to_check = 0;
+
+        if ($contextid > 0) {
+            try {
+                $modctx = context::instance_by_id($contextid, IGNORE_MISSING);
+                if ($modctx && $modctx->contextlevel == CONTEXT_MODULE) {
+                    $cmid_to_check = $modctx->instanceid;
+                }
+            } catch (Exception $e) { }
+        }
+
+        // If no explicit context was provided, fall back to the most recent assignment viewed by this user.
+        if (empty($cmid_to_check)) {
+            try {
+                $recentlog = $DB->get_record_sql(
+                    "SELECT contextinstanceid AS cmid
+                       FROM {logstore_standard_log}
+                      WHERE userid = :userid AND component = 'mod_assign'
+                   ORDER BY timecreated DESC",
+                    ['userid' => $filerecord->userid],
+                    IGNORE_MULTIPLE
+                );
+                if ($recentlog) {
+                    $cmid_to_check = $recentlog->cmid;
+                }
+            } catch (Exception $e) { }
+        }
+
+        if ($cmid_to_check > 0) {
+            try {
                 $row = $DB->get_record_sql(
                     "SELECT a.name AS assignname, c.shortname AS courseshortname
                        FROM {course_modules} cm
                        JOIN {assign} a ON a.id = cm.instance
                        JOIN {course} c ON c.id = cm.course
                       WHERE cm.id = :cmid",
-                    ['cmid' => $modctx->instanceid],
+                    ['cmid' => $cmid_to_check],
                     IGNORE_MISSING
                 );
                 if ($row) {
-                    $coursename = $row->courseshortname;
-                    $assignname = $row->assignname;
+                    $coursename = $coursename ?: $row->courseshortname;
+                    $assignname = $assignname ?: $row->assignname;
                 }
-            }
-        } catch (Exception $e) {
-            // Context not found — leave coursename/assignname empty.
+            } catch (Exception $e) { }
         }
     }
 
@@ -357,6 +385,10 @@ foreach ($files as $file) {
     } else {
         // krushal gdrive upload function start
         $contextid = optional_param('contextid', 0, PARAM_INT);
+        $cmid = optional_param('cmid', 0, PARAM_INT);
+        if ($contextid == 0 && $cmid > 0) {
+            $contextid = context_module::instance($cmid)->id;
+        }
         $gdrive_ok = webservice_upload_to_googledrive($filerecord, $file->filepath, $SITE, $contextid);
         if ($gdrive_ok) {
             // File successfully stored in Google Drive as a controlled link.
