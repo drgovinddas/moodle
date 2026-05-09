@@ -37,6 +37,7 @@ $action = optional_param('action', 'currententry', PARAM_ALPHANUMEXT); // Action
 $firstkey = optional_param('firstkey', '', PARAM_INT); // Which diary_entries id to edit.
 $promptid = optional_param('promptid', '', PARAM_INT); // The current one.
 $saveandcontinue = optional_param('saveandcontinue', '', PARAM_RAW_TRIMMED);
+$submitbutton = optional_param('submitbutton', '', PARAM_RAW_TRIMMED);
 
 if (!$cm = get_coursemodule_from_id('diary', $id)) {
     throw new moodle_exception(get_string('incorrectmodule', 'diary'));
@@ -92,7 +93,7 @@ $tempintro = $diary->intro;
 // 20240507 Added for testing and it appears to work for existing entry without a prompt.
 if (!($promptid > 0) && ($diary->timeopen < time()) && !($action == 'editentry' && $entry)) {
     // Need to call a prompt function that returns the current promptid, if there is one that is current.
-    $promptid = prompts::get_current_promptid($diary);
+    $promptid = prompts::get_current_promptid($diary, $USER->id, $promptid);
 }
 
 // 20210817 Add min/max info to the description so user can see them while editing an entry.
@@ -162,7 +163,7 @@ if ($action == 'currententry' && $entry) {
     // There are no entries for this user, so start the first one.
     $data->entryid = null;
     // 20250112 Testing promptid for new entry with a current prompt.
-    $data->promptid = prompts::get_current_promptid($diary);
+    $data->promptid = prompts::get_current_promptid($diary, $USER->id, $promptid);
     $data->timecreated = time();
     $data->title = '';
     $data->text = '';
@@ -273,7 +274,8 @@ $data->id = $cm->id;
             }
             $newentry->promptid = $originalpromptid;  // Or $fromform->promptid if you allow changes someday.
         } else {
-            $newentry->promptid = prompts::get_current_promptid($diary);
+            $requestedpromptid = !empty($fromform->promptid) ? (int)$fromform->promptid : 0;
+            $newentry->promptid = prompts::get_current_promptid($diary, $USER->id, $requestedpromptid);
         }
         $newentry->timecreated = $fromform->timecreated;
         $newentry->timemodified = $timenow;
@@ -399,6 +401,15 @@ $data->id = $cm->id;
             'entry',
             $newentry->id
         );
+        // Save attachment files.
+        file_save_draft_area_files(
+            $fromform->attachment_filemanager,
+            $context->id,
+            'mod_diary',
+            'attachment',
+            $newentry->id,
+            $attachmentoptions
+        );
         $newentry->title = $fromform->title;
         $newentry->text = $fromform->text;
         $newentry->format = $fromform->textformat;
@@ -406,6 +417,7 @@ $data->id = $cm->id;
         $newentry->tags = $fromform->tags;
 
         $DB->update_record('diary_entries', $newentry);
+        diary_sync_completion_state($course, $cm, $USER->id, $diary);
 
         // Do some other processing here,
         // If this is a new page (entry) you need to insert it in the DB and obtain id.
@@ -539,7 +551,9 @@ $data->id = $cm->id;
             }
         }
         // End new code.
-        if (!empty($saveandcontinue)) {
+        // Mobile/WebView submissions can default to the first submit button.
+        // Only stay on edit when that button is explicitly chosen.
+        if (!empty($saveandcontinue) && empty($submitbutton)) {
             redirect(new moodle_url('/mod/diary/edit.php', [
                 'id' => $cm->id,
                 'action' => 'editentry',
@@ -562,4 +576,10 @@ $data->id = $cm->id;
     echo $OUTPUT->box($intro);
     // Otherwise fill and print the form.
     $form->display();
+    if ($entry) {
+        $attachmentshtml = results::diary_render_entry_attachments($entry, $course, $cm);
+        if (!empty($attachmentshtml)) {
+            echo $OUTPUT->box($attachmentshtml, 'diary-entry-attachments');
+        }
+    }
     echo $OUTPUT->footer();

@@ -23,6 +23,11 @@
  */
 defined('MOODLE_INTERNAL') || die(); // phpcs:ignore
 use mod_diary\local\results;
+use mod_diary\local\prompts;
+use mod_diary\local\diarystats;
+
+/** Config key prefix for per-activity advanced metric completion requirements. */
+const DIARY_METRIC_REQUIREMENTS_KEY_PREFIX = 'metricrequirements_';
 
 /**
  * Given an object containing all the necessary data,
@@ -36,6 +41,21 @@ use mod_diary\local\results;
 function diary_add_instance($diary) {
     global $DB;
 
+    $metricrequirements = diary_extract_metric_requirements_from_form($diary);
+
+    $diary->promptmode = isset($diary->promptmode) ? (int)$diary->promptmode : 0;
+    if ($diary->promptmode < 0 || $diary->promptmode > 4) {
+        $diary->promptmode = 0;
+    }
+
+    $diary->requiredpromptcount = isset($diary->requiredpromptcount) ? (int)$diary->requiredpromptcount : 0;
+    if ($diary->requiredpromptcount < 0) {
+        $diary->requiredpromptcount = 0;
+    }
+    if ($diary->promptmode !== 4) {
+        $diary->requiredpromptcount = 0;
+    }
+
     $enableborders = isset($diary->enableborders)
         ? (int)$diary->enableborders
         : (int)get_config('mod_diary', 'enableborders');
@@ -45,9 +65,13 @@ function diary_add_instance($diary) {
     $bordercolor = isset($diary->bordercolor)
         ? $diary->bordercolor
         : (string)get_config('mod_diary', 'bordercolor');
+    $inlineattachmentpreviews = isset($diary->inlineattachmentpreviews)
+        ? (int)$diary->inlineattachmentpreviews
+        : (int)get_config('mod_diary', 'inlineattachmentpreviews');
     unset($diary->enableborders);
     unset($diary->borderstyle);
     unset($diary->bordercolor);
+    unset($diary->inlineattachmentpreviews);
 
     if (empty($diary->assessed)) {
         $diary->assessed = 0;
@@ -73,6 +97,8 @@ function diary_add_instance($diary) {
     set_config('enableborders_' . $diary->id, $enableborders, 'mod_diary');
     set_config('borderstyle_' . $diary->id, $borderstyle, 'mod_diary');
     set_config('bordercolor_' . $diary->id, $bordercolor, 'mod_diary');
+    set_config('inlineattachmentpreviews_' . $diary->id, $inlineattachmentpreviews, 'mod_diary');
+    diary_set_metric_requirements($diary->id, $metricrequirements);
 
     return $diary->id;
 }
@@ -89,6 +115,21 @@ function diary_add_instance($diary) {
 function diary_update_instance($diary) {
     global $DB;
 
+    $metricrequirements = diary_extract_metric_requirements_from_form($diary);
+
+    $diary->promptmode = isset($diary->promptmode) ? (int)$diary->promptmode : 0;
+    if ($diary->promptmode < 0 || $diary->promptmode > 4) {
+        $diary->promptmode = 0;
+    }
+
+    $diary->requiredpromptcount = isset($diary->requiredpromptcount) ? (int)$diary->requiredpromptcount : 0;
+    if ($diary->requiredpromptcount < 0) {
+        $diary->requiredpromptcount = 0;
+    }
+    if ($diary->promptmode !== 4) {
+        $diary->requiredpromptcount = 0;
+    }
+
     $enableborders = isset($diary->enableborders)
         ? (int)$diary->enableborders
         : (int)get_config('mod_diary', 'enableborders');
@@ -98,9 +139,13 @@ function diary_update_instance($diary) {
     $bordercolor = isset($diary->bordercolor)
         ? $diary->bordercolor
         : (string)get_config('mod_diary', 'bordercolor');
+    $inlineattachmentpreviews = isset($diary->inlineattachmentpreviews)
+        ? (int)$diary->inlineattachmentpreviews
+        : (int)get_config('mod_diary', 'inlineattachmentpreviews');
     unset($diary->enableborders);
     unset($diary->borderstyle);
     unset($diary->bordercolor);
+    unset($diary->inlineattachmentpreviews);
 
     $diary->timemodified = time();
     $diary->id = $diary->instance;
@@ -132,6 +177,8 @@ function diary_update_instance($diary) {
     set_config('enableborders_' . $diary->id, $enableborders, 'mod_diary');
     set_config('borderstyle_' . $diary->id, $borderstyle, 'mod_diary');
     set_config('bordercolor_' . $diary->id, $bordercolor, 'mod_diary');
+    set_config('inlineattachmentpreviews_' . $diary->id, $inlineattachmentpreviews, 'mod_diary');
+    diary_set_metric_requirements($diary->id, $metricrequirements);
 
     return true;
 }
@@ -186,8 +233,274 @@ function diary_delete_instance($id) {
     unset_config('enableborders_' . $diary->id, 'mod_diary');
     unset_config('borderstyle_' . $diary->id, 'mod_diary');
     unset_config('bordercolor_' . $diary->id, 'mod_diary');
+    unset_config('inlineattachmentpreviews_' . $diary->id, 'mod_diary');
+    unset_config(DIARY_METRIC_REQUIREMENTS_KEY_PREFIX . $diary->id, 'mod_diary');
 
     return $result;
+}
+
+/**
+ * Returns advanced metric keys supported by completion requirements.
+ *
+ * @return string[]
+ */
+function diary_get_metric_requirement_keys() {
+    return [
+        'uniquewords',
+        'shortwords',
+        'mediumwords',
+        'longwords',
+        'charspersentence',
+        'sentencesperparagraph',
+        'wordspersentence',
+        'longwordspersentence',
+        'totalsyllables',
+        'avgsyllperword',
+        'avgwordlenchar',
+        'avgwordpara',
+        'lexicaldensity',
+        'fkgrade',
+        'freadingease',
+        'fogindex',
+    ];
+}
+
+/**
+ * Get per-activity advanced metric requirements from plugin config.
+ *
+ * @param int $diaryid Diary id.
+ * @return array
+ */
+function diary_get_metric_requirements($diaryid) {
+    $raw = get_config('mod_diary', DIARY_METRIC_REQUIREMENTS_KEY_PREFIX . (int)$diaryid);
+    if (!is_string($raw) || $raw === '') {
+        return [];
+    }
+
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded)) {
+        return [];
+    }
+
+    $allowed = array_flip(diary_get_metric_requirement_keys());
+    $requirements = [];
+    foreach ($decoded as $metric => $rule) {
+        if (!isset($allowed[$metric]) || !is_array($rule)) {
+            continue;
+        }
+        if (!array_key_exists('value', $rule) || !is_numeric($rule['value'])) {
+            continue;
+        }
+        $operator = (int)($rule['operator'] ?? 0);
+        if ($operator !== 1) {
+            $operator = 0;
+        }
+        $penalty = (int)($rule['penalty'] ?? 1);
+        if ($penalty < 0) {
+            $penalty = 0;
+        }
+        $requirements[$metric] = [
+            'operator' => $operator,
+            'value' => (float)$rule['value'],
+            'penalty' => $penalty,
+        ];
+    }
+
+    return $requirements;
+}
+
+/**
+ * Persist per-activity advanced metric requirements.
+ *
+ * @param int $diaryid Diary id.
+ * @param array $requirements Requirement map.
+ * @return void
+ */
+function diary_set_metric_requirements($diaryid, array $requirements) {
+    if (empty($requirements)) {
+        unset_config(DIARY_METRIC_REQUIREMENTS_KEY_PREFIX . (int)$diaryid, 'mod_diary');
+        return;
+    }
+
+    set_config(
+        DIARY_METRIC_REQUIREMENTS_KEY_PREFIX . (int)$diaryid,
+        json_encode($requirements, JSON_UNESCAPED_SLASHES),
+        'mod_diary'
+    );
+}
+
+/**
+ * Extract advanced metric requirement fields from form data object.
+ *
+ * This unsets form-only fields from $diary so DB insert/update remains clean.
+ *
+ * @param stdClass $diary Form data object.
+ * @return array
+ */
+function diary_extract_metric_requirements_from_form($diary) {
+    $requirements = [];
+    foreach (diary_get_metric_requirement_keys() as $key) {
+        $enabledfield = 'metricreq_enable_' . $key;
+        $operatorfield = 'metricreq_op_' . $key;
+        $valuefield = 'metricreq_val_' . $key;
+        $penaltyfield = 'metricreq_pen_' . $key;
+
+        $enabled = !empty($diary->{$enabledfield});
+        $value = $diary->{$valuefield} ?? null;
+        $operator = (int)($diary->{$operatorfield} ?? 0);
+        $penalty = $diary->{$penaltyfield} ?? 1;
+
+        unset($diary->{$enabledfield});
+        unset($diary->{$operatorfield});
+        unset($diary->{$valuefield});
+        unset($diary->{$penaltyfield});
+
+        if (!$enabled || $value === null || $value === '' || !is_numeric($value)) {
+            continue;
+        }
+        if ($operator !== 1) {
+            $operator = 0;
+        }
+        if (!is_numeric($penalty)) {
+            $penalty = 1;
+        }
+        $penalty = (int)$penalty;
+        if ($penalty < 0) {
+            $penalty = 0;
+        }
+
+        $requirements[$key] = [
+            'operator' => $operator,
+            'value' => (float)$value,
+            'penalty' => $penalty,
+        ];
+    }
+
+    return $requirements;
+}
+
+/**
+ * Calculate advanced text metrics for a diary entry.
+ *
+ * @param stdClass $entry Diary entry record.
+ * @return array<string,float>
+ */
+function diary_calculate_entry_metrics($entry) {
+    $precision = 2;
+    $text = diarystats::to_plain_text($entry->text ?? '', $entry->format ?? FORMAT_HTML);
+
+    $characters = (float)diarystats::get_stats_chars($text);
+    $words = (float)diarystats::get_stats_words($text);
+    $sentences = (float)diarystats::get_stats_sentences($text);
+    $paragraphs = (float)diarystats::get_stats_paragraphs($text);
+    $uniquewords = (float)diarystats::get_stats_uniquewords($text);
+    [$shortwords, $mediumwords, $longwords, $totalsyllables] = diarystats::get_stats_longwords($text);
+
+    $charspersentence = $sentences > 0 ? round($characters / $sentences, $precision) : 0.0;
+    $wordspersentence = $sentences > 0 ? round($words / $sentences, $precision) : 0.0;
+    $longwordspersentence = $sentences > 0 ? round(((float)$longwords) / $sentences, $precision) : 0.0;
+    $sentencesperparagraph = $paragraphs > 0 ? round($sentences / $paragraphs, $precision) : 0.0;
+    $avgsyllperword = $uniquewords > 0 ? round(((float)$totalsyllables) / $uniquewords, $precision) : 0.0;
+    $avgwordlenchar = $words > 0 ? round($characters / $words, $precision) : 0.0;
+    $avgwordpara = $paragraphs > 0 ? round($words / $paragraphs, $precision) : 0.0;
+    $lexicaldensity = $words > 0 ? round(($uniquewords / $words) * 100, $precision) : 0.0;
+    $fkgrade = $sentences > 0
+        ? max(round(0.39 * ($words / $sentences) + 11.8 * (((float)$totalsyllables) / max($words, 1.0)) - 15.59, $precision), 0)
+        : 0.0;
+    $freadingease = $sentences > 0
+        ? round(206.835 - 1.015 * ($words / $sentences) - 84.6 * (((float)$totalsyllables) / max($words, 1.0)), $precision)
+        : 0.0;
+    $fogindex = $wordspersentence > 0 ? round(($wordspersentence + $longwordspersentence) * 0.4, $precision) : 0.0;
+
+    return [
+        'uniquewords' => $uniquewords,
+        'shortwords' => (float)$shortwords,
+        'mediumwords' => (float)$mediumwords,
+        'longwords' => (float)$longwords,
+        'charspersentence' => $charspersentence,
+        'sentencesperparagraph' => $sentencesperparagraph,
+        'wordspersentence' => $wordspersentence,
+        'longwordspersentence' => $longwordspersentence,
+        'totalsyllables' => (float)$totalsyllables,
+        'avgsyllperword' => $avgsyllperword,
+        'avgwordlenchar' => $avgwordlenchar,
+        'avgwordpara' => $avgwordpara,
+        'lexicaldensity' => $lexicaldensity,
+        'fkgrade' => (float)$fkgrade,
+        'freadingease' => $freadingease,
+        'fogindex' => $fogindex,
+    ];
+}
+
+/**
+ * Check whether one entry satisfies all configured advanced metric requirements.
+ *
+ * operator: 0 => >=, 1 => <=
+ *
+ * @param stdClass $entry Diary entry record.
+ * @param array $requirements Requirement map.
+ * @return bool
+ */
+function diary_entry_meets_metric_requirements($entry, array $requirements) {
+    if (empty($requirements)) {
+        return true;
+    }
+
+    $metrics = diary_calculate_entry_metrics($entry);
+    foreach ($requirements as $metric => $rule) {
+        if (!array_key_exists($metric, $metrics)) {
+            return false;
+        }
+        $value = (float)$metrics[$metric];
+        $target = (float)$rule['value'];
+        $operator = (int)$rule['operator'];
+
+        if ($operator === 1) {
+            if ($value > $target) {
+                return false;
+            }
+        } else {
+            if ($value < $target) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Compute completion progress for configured advanced metric requirements.
+ *
+ * Applies when at least one requirement is configured and is complete once
+ * at least one entry by this user satisfies all configured requirements.
+ *
+ * @param stdClass $diary Diary activity record.
+ * @param int $userid User id.
+ * @return array{applies:bool, complete:bool}
+ */
+function diary_get_metric_requirements_progress($diary, $userid) {
+    global $DB;
+
+    $requirements = diary_get_metric_requirements((int)$diary->id);
+    if (empty($requirements)) {
+        return ['applies' => false, 'complete' => true];
+    }
+
+    $entries = $DB->get_records(
+        'diary_entries',
+        ['diary' => $diary->id, 'userid' => $userid],
+        'timemodified DESC, id DESC',
+        'id,text,format'
+    );
+
+    foreach ($entries as $entry) {
+        if (diary_entry_meets_metric_requirements($entry, $requirements)) {
+            return ['applies' => true, 'complete' => true];
+        }
+    }
+
+    return ['applies' => true, 'complete' => false];
 }
 
 /**
@@ -265,6 +578,21 @@ function diary_get_border_css_vars($diaryid) {
 }
 
 /**
+ * Returns whether inline attachment previews are enabled for a diary activity.
+ *
+ * @param int $diaryid Diary activity id.
+ * @return bool
+ */
+function diary_get_inline_attachment_previews($diaryid) {
+    $diaryid = (int)$diaryid;
+    $value = get_config('mod_diary', 'inlineattachmentpreviews_' . $diaryid);
+    if ($value === false || $value === null || $value === '') {
+        $value = get_config('mod_diary', 'inlineattachmentpreviews');
+    }
+    return !empty($value);
+}
+
+/**
  * Indicates API features that the diary supports.
  *
  * @uses FEATURE_MOD_PURPOSE:
@@ -328,7 +656,7 @@ function diary_get_coursemodule_info($coursemodule) {
     $diary = $DB->get_record(
         'diary',
         ['id' => $coursemodule->instance],
-        'id,name,intro,introformat',
+        'id,name,intro,introformat,promptmode,requiredpromptcount',
         IGNORE_MISSING
     );
     if (!$diary) {
@@ -364,20 +692,61 @@ function diary_get_coursemodule_info($coursemodule) {
             $currentprompt = $DB->get_record_sql($sql, $params, IGNORE_MULTIPLE);
 
             if (!empty($currentprompt)) {
-                $prompttext = format_text($currentprompt->text, $currentprompt->format, [
+                $prompttext = format_text(
+                    file_rewrite_pluginfile_urls(
+                        $currentprompt->text,
+                        'pluginfile.php',
+                        $context->id,
+                        'mod_diary',
+                        'prompt',
+                        $currentprompt->id
+                    ),
+                    $currentprompt->format,
+                    [
                     'context' => $context,
                     'overflowdiv' => true,
                     'para' => false,
                     // This callback can run while course modinfo is being built before $PAGE is fully initialised.
                     // Avoid filter chains that require $PAGE->context (e.g. emoticon filter).
                     'filter' => false,
-                ]);
+                    ]
+                );
                 $promptlabel = \html_writer::tag('strong', get_string('coursetopiccurrentpromptlabel', 'diary'));
                 $content .= \html_writer::div(
                     $promptlabel . $prompttext,
                     'diary-course-topic-currentprompt'
                 );
             }
+        }
+
+        // Append prompt mode label when the diary has any prompts configured.
+        $totalprompts = $DB->count_records('diary_prompts', ['diaryid' => $diary->id]);
+        if ($totalprompts > 0) {
+            $mode = isset($diary->promptmode) ? (int)$diary->promptmode : 0;
+            $modelabels = [
+                0 => get_string('promptmodesequential', 'diary'),
+                1 => get_string('promptmodechoice', 'diary'),
+                2 => get_string('promptmoderandom', 'diary'),
+                3 => get_string('promptmodecompleteall', 'diary'),
+                4 => get_string('promptmodechoicecomplete', 'diary'),
+                5 => get_string('promptmoderandomcomplete', 'diary'),
+            ];
+            if ($mode === 4) {
+                $required = isset($diary->requiredpromptcount) ? (int)$diary->requiredpromptcount : 0;
+                $modedata = (object)['required' => $required, 'total' => $totalprompts];
+                $modelabel = get_string('coursetopiccurrentpromptmodechoicecomplete', 'diary', $modedata);
+            } else if ($mode === 5) {
+                $required = isset($diary->requiredpromptcount) ? (int)$diary->requiredpromptcount : 0;
+                $modedata = (object)['required' => $required, 'total' => $totalprompts];
+                $modelabel = get_string('coursetopiccurrentpromptmoderandomcomplete', 'diary', $modedata);
+            } else {
+                $modename = $modelabels[$mode] ?? $modelabels[0];
+                $modelabel = get_string('coursetopiccurrentpromptmode', 'diary', $modename);
+            }
+            $content .= \html_writer::div(
+                \html_writer::tag('strong', $modelabel),
+                'diary-course-topic-promptmode'
+            );
         }
 
         if ($content !== '') {
@@ -1095,6 +1464,38 @@ function diary_pluginfile($course, $cm, $context, $filearea, $args, $forcedownlo
         return false;
     }
 
+    // 20260503 Split handler into two branches: prompt files (visible to any enrolled user)
+    // and entry/attachment files (owner or manager only), matching backup file areas.
+    if ($filearea === 'prompt') {
+        // Prompt media files: any user who can view the activity may access them.
+        if (
+            !has_capability('mod/diary:viewentries', $context)
+            && !has_capability('mod/diary:addentries', $context)
+            && !has_capability('mod/diary:manageentries', $context)
+        ) {
+            return false;
+        }
+
+        $promptid = intval(array_shift($args));
+        if (empty($promptid) || !is_numeric($promptid)) {
+            return false;
+        }
+
+        $fs = get_file_storage();
+        $relativepath = implode('/', $args);
+        $fullpath = "/$context->id/mod_diary/$filearea/$promptid/$relativepath";
+        $file = $fs->get_file_by_hash(sha1($fullpath));
+        if (!$file || $file->is_directory()) {
+            return false;
+        }
+        send_stored_file($file, null, 0, $forcedownload, $options);
+        return true;
+    }
+
+    if ($filearea !== 'entry' && $filearea !== 'attachment') {
+        return false;
+    }
+
     // Args[0] should be the entry id.
     $entryid = intval(array_shift($args));
 
@@ -1121,17 +1522,17 @@ function diary_pluginfile($course, $cm, $context, $filearea, $args, $forcedownlo
         return false;
     }
 
-    if ($filearea !== 'entry') {
-        return false;
-    }
-
     $fs = get_file_storage();
     $relativepath = implode('/', $args);
     $fullpath = "/$context->id/mod_diary/$filearea/$entryid/$relativepath";
     $file = $fs->get_file_by_hash(sha1($fullpath));
+    if (!$file || $file->is_directory()) {
+        return false;
+    }
 
     // Finally send the file.
     send_stored_file($file, null, 0, $forcedownload, $options);
+    return true;
 }
 
 
@@ -1193,16 +1594,92 @@ function diary_get_completion_state($course, $cm, $userid, $type) {
     // No need to check for the 'view' condition, completion_info_custom::get_state
     // already checks for the 'view' rule before calling this function.
 
-    if ($type == COMPLETION_AND) {
-        $diary = $DB->get_record('diary', ['id' => $cm->instance]);
-        if (!$diary) {
-            return $type;
-        }
+    $diary = $DB->get_record('diary', ['id' => $cm->instance]);
+    if (!$diary) {
+        return $type;
+    }
 
-        if (!empty($diary->completion_create_entry)) {
-            return $DB->record_exists('diary_entries', ['diary' => $diary->id, 'userid' => $userid]);
-        }
+    // Metric and prompt requirements are hard completion gates when configured.
+    $promptcompletion = prompts::get_prompt_completion_progress($diary, $userid);
+    if (!empty($promptcompletion['applies']) && empty($promptcompletion['complete'])) {
+        return false;
+    }
+
+    $metriccompletion = diary_get_metric_requirements_progress($diary, $userid);
+    if (!empty($metriccompletion['applies']) && empty($metriccompletion['complete'])) {
+        return false;
+    }
+
+    if (!empty($diary->completion_create_entry)) {
+        return $DB->record_exists('diary_entries', ['diary' => $diary->id, 'userid' => $userid]);
     }
 
     return $type;
+}
+
+/**
+ * Synchronize stored activity completion with Diary prompt-mode progress.
+ *
+ * Core completion still evaluates view/grade/pass-grade requirements. For
+ * prompt-driven diary modes, this helper clamps the final stored state back to
+ * incomplete until the user has completed the required prompt count.
+ *
+ * @param stdClass $course Course record.
+ * @param cm_info|stdClass $cm Course module.
+ * @param int $userid User id. Defaults to current user.
+ * @param stdClass|null $diary Optional diary record to avoid reloading it.
+ * @return void
+ */
+function diary_sync_completion_state($course, $cm, $userid = 0, $diary = null) {
+    global $DB, $USER;
+
+    if (empty($userid)) {
+        $userid = $USER->id;
+    }
+
+    $completion = new completion_info($course);
+    if ($cm->completion != COMPLETION_TRACKING_AUTOMATIC || !$completion->is_enabled($cm)) {
+        return;
+    }
+
+    $current = $completion->get_data($cm, false, $userid);
+    if (!empty($current->overrideby)) {
+        return;
+    }
+
+    if ($diary === null) {
+        $diary = $DB->get_record('diary', ['id' => $cm->instance], '*', MUST_EXIST);
+    }
+
+    $promptcompletion = prompts::get_prompt_completion_progress($diary, $userid);
+    $metriccompletion = diary_get_metric_requirements_progress($diary, $userid);
+
+    // First let Moodle recalculate the normal automatic rules (view/grade/pass grade).
+    $completion->update_state($cm, COMPLETION_UNKNOWN, $userid);
+
+    $promptrequired = !empty($promptcompletion['applies']);
+    $metricsrequired = !empty($metriccompletion['applies']);
+    if (!$promptrequired && !$metricsrequired) {
+        return;
+    }
+
+    $current = $completion->get_data($cm, false, $userid);
+    if (!empty($current->overrideby)) {
+        return;
+    }
+
+    $promptcomplete = !$promptrequired || !empty($promptcompletion['complete']);
+    $metricscomplete = !$metricsrequired || !empty($metriccompletion['complete']);
+    if ($promptcomplete && $metricscomplete) {
+        return;
+    }
+
+    if ((int)$current->completionstate === COMPLETION_INCOMPLETE) {
+        return;
+    }
+
+    $current->completionstate = COMPLETION_INCOMPLETE;
+    $current->timemodified = time();
+    $current->overrideby = null;
+    $completion->internal_set_data($cm, $current);
 }

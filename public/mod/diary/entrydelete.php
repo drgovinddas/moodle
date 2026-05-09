@@ -64,7 +64,7 @@ if ((!$promptid) && ($diary->timeopen < time())) {
     // 20240507 Added for testing and it appears to work for existing entry without a prompt.
     if ($promptid > 0) {
         // Need to call a prompt function that returns the current promptid, if there is one that is current.
-        $promptid = prompts::get_current_promptid($diary);
+        $promptid = prompts::get_current_promptid($diary, $USER->id, 0);
     }
 }
 
@@ -337,6 +337,7 @@ $data->id = $cm->id;
         $newentry->tags = $fromform->tags;
 
         $DB->update_record('diary_entries', $newentry);
+        diary_sync_completion_state($course, $cm, $USER->id, $diary);
 
         // Do some other processing here,
         // If this is a new page (entry) you need to insert it in the DB and obtain id.

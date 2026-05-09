@@ -26,6 +26,7 @@ use mod_diary\local\diarystats;
 
 require_once($CFG->dirroot . '/course/moodleform_mod.php');
 require_once($CFG->dirroot . '/rating/lib.php');
+require_once($CFG->dirroot . '/mod/diary/lib.php');
 
 /**
  * Diary settings form.
@@ -192,6 +193,22 @@ class mod_diary_mod_form extends moodleform_mod {
         $mform->setType($name, PARAM_INT);
         $mform->setDefault($name, (int)($diaryconfig->maxeditopens ?? 0));
 
+        // Prompt assignment mode controls (Phase 1 plumbing, default keeps current behavior).
+        $name = 'promptmode';
+        $label = get_string($name, $plugin);
+        $mform->addElement('select', $name, $label, $this->get_promptmode_options($plugin));
+        $mform->addHelpButton($name, $name, $plugin);
+        $mform->setType($name, PARAM_INT);
+        $mform->setDefault($name, 0);
+
+        $name = 'requiredpromptcount';
+        $label = get_string($name, $plugin);
+        $mform->addElement('text', $name, $label, $mediumtextoptions);
+        $mform->addHelpButton($name, $name, $plugin);
+        $mform->setType($name, PARAM_INT);
+        $mform->setDefault($name, 0);
+        $mform->disabledIf($name, 'promptmode', 'in', [0, 1, 2, 3]);
+
         // 20210704 Added heading for appearance options section.
         $name = 'appearancehdr';
         $label = get_string('appearance');
@@ -245,6 +262,13 @@ class mod_diary_mod_form extends moodleform_mod {
         $mform->setType($name, PARAM_TEXT);
         $mform->setDefault($name, $diaryconfig->bordercolor ?? get_string('bordercolor_default', 'diary'));
         $mform->disabledIf($name, 'enableborders', 'eq', 0);
+
+        $name = 'inlineattachmentpreviews';
+        $label = get_string('inlineattachmentpreviews', 'diary');
+        $mform->addElement('selectyesno', $name, $label);
+        $mform->addHelpButton($name, $name, $plugin);
+        $mform->setType($name, PARAM_INT);
+        $mform->setDefault($name, (int)($diaryconfig->inlineattachmentpreviews ?? 0));
 
         $mform->addElement('html', "
             <script>
@@ -465,6 +489,46 @@ class mod_diary_mod_form extends moodleform_mod {
         $mform->disabledIf($name, 'enableautorating', 'eq', 0);
         $mform->disabledIf($name, 'enablestats', 'eq', 0);
 
+        // Optional completion requirements based on advanced writing metrics.
+        $name = 'completionmetricrequirementshdr';
+        $label = get_string('completionmetricrequirements', $plugin);
+        $mform->addElement('header', $name, $label);
+        $mform->setExpanded($name, false);
+        $mform->addElement(
+            'static',
+            'completionmetricrequirementshelp',
+            '',
+            get_string('completionmetricrequirements_help', $plugin)
+        );
+
+        $operatoroptions = $this->get_metric_operator_options($plugin);
+        foreach ($this->get_metric_requirement_definitions() as $key => $stringkey) {
+            $metriclabel = get_string($stringkey, $plugin);
+            $enabledname = 'metricreq_enable_' . $key;
+            $operatorname = 'metricreq_op_' . $key;
+            $valuename = 'metricreq_val_' . $key;
+            $penaltyname = 'metricreq_pen_' . $key;
+
+            $mform->addElement('advcheckbox', $enabledname, $metriclabel, '', [], [0, 1]);
+            $mform->addHelpButton($enabledname, $stringkey, $plugin);
+            $mform->setType($enabledname, PARAM_INT);
+            $mform->setDefault($enabledname, 0);
+
+            $mform->addElement('select', $operatorname, get_string('completionmetricoperator', $plugin), $operatoroptions);
+            $mform->setType($operatorname, PARAM_INT);
+            $mform->setDefault($operatorname, in_array($key, ['fkgrade', 'fogindex']) ? 1 : 0);
+            $mform->disabledIf($operatorname, $enabledname, 'eq', 0);
+
+            $mform->addElement('text', $valuename, get_string('completionmetricthreshold', $plugin), $mediumtextoptions);
+            $mform->setType($valuename, PARAM_RAW_TRIMMED);
+            $mform->disabledIf($valuename, $enabledname, 'eq', 0);
+
+            $mform->addElement('text', $penaltyname, get_string('completionmetricpenalty', $plugin), $mediumtextoptions);
+            $mform->setType($penaltyname, PARAM_INT);
+            $mform->setDefault($penaltyname, 1);
+            $mform->disabledIf($penaltyname, $enabledname, 'eq', 0);
+        }
+
         // 20210703 Added the common errors header.
         $name = 'commonerrors';
         $label = get_string($name, $plugin);
@@ -563,6 +627,28 @@ class mod_diary_mod_form extends moodleform_mod {
             if ($storedcolor !== false && $storedcolor !== null && $storedcolor !== '') {
                 $defaultvalues['bordercolor'] = (string)$storedcolor;
             }
+            $storedinlinepreviews = get_config('mod_diary', 'inlineattachmentpreviews_' . $instanceid);
+            if ($storedinlinepreviews !== false && $storedinlinepreviews !== null && $storedinlinepreviews !== '') {
+                $defaultvalues['inlineattachmentpreviews'] = (int)$storedinlinepreviews;
+            }
+
+            $metricrequirements = diary_get_metric_requirements($instanceid);
+            foreach ($this->get_metric_requirement_definitions() as $key => $unused) {
+                $enabledname = 'metricreq_enable_' . $key;
+                $operatorname = 'metricreq_op_' . $key;
+                $valuename = 'metricreq_val_' . $key;
+                $penaltyname = 'metricreq_pen_' . $key;
+
+                if (isset($metricrequirements[$key])) {
+                    $defaultvalues[$enabledname] = 1;
+                    $defaultvalues[$operatorname] = (int)($metricrequirements[$key]['operator'] ?? 0);
+                    $defaultvalues[$valuename] = (string)($metricrequirements[$key]['value'] ?? '');
+                    $defaultvalues[$penaltyname] = (int)($metricrequirements[$key]['penalty'] ?? 1);
+                } else {
+                    $defaultvalues[$enabledname] = 0;
+                    $defaultvalues[$penaltyname] = 1;
+                }
+            }
         }
     }
 
@@ -594,7 +680,95 @@ class mod_diary_mod_form extends moodleform_mod {
             );
         }
 
+        $promptmode = isset($data['promptmode']) ? (int)$data['promptmode'] : 0;
+        $requiredpromptcount = isset($data['requiredpromptcount']) ? (int)$data['requiredpromptcount'] : 0;
+
+        if ($promptmode < 0 || $promptmode > 5) {
+            $errors['promptmode'] = get_string('promptmodeinvalid', 'diary');
+        }
+
+        if ($requiredpromptcount < 0) {
+            $errors['requiredpromptcount'] = get_string('requiredpromptcountinvalid', 'diary');
+        }
+
+        if (!in_array($promptmode, [4, 5]) && $requiredpromptcount !== 0) {
+            $errors['requiredpromptcount'] = get_string('requiredpromptcountnonpartial', 'diary');
+        }
+
+        foreach ($this->get_metric_requirement_definitions() as $key => $unused) {
+            $enabledname = 'metricreq_enable_' . $key;
+            $valuename = 'metricreq_val_' . $key;
+            $penaltyname = 'metricreq_pen_' . $key;
+            if (!empty($data[$enabledname])) {
+                $rawvalue = $data[$valuename] ?? '';
+                if ($rawvalue === '' || !is_numeric($rawvalue)) {
+                    $errors[$valuename] = get_string('completionmetricinvalidnumber', 'diary');
+                }
+
+                $rawpenalty = $data[$penaltyname] ?? '';
+                if ($rawpenalty === '' || !is_numeric($rawpenalty) || (int)$rawpenalty < 0) {
+                    $errors[$penaltyname] = get_string('completionmetricinvalidpenalty', 'diary');
+                }
+            }
+        }
+
         return $errors;
+    }
+
+    /**
+     * Metric requirement definitions in UI order.
+     *
+     * @return array<string, string>
+     */
+    protected function get_metric_requirement_definitions() {
+        return [
+            'uniquewords' => 'uniquewords',
+            'shortwords' => 'shortwords',
+            'mediumwords' => 'mediumwords',
+            'longwords' => 'longwords',
+            'charspersentence' => 'charspersentence',
+            'sentencesperparagraph' => 'sentencesperparagraph',
+            'wordspersentence' => 'wordspersentence',
+            'longwordspersentence' => 'longwordspersentence',
+            'totalsyllables' => 'totalsyllables',
+            'avgsyllperword' => 'avgsylperword',
+            'avgwordlenchar' => 'avgwordlenchar',
+            'avgwordpara' => 'avgwordpara',
+            'lexicaldensity' => 'lexicaldensity',
+            'fkgrade' => 'fkgrade',
+            'freadingease' => 'freadingease',
+            'fogindex' => 'fogindex',
+        ];
+    }
+
+    /**
+     * Operator options for metric completion requirements.
+     *
+     * @param string $plugin name
+     * @return array
+     */
+    protected function get_metric_operator_options($plugin) {
+        return [
+            0 => get_string('completionmetricoperatoratleast', $plugin),
+            1 => get_string('completionmetricoperatoratmost', $plugin),
+        ];
+    }
+
+    /**
+     * Get array of prompt mode options.
+     *
+     * @param string $plugin name
+     * @return array
+     */
+    protected function get_promptmode_options($plugin) {
+        return [
+            0 => get_string('promptmodesequential', $plugin),
+            1 => get_string('promptmodechoice', $plugin),
+            2 => get_string('promptmoderandom', $plugin),
+            3 => get_string('promptmodecompleteall', $plugin),
+            4 => get_string('promptmodechoicecomplete', $plugin),
+            5 => get_string('promptmoderandomcomplete', $plugin),
+        ];
     }
 
     /**
