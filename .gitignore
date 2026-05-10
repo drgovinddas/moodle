@@ -64,3 +64,4 @@ UPGRADING-CURRENT.md
 *.zip
 git_data.zip
 db.sql
+tsconfig.aliases.json

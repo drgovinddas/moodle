@@ -608,6 +608,8 @@ final class category_manager_test extends \advanced_testcase {
 
     /**
      * Check that question categories with the wrong parent are fixed.
+     *
+     * @todo Deprecate in 6.0 MDL-87844 for Removal in 7.0 MDL-87845.
      */
     public function test_fix_restored_category_parents(): void {
         global $CFG, $DB, $USER;
@@ -667,6 +669,8 @@ final class category_manager_test extends \advanced_testcase {
 
     /**
      * A question with no category should be deleted, while other questions remain as-is.
+     *
+     * @todo Deprecate in 6.0 MDL-87844 for Removal in 7.0 MDL-87845.
      */
     public function test_cleanup_questions_without_categories(): void {
         global $DB;
