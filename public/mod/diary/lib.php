@@ -1,0 +1,1685 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * This page opens the current lib instance of diary.
+ *
+ * @package   mod_diary
+ * @copyright 2019 AL Rachels (drachels@drachels.com)
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+defined('MOODLE_INTERNAL') || die(); // phpcs:ignore
+use mod_diary\local\results;
+use mod_diary\local\prompts;
+use mod_diary\local\diarystats;
+
+/** Config key prefix for per-activity advanced metric completion requirements. */
+const DIARY_METRIC_REQUIREMENTS_KEY_PREFIX = 'metricrequirements_';
+
+/**
+ * Given an object containing all the necessary data,
+ * (defined by the form in mod.html) this function
+ * will create a new instance and return the id number
+ * of the new instance.
+ *
+ * @param object $diary Object containing required diary properties.
+ * @return int Diary ID.
+ */
+function diary_add_instance($diary) {
+    global $DB;
+
+    $metricrequirements = diary_extract_metric_requirements_from_form($diary);
+
+    $diary->promptmode = isset($diary->promptmode) ? (int)$diary->promptmode : 0;
+    if ($diary->promptmode < 0 || $diary->promptmode > 4) {
+        $diary->promptmode = 0;
+    }
+
+    $diary->requiredpromptcount = isset($diary->requiredpromptcount) ? (int)$diary->requiredpromptcount : 0;
+    if ($diary->requiredpromptcount < 0) {
+        $diary->requiredpromptcount = 0;
+    }
+    if ($diary->promptmode !== 4) {
+        $diary->requiredpromptcount = 0;
+    }
+
+    $enableborders = isset($diary->enableborders)
+        ? (int)$diary->enableborders
+        : (int)get_config('mod_diary', 'enableborders');
+    $borderstyle = isset($diary->borderstyle)
+        ? $diary->borderstyle
+        : (string)get_config('mod_diary', 'borderstyle');
+    $bordercolor = isset($diary->bordercolor)
+        ? $diary->bordercolor
+        : (string)get_config('mod_diary', 'bordercolor');
+    $inlineattachmentpreviews = isset($diary->inlineattachmentpreviews)
+        ? (int)$diary->inlineattachmentpreviews
+        : (int)get_config('mod_diary', 'inlineattachmentpreviews');
+    unset($diary->enableborders);
+    unset($diary->borderstyle);
+    unset($diary->bordercolor);
+    unset($diary->inlineattachmentpreviews);
+
+    if (empty($diary->assessed)) {
+        $diary->assessed = 0;
+    }
+    // 20190917 First one always true as ratingtime does not exist.
+    if (empty($diary->ratingtime) || empty($diary->assessed)) {
+        $diary->assesstimestart = 0;
+        $diary->assesstimefinish = 0;
+    }
+    $diary->timemodified = time();
+    $diary->id = $DB->insert_record('diary', $diary);
+
+    // 20200903 Added calendar dates.
+    results::diary_update_calendar($diary, $diary->coursemodule);
+
+    // 20200901 Added expected completion date.
+    if (!empty($diary->completionexpected)) {
+        \core_completion\api::update_completion_date_event($diary->coursemodule, 'diary', $diary->id, $diary->completionexpected);
+    }
+
+    diary_grade_item_update($diary);
+
+    set_config('enableborders_' . $diary->id, $enableborders, 'mod_diary');
+    set_config('borderstyle_' . $diary->id, $borderstyle, 'mod_diary');
+    set_config('bordercolor_' . $diary->id, $bordercolor, 'mod_diary');
+    set_config('inlineattachmentpreviews_' . $diary->id, $inlineattachmentpreviews, 'mod_diary');
+    diary_set_metric_requirements($diary->id, $metricrequirements);
+
+    return $diary->id;
+}
+
+/**
+ *
+ * Given an object containing all the necessary diary data,
+ * will update an existing instance with new diary data.
+ *
+ * @param object $diary
+ *            Object containing required diary properties.
+ * @return boolean True if successful.
+ */
+function diary_update_instance($diary) {
+    global $DB;
+
+    $metricrequirements = diary_extract_metric_requirements_from_form($diary);
+
+    $diary->promptmode = isset($diary->promptmode) ? (int)$diary->promptmode : 0;
+    if ($diary->promptmode < 0 || $diary->promptmode > 4) {
+        $diary->promptmode = 0;
+    }
+
+    $diary->requiredpromptcount = isset($diary->requiredpromptcount) ? (int)$diary->requiredpromptcount : 0;
+    if ($diary->requiredpromptcount < 0) {
+        $diary->requiredpromptcount = 0;
+    }
+    if ($diary->promptmode !== 4) {
+        $diary->requiredpromptcount = 0;
+    }
+
+    $enableborders = isset($diary->enableborders)
+        ? (int)$diary->enableborders
+        : (int)get_config('mod_diary', 'enableborders');
+    $borderstyle = isset($diary->borderstyle)
+        ? $diary->borderstyle
+        : (string)get_config('mod_diary', 'borderstyle');
+    $bordercolor = isset($diary->bordercolor)
+        ? $diary->bordercolor
+        : (string)get_config('mod_diary', 'bordercolor');
+    $inlineattachmentpreviews = isset($diary->inlineattachmentpreviews)
+        ? (int)$diary->inlineattachmentpreviews
+        : (int)get_config('mod_diary', 'inlineattachmentpreviews');
+    unset($diary->enableborders);
+    unset($diary->borderstyle);
+    unset($diary->bordercolor);
+    unset($diary->inlineattachmentpreviews);
+
+    $diary->timemodified = time();
+    $diary->id = $diary->instance;
+
+    if (empty($diary->assessed)) {
+        $diary->assessed = 0;
+    }
+
+    if (empty($diary->ratingtime) || empty($diary->assessed)) {
+        $diary->assesstimestart = 0;
+        $diary->assesstimefinish = 0;
+    }
+
+    if (empty($diary->notification)) {
+        $diary->notification = 0;
+    }
+
+    $DB->update_record('diary', $diary);
+
+    // 20200903 Added calendar dates.
+    results::diary_update_calendar($diary, $diary->coursemodule);
+
+    // 20200901 Added expected completion date.
+    $completionexpected = (!empty($diary->completionexpected)) ? $diary->completionexpected : null;
+    \core_completion\api::update_completion_date_event($diary->coursemodule, 'diary', $diary->id, $completionexpected);
+
+    diary_grade_item_update($diary);
+
+    set_config('enableborders_' . $diary->id, $enableborders, 'mod_diary');
+    set_config('borderstyle_' . $diary->id, $borderstyle, 'mod_diary');
+    set_config('bordercolor_' . $diary->id, $bordercolor, 'mod_diary');
+    set_config('inlineattachmentpreviews_' . $diary->id, $inlineattachmentpreviews, 'mod_diary');
+    diary_set_metric_requirements($diary->id, $metricrequirements);
+
+    return true;
+}
+
+/**
+ *
+ * Given an ID of an instance of this module,
+ * this function will permanently delete the instance
+ * and any data that depends on it.
+ *
+ * @param int $id
+ *            Diary ID.
+ * @return boolean True if successful.
+ */
+function diary_delete_instance($id) {
+    global $DB;
+
+    $result = true;
+
+    if (
+        !$diary = $DB->get_record("diary", [
+        "id" => $id,
+        ])
+    ) {
+        return false;
+    }
+
+    if (
+        !$DB->delete_records("diary_entries", [
+        "diary" => $diary->id,
+        ])
+    ) {
+        $result = false;
+    }
+
+    if (
+        !$DB->delete_records("diary_prompts", [
+        "diaryid" => $diary->id,
+        ])
+    ) {
+        $result = false;
+    }
+
+    if (
+        !$DB->delete_records("diary", [
+        "id" => $diary->id,
+        ])
+    ) {
+        $result = false;
+    }
+
+    unset_config('enableborders_' . $diary->id, 'mod_diary');
+    unset_config('borderstyle_' . $diary->id, 'mod_diary');
+    unset_config('bordercolor_' . $diary->id, 'mod_diary');
+    unset_config('inlineattachmentpreviews_' . $diary->id, 'mod_diary');
+    unset_config(DIARY_METRIC_REQUIREMENTS_KEY_PREFIX . $diary->id, 'mod_diary');
+
+    return $result;
+}
+
+/**
+ * Returns advanced metric keys supported by completion requirements.
+ *
+ * @return string[]
+ */
+function diary_get_metric_requirement_keys() {
+    return [
+        'uniquewords',
+        'shortwords',
+        'mediumwords',
+        'longwords',
+        'charspersentence',
+        'sentencesperparagraph',
+        'wordspersentence',
+        'longwordspersentence',
+        'totalsyllables',
+        'avgsyllperword',
+        'avgwordlenchar',
+        'avgwordpara',
+        'lexicaldensity',
+        'fkgrade',
+        'freadingease',
+        'fogindex',
+    ];
+}
+
+/**
+ * Get per-activity advanced metric requirements from plugin config.
+ *
+ * @param int $diaryid Diary id.
+ * @return array
+ */
+function diary_get_metric_requirements($diaryid) {
+    $raw = get_config('mod_diary', DIARY_METRIC_REQUIREMENTS_KEY_PREFIX . (int)$diaryid);
+    if (!is_string($raw) || $raw === '') {
+        return [];
+    }
+
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded)) {
+        return [];
+    }
+
+    $allowed = array_flip(diary_get_metric_requirement_keys());
+    $requirements = [];
+    foreach ($decoded as $metric => $rule) {
+        if (!isset($allowed[$metric]) || !is_array($rule)) {
+            continue;
+        }
+        if (!array_key_exists('value', $rule) || !is_numeric($rule['value'])) {
+            continue;
+        }
+        $operator = (int)($rule['operator'] ?? 0);
+        if ($operator !== 1) {
+            $operator = 0;
+        }
+        $penalty = (int)($rule['penalty'] ?? 1);
+        if ($penalty < 0) {
+            $penalty = 0;
+        }
+        $requirements[$metric] = [
+            'operator' => $operator,
+            'value' => (float)$rule['value'],
+            'penalty' => $penalty,
+        ];
+    }
+
+    return $requirements;
+}
+
+/**
+ * Persist per-activity advanced metric requirements.
+ *
+ * @param int $diaryid Diary id.
+ * @param array $requirements Requirement map.
+ * @return void
+ */
+function diary_set_metric_requirements($diaryid, array $requirements) {
+    if (empty($requirements)) {
+        unset_config(DIARY_METRIC_REQUIREMENTS_KEY_PREFIX . (int)$diaryid, 'mod_diary');
+        return;
+    }
+
+    set_config(
+        DIARY_METRIC_REQUIREMENTS_KEY_PREFIX . (int)$diaryid,
+        json_encode($requirements, JSON_UNESCAPED_SLASHES),
+        'mod_diary'
+    );
+}
+
+/**
+ * Extract advanced metric requirement fields from form data object.
+ *
+ * This unsets form-only fields from $diary so DB insert/update remains clean.
+ *
+ * @param stdClass $diary Form data object.
+ * @return array
+ */
+function diary_extract_metric_requirements_from_form($diary) {
+    $requirements = [];
+    foreach (diary_get_metric_requirement_keys() as $key) {
+        $enabledfield = 'metricreq_enable_' . $key;
+        $operatorfield = 'metricreq_op_' . $key;
+        $valuefield = 'metricreq_val_' . $key;
+        $penaltyfield = 'metricreq_pen_' . $key;
+
+        $enabled = !empty($diary->{$enabledfield});
+        $value = $diary->{$valuefield} ?? null;
+        $operator = (int)($diary->{$operatorfield} ?? 0);
+        $penalty = $diary->{$penaltyfield} ?? 1;
+
+        unset($diary->{$enabledfield});
+        unset($diary->{$operatorfield});
+        unset($diary->{$valuefield});
+        unset($diary->{$penaltyfield});
+
+        if (!$enabled || $value === null || $value === '' || !is_numeric($value)) {
+            continue;
+        }
+        if ($operator !== 1) {
+            $operator = 0;
+        }
+        if (!is_numeric($penalty)) {
+            $penalty = 1;
+        }
+        $penalty = (int)$penalty;
+        if ($penalty < 0) {
+            $penalty = 0;
+        }
+
+        $requirements[$key] = [
+            'operator' => $operator,
+            'value' => (float)$value,
+            'penalty' => $penalty,
+        ];
+    }
+
+    return $requirements;
+}
+
+/**
+ * Calculate advanced text metrics for a diary entry.
+ *
+ * @param stdClass $entry Diary entry record.
+ * @return array<string,float>
+ */
+function diary_calculate_entry_metrics($entry) {
+    $precision = 2;
+    $text = diarystats::to_plain_text($entry->text ?? '', $entry->format ?? FORMAT_HTML);
+
+    $characters = (float)diarystats::get_stats_chars($text);
+    $words = (float)diarystats::get_stats_words($text);
+    $sentences = (float)diarystats::get_stats_sentences($text);
+    $paragraphs = (float)diarystats::get_stats_paragraphs($text);
+    $uniquewords = (float)diarystats::get_stats_uniquewords($text);
+    [$shortwords, $mediumwords, $longwords, $totalsyllables] = diarystats::get_stats_longwords($text);
+
+    $charspersentence = $sentences > 0 ? round($characters / $sentences, $precision) : 0.0;
+    $wordspersentence = $sentences > 0 ? round($words / $sentences, $precision) : 0.0;
+    $longwordspersentence = $sentences > 0 ? round(((float)$longwords) / $sentences, $precision) : 0.0;
+    $sentencesperparagraph = $paragraphs > 0 ? round($sentences / $paragraphs, $precision) : 0.0;
+    $avgsyllperword = $uniquewords > 0 ? round(((float)$totalsyllables) / $uniquewords, $precision) : 0.0;
+    $avgwordlenchar = $words > 0 ? round($characters / $words, $precision) : 0.0;
+    $avgwordpara = $paragraphs > 0 ? round($words / $paragraphs, $precision) : 0.0;
+    $lexicaldensity = $words > 0 ? round(($uniquewords / $words) * 100, $precision) : 0.0;
+    $fkgrade = $sentences > 0
+        ? max(round(0.39 * ($words / $sentences) + 11.8 * (((float)$totalsyllables) / max($words, 1.0)) - 15.59, $precision), 0)
+        : 0.0;
+    $freadingease = $sentences > 0
+        ? round(206.835 - 1.015 * ($words / $sentences) - 84.6 * (((float)$totalsyllables) / max($words, 1.0)), $precision)
+        : 0.0;
+    $fogindex = $wordspersentence > 0 ? round(($wordspersentence + $longwordspersentence) * 0.4, $precision) : 0.0;
+
+    return [
+        'uniquewords' => $uniquewords,
+        'shortwords' => (float)$shortwords,
+        'mediumwords' => (float)$mediumwords,
+        'longwords' => (float)$longwords,
+        'charspersentence' => $charspersentence,
+        'sentencesperparagraph' => $sentencesperparagraph,
+        'wordspersentence' => $wordspersentence,
+        'longwordspersentence' => $longwordspersentence,
+        'totalsyllables' => (float)$totalsyllables,
+        'avgsyllperword' => $avgsyllperword,
+        'avgwordlenchar' => $avgwordlenchar,
+        'avgwordpara' => $avgwordpara,
+        'lexicaldensity' => $lexicaldensity,
+        'fkgrade' => (float)$fkgrade,
+        'freadingease' => $freadingease,
+        'fogindex' => $fogindex,
+    ];
+}
+
+/**
+ * Check whether one entry satisfies all configured advanced metric requirements.
+ *
+ * operator: 0 => >=, 1 => <=
+ *
+ * @param stdClass $entry Diary entry record.
+ * @param array $requirements Requirement map.
+ * @return bool
+ */
+function diary_entry_meets_metric_requirements($entry, array $requirements) {
+    if (empty($requirements)) {
+        return true;
+    }
+
+    $metrics = diary_calculate_entry_metrics($entry);
+    foreach ($requirements as $metric => $rule) {
+        if (!array_key_exists($metric, $metrics)) {
+            return false;
+        }
+        $value = (float)$metrics[$metric];
+        $target = (float)$rule['value'];
+        $operator = (int)$rule['operator'];
+
+        if ($operator === 1) {
+            if ($value > $target) {
+                return false;
+            }
+        } else {
+            if ($value < $target) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Compute completion progress for configured advanced metric requirements.
+ *
+ * Applies when at least one requirement is configured and is complete once
+ * at least one entry by this user satisfies all configured requirements.
+ *
+ * @param stdClass $diary Diary activity record.
+ * @param int $userid User id.
+ * @return array{applies:bool, complete:bool}
+ */
+function diary_get_metric_requirements_progress($diary, $userid) {
+    global $DB;
+
+    $requirements = diary_get_metric_requirements((int)$diary->id);
+    if (empty($requirements)) {
+        return ['applies' => false, 'complete' => true];
+    }
+
+    $entries = $DB->get_records(
+        'diary_entries',
+        ['diary' => $diary->id, 'userid' => $userid],
+        'timemodified DESC, id DESC',
+        'id,text,format'
+    );
+
+    foreach ($entries as $entry) {
+        if (diary_entry_meets_metric_requirements($entry, $requirements)) {
+            return ['applies' => true, 'complete' => true];
+        }
+    }
+
+    return ['applies' => true, 'complete' => false];
+}
+
+/**
+ * Returns whether entry/prompt borders are enabled for a diary activity.
+ *
+ * Stored in plugin config keyed by diary id to avoid schema changes.
+ * Falls back to site default mod_diary/enableborders.
+ *
+ * @param int $diaryid Diary activity id.
+ * @return bool
+ */
+function diary_get_enable_borders($diaryid) {
+    $diaryid = (int)$diaryid;
+    $value = get_config('mod_diary', 'enableborders_' . $diaryid);
+    if ($value === false || $value === null || $value === '') {
+        $value = get_config('mod_diary', 'enableborders');
+    }
+    return !empty($value);
+}
+
+/**
+ * Returns border style value for a diary activity.
+ *
+ * @param int $diaryid Diary activity id.
+ * @return string 'none', 'thin', or 'double'
+ */
+function diary_get_border_style($diaryid) {
+    $diaryid = (int)$diaryid;
+    $value = get_config('mod_diary', 'borderstyle_' . $diaryid);
+    if ($value === false || $value === null || $value === '') {
+        $value = get_config('mod_diary', 'borderstyle');
+    }
+    if ($value === 'none' || $value === 'thin' || $value === 'double') {
+        return $value;
+    }
+    return 'none';
+}
+
+/**
+ * Returns border color value for a diary activity.
+ *
+ * @param int $diaryid Diary activity id.
+ * @return string CSS color string
+ */
+function diary_get_border_color($diaryid) {
+    $diaryid = (int)$diaryid;
+    $value = get_config('mod_diary', 'bordercolor_' . $diaryid);
+    if ($value === false || $value === null || $value === '') {
+        $value = get_config('mod_diary', 'bordercolor');
+    }
+    if (empty($value)) {
+        $value = '#666666';
+    }
+    return (string)$value;
+}
+
+/**
+ * Returns inline CSS variables for entry/prompt border style.
+ *
+ * @param int $diaryid Diary activity id.
+ * @return string
+ */
+function diary_get_border_css_vars($diaryid) {
+    if (diary_get_enable_borders($diaryid)) {
+        $color = diary_get_border_color($diaryid);
+        $style = diary_get_border_style($diaryid);
+        if ($style === 'none') {
+            return '--diary-entry-border:0;--diary-prompt-border:0;';
+        }
+        $entryborder = ($style === 'double') ? '3px double ' . $color : '1px solid ' . $color;
+        $promptborder = ($style === 'double') ? '3px double ' . $color : '1px solid ' . $color;
+        return '--diary-entry-border:' . $entryborder . ';--diary-prompt-border:' . $promptborder . ';';
+    }
+    return '--diary-entry-border:0;--diary-prompt-border:0;';
+}
+
+/**
+ * Returns whether inline attachment previews are enabled for a diary activity.
+ *
+ * @param int $diaryid Diary activity id.
+ * @return bool
+ */
+function diary_get_inline_attachment_previews($diaryid) {
+    $diaryid = (int)$diaryid;
+    $value = get_config('mod_diary', 'inlineattachmentpreviews_' . $diaryid);
+    if ($value === false || $value === null || $value === '') {
+        $value = get_config('mod_diary', 'inlineattachmentpreviews');
+    }
+    return !empty($value);
+}
+
+/**
+ * Indicates API features that the diary supports.
+ *
+ * @uses FEATURE_MOD_PURPOSE:
+ * @uses FEATURE__BACKUP_MOODLE2
+ * @uses FEATURE_COMPLETION_TRACKS_VIEWS
+ * @uses FEATURE_GRADE_HAS_GRADE
+ * @uses FEATURE_GRADE_OUTCOMES
+ * @uses FEATURE_GROUPS
+ * @uses FEATURE_GROUPINGS
+ * @uses FEATURE_GROUPMEMBERSONLY
+ * @uses FEATURE_MOD_INTRO
+ * @uses FEATURE_RATE
+ * @uses FEATURE_SHOW_DESCRIPTION
+ * @param string $feature FEATURE_xx constant for requested feature.
+ * @return mixed True if module supports feature, null if doesn't know.
+ */
+function diary_supports($feature) {
+    global $CFG;
+
+    switch ($feature) {
+        case FEATURE_BACKUP_MOODLE2:
+            return true;
+        case FEATURE_COMPLETION_TRACKS_VIEWS:
+            return true;
+        case FEATURE_GRADE_HAS_GRADE:
+            return true;
+        case FEATURE_GRADE_OUTCOMES:
+            return false;
+        case FEATURE_GROUPS:
+            return true;
+        case FEATURE_GROUPINGS:
+            return true;
+        case FEATURE_GROUPMEMBERSONLY:
+            return true;
+        case FEATURE_MOD_INTRO:
+            return true;
+        case FEATURE_RATE:
+            return true;
+        case FEATURE_SHOW_DESCRIPTION:
+            return true;
+        case FEATURE_MOD_PURPOSE:
+            return MOD_PURPOSE_COLLABORATION;
+
+        default:
+            return null;
+    }
+}
+
+/**
+ * Returns cached module information for course pages.
+ *
+ * Appends the current prompt text to the Diary description shown in course topics
+ * when the module is configured to show its description.
+ *
+ * @param stdClass $coursemodule Course module record from {course_modules}.
+ * @return cached_cm_info|null
+ */
+function diary_get_coursemodule_info($coursemodule) {
+    global $DB;
+
+    $diary = $DB->get_record(
+        'diary',
+        ['id' => $coursemodule->instance],
+        'id,name,intro,introformat,promptmode,requiredpromptcount',
+        IGNORE_MISSING
+    );
+    if (!$diary) {
+        return null;
+    }
+
+    $info = new cached_cm_info();
+    $info->name = $diary->name;
+
+    if (!empty($coursemodule->showdescription)) {
+        $context = \context_module::instance($coursemodule->id);
+        $content = '';
+
+        if (trim(strip_tags($diary->intro)) !== '') {
+            $content = format_module_intro('diary', $diary, $coursemodule->id, false);
+        }
+
+        $now = time();
+        $params = ['diaryid' => $diary->id, 'startnow' => $now, 'finishnow' => $now];
+        $activesql = "diaryid = :diaryid AND datestart <= :startnow AND datestop >= :finishnow";
+        $activepromptcount = $DB->count_records_select('diary_prompts', $activesql, $params);
+
+        if ($activepromptcount > 1) {
+            $promptlabel = \html_writer::tag('strong', get_string('coursetopiccurrentpromptcount', 'diary', $activepromptcount));
+            $content .= \html_writer::div($promptlabel, 'diary-course-topic-currentprompt');
+        } else if ($activepromptcount === 1) {
+            $sql = "SELECT id, text, format
+                      FROM {diary_prompts}
+                     WHERE diaryid = :diaryid
+                       AND datestart <= :startnow
+                       AND datestop >= :finishnow
+                  ORDER BY datestart DESC, id DESC";
+            $currentprompt = $DB->get_record_sql($sql, $params, IGNORE_MULTIPLE);
+
+            if (!empty($currentprompt)) {
+                $prompttext = format_text(
+                    file_rewrite_pluginfile_urls(
+                        $currentprompt->text,
+                        'pluginfile.php',
+                        $context->id,
+                        'mod_diary',
+                        'prompt',
+                        $currentprompt->id
+                    ),
+                    $currentprompt->format,
+                    [
+                    'context' => $context,
+                    'overflowdiv' => true,
+                    'para' => false,
+                    // This callback can run while course modinfo is being built before $PAGE is fully initialised.
+                    // Avoid filter chains that require $PAGE->context (e.g. emoticon filter).
+                    'filter' => false,
+                    ]
+                );
+                $promptlabel = \html_writer::tag('strong', get_string('coursetopiccurrentpromptlabel', 'diary'));
+                $content .= \html_writer::div(
+                    $promptlabel . $prompttext,
+                    'diary-course-topic-currentprompt'
+                );
+            }
+        }
+
+        // Append prompt mode label when the diary has any prompts configured.
+        $totalprompts = $DB->count_records('diary_prompts', ['diaryid' => $diary->id]);
+        if ($totalprompts > 0) {
+            $mode = isset($diary->promptmode) ? (int)$diary->promptmode : 0;
+            $modelabels = [
+                0 => get_string('promptmodesequential', 'diary'),
+                1 => get_string('promptmodechoice', 'diary'),
+                2 => get_string('promptmoderandom', 'diary'),
+                3 => get_string('promptmodecompleteall', 'diary'),
+                4 => get_string('promptmodechoicecomplete', 'diary'),
+                5 => get_string('promptmoderandomcomplete', 'diary'),
+            ];
+            if ($mode === 4) {
+                $required = isset($diary->requiredpromptcount) ? (int)$diary->requiredpromptcount : 0;
+                $modedata = (object)['required' => $required, 'total' => $totalprompts];
+                $modelabel = get_string('coursetopiccurrentpromptmodechoicecomplete', 'diary', $modedata);
+            } else if ($mode === 5) {
+                $required = isset($diary->requiredpromptcount) ? (int)$diary->requiredpromptcount : 0;
+                $modedata = (object)['required' => $required, 'total' => $totalprompts];
+                $modelabel = get_string('coursetopiccurrentpromptmoderandomcomplete', 'diary', $modedata);
+            } else {
+                $modename = $modelabels[$mode] ?? $modelabels[0];
+                $modelabel = get_string('coursetopiccurrentpromptmode', 'diary', $modename);
+            }
+            $content .= \html_writer::div(
+                \html_writer::tag('strong', $modelabel),
+                'diary-course-topic-promptmode'
+            );
+        }
+
+        if ($content !== '') {
+            $info->content = $content;
+        }
+    }
+
+    return $info;
+}
+
+/**
+ * List the actions that correspond to a view of this module.
+ * This is used by the participation report.
+ *
+ * Note: This is not used by new logging system. Event with
+ * crud = 'r' and edulevel = LEVEL_PARTICIPATING will
+ * be considered as view action.
+ *
+ * @return array
+ */
+function diary_get_view_actions() {
+    return [
+        'view',
+        'view all',
+        'view responses',
+    ];
+}
+
+/**
+ * List the actions that correspond to a post of this module.
+ * This is used by the participation report.
+ *
+ * Note: This is not used by new logging system. Event with
+ * crud = ('c' || 'u' || 'd') and edulevel = LEVEL_PARTICIPATING
+ * will be considered as post action.
+ *
+ * @return array
+ */
+function diary_get_post_actions() {
+    return [
+        'add entry',
+        'update entry',
+        'update feedback',
+    ];
+}
+
+/**
+ * Returns a summary of data activity of this user.
+ *
+ * Not used yet, as of 20200718.
+ *
+ * @param object $course
+ * @param object $user
+ * @param object $mod
+ * @param object $diary
+ * @return object|null
+ */
+function diary_user_outline($course, $user, $mod, $diary) {
+    global $DB;
+
+    if (
+        $entry = $DB->get_record("diary_entries", [
+        "userid" => $user->id,
+        "diary" => $diary->id,
+        ])
+    ) {
+        $numwords = count(preg_split("/\w\b/", $entry->text)) - 1;
+
+        $result = new stdClass();
+        $result->info = get_string("numwords", "", $numwords);
+        $result->time = $entry->timemodified;
+        return $result;
+    }
+    return null;
+}
+
+/**
+ * Given a course and a time, this module should find recent activity
+ * that has occurred in diary activities and print it out.
+ * Return true if there was output, or false if there was none.
+ *
+ * @param stdClass $course
+ * @param bool $viewfullnames
+ * @param int $timestart
+ * @return bool
+ */
+function diary_print_recent_activity($course, $viewfullnames, $timestart) {
+    global $CFG, $USER, $DB, $OUTPUT;
+
+    if (!get_config('diary', 'showrecentactivity')) {
+        return false;
+    }
+
+    $dbparams = [
+        $timestart,
+        $course->id,
+        'diary',
+    ];
+    // 20210611 Added Moodle branch check.
+    if ($CFG->branch < 311) {
+        $namefields = user_picture::fields('u', null, 'userid');
+    } else {
+        $userfieldsapi = \core_user\fields::for_userpic();
+        $namefields = $userfieldsapi->get_sql('u', false, '', 'userid', false)->selects;
+        ;
+    }
+    $sql = "SELECT de.id, de.timemodified, cm.id AS cmid, $namefields
+              FROM {diary_entries} de
+              JOIN {diary} d ON d.id = de.diary
+              JOIN {course_modules} cm ON cm.instance = d.id
+              JOIN {modules} md ON md.id = cm.module
+              JOIN {user} u ON u.id = de.userid
+             WHERE de.timemodified > ? AND d.course = ? AND md.name = ?
+          ORDER BY u.lastname ASC, u.firstname ASC
+    ";
+    // Changed on 20190622 original line 310: ORDER BY de.timemodified ASC.
+    $newentries = $DB->get_records_sql($sql, $dbparams);
+
+    $modinfo = get_fast_modinfo($course);
+
+    $show = [];
+
+    foreach ($newentries as $anentry) {
+        if (!array_key_exists($anentry->cmid, $modinfo->get_cms())) {
+            continue;
+        }
+        $cm = $modinfo->get_cm($anentry->cmid);
+
+        if (!$cm->uservisible) {
+            continue;
+        }
+        if ($anentry->userid == $USER->id) {
+            $show[] = $anentry;
+            continue;
+        }
+        $context = context_module::instance($anentry->cmid);
+
+        // Only teachers can see other students entries.
+        if (!has_capability('mod/diary:manageentries', $context)) {
+            continue;
+        }
+
+        $groupmode = groups_get_activity_groupmode($cm, $course);
+
+        if ($groupmode == SEPARATEGROUPS && !has_capability('moodle/site:accessallgroups', $context)) {
+            if (isguestuser()) {
+                // Shortcut - guest user does not belong into any group.
+                continue;
+            }
+
+            // This will be slow - show only users that share group with me in this cm.
+            if (!$modinfo->get_groups($cm->groupingid)) {
+                continue;
+            }
+            $usersgroups = groups_get_all_groups($course->id, $anentry->userid, $cm->groupingid);
+            if (is_array($usersgroups)) {
+                $usersgroups = array_keys($usersgroups);
+                $intersect = array_intersect($usersgroups, $modinfo->get_groups($cm->groupingid));
+                if (empty($intersect)) {
+                    continue;
+                }
+            }
+        }
+        $show[] = $anentry;
+    }
+
+    if (empty($show)) {
+        return false;
+    }
+
+    echo $OUTPUT->heading(get_string('newdiaryentries', 'diary') . ':', 3);
+
+    foreach ($show as $submission) {
+        $cm = $modinfo->get_cm($submission->cmid);
+        $context = context_module::instance($submission->cmid);
+        if (has_capability('mod/diary:manageentries', $context)) {
+            $link = $CFG->wwwroot . '/mod/diary/report.php?id=' . $cm->id;
+        } else {
+            $link = $CFG->wwwroot . '/mod/diary/view.php?id=' . $cm->id;
+        }
+        print_recent_activity_note(
+            $submission->timemodified,
+            $submission,
+            $cm->name,
+            $link,
+            false,
+            $viewfullnames
+        );
+    }
+    return true;
+}
+
+/**
+ * Returns the users with data in one diary.
+ * Users with records in diary_entries - students and teachers.
+ *
+ * @param int $diaryid
+ *            Diary ID.
+ * @return array Array of user ids.
+ */
+function diary_get_participants($diaryid) {
+    global $DB;
+
+    // Get students.
+    $students = $DB->get_records_sql("SELECT DISTINCT u.id
+                                        FROM {user} u, {diary_entries} d
+                                       WHERE d.diary = ? AND u.id = d.userid", [$diaryid]);
+    // Get teachers.
+    $teachers = $DB->get_records_sql("SELECT DISTINCT u.id
+                                        FROM {user} u, {diary_entries} d
+                                       WHERE d.diary = ? AND u.id = d.teacher", [$diaryid]);
+
+    // Add teachers to students.
+    if ($teachers) {
+        foreach ($teachers as $teacher) {
+            $students[$teacher->id] = $teacher;
+        }
+    }
+    // Return students array, (it contains an array of unique users).
+    return ($students);
+}
+
+/**
+ * This function returns true if a scale is being used by one diary.
+ *
+ * @param int $diaryid
+ *            Diary ID.
+ * @param int $scaleid
+ *            Scale ID.
+ * @return boolean True if a scale is being used by one diary.
+ */
+function diary_scale_used($diaryid, $scaleid) {
+    global $DB;
+    $return = false;
+
+    $rec = $DB->get_record("diary", [
+        "id" => $diaryid,
+        "grade" => - $scaleid,
+    ]);
+
+    if (!empty($rec) && ! empty($scaleid)) {
+        $return = true;
+    }
+
+    return $return;
+}
+
+/**
+ * Checks if scale is being used by any instance of diary.
+ *
+ * This is used to find out if scale used anywhere.
+ *
+ * @param int $scaleid
+ * @return boolean True if the scale is used by any diary.
+ */
+function diary_scale_used_anywhere($scaleid) {
+    global $DB;
+
+    if (empty($scaleid)) {
+        return false;
+    }
+
+    return $DB->record_exists('diary', ['scale' => $scaleid * - 1]);
+}
+
+/**
+ * Implementation of the function for printing the form elements that control
+ * whether the course reset functionality affects the diary.
+ *
+ * @param object $mform Form passed by reference.
+ */
+function diary_reset_course_form_definition(&$mform) {
+    $mform->addElement('header', 'diaryheader', get_string('modulenameplural', 'diary'));
+    $mform->addElement('advcheckbox', 'reset_diary', get_string('removemessages', 'diary'));
+    $mform->addElement('checkbox', 'reset_diary_tags', get_string('removealldiarytags', 'diary'));
+}
+
+/**
+ * Course reset form defaults.
+ *
+ * @param object $course
+ * @return array
+ */
+function diary_reset_course_form_defaults($course) {
+    return ['reset_diary' => 1];
+}
+
+/**
+ * Actual implementation of the reset course functionality, delete all the
+ * data responses for course $data->courseid.
+ *
+ * @param object $data the data submitted from the reset course.
+ * @return array status array
+ */
+function diary_reset_userdata($data) {
+    global $CFG, $DB;
+    require_once($CFG->libdir . '/filelib.php');
+    require_once($CFG->dirroot . '/rating/lib.php');
+
+    $componentstr = get_string('modulenameplural', 'diary');
+    $status = [];
+
+    $alldatassql = "SELECT d.id
+                      FROM {diary} d
+                     WHERE d.course=?";
+
+    $rm = new rating_manager();
+    $ratingdeloptions = new stdClass();
+    $ratingdeloptions->component = 'mod_diary';
+    $ratingdeloptions->ratingarea = 'entry';
+
+    // Set the file storage - may need it to remove files later.
+    $fs = get_file_storage();
+
+    // Delete entries if requested.
+    if (!empty($data->reset_diary)) {
+        $DB->delete_records_select('diary_entries', "diary IN ($alldatassql)", [$data->courseid]);
+
+        if ($datas = $DB->get_records_sql($alldatassql, [$data->courseid])) {
+            foreach ($datas as $dataid => $unused) {
+                if (!$cm = get_coursemodule_from_instance('diary', $dataid)) {
+                    continue;
+                }
+                $datacontext = context_module::instance($cm->id);
+
+                // Delete any files that may exist.
+                $fs->delete_area_files($datacontext->id, 'mod_diary', 'content');
+
+                $ratingdeloptions->contextid = $datacontext->id;
+                $rm->delete_ratings($ratingdeloptions);
+
+                core_tag_tag::delete_instances('mod_diary', null, $datacontext->id);
+            }
+        }
+
+        if (empty($data->reset_gradebook_grades)) {
+            // Remove all grades from gradebook.
+            diary_reset_gradebook($data->courseid);
+        }
+
+        $status[] = [
+            'component' => $componentstr,
+            'item' => get_string('removeentries', 'diary'),
+            'error' => false,
+        ];
+    }
+
+    // Remove entries by users not enrolled into the course.
+    if (!empty($data->reset_data_notenrolled)) {
+        $recordssql = "SELECT de.id, de.userid, de.diary, u.id AS userexists, u.deleted AS userdeleted
+                         FROM {diary_entries} de
+                              JOIN {diary} d ON d.id = de.diary
+                              LEFT JOIN {user} u ON de.userid = u.id
+                        WHERE d.course = ? AND de.userid > 0";
+
+        $coursecontext = context_course::instance($data->courseid);
+        $notenrolled = [];
+        $fields = [];
+        $rs = $DB->get_recordset_sql($recordssql, [$data->courseid]);
+        foreach ($rs as $record) {
+            if (
+                array_key_exists($record->userid, $notenrolled) || !$record->userexists || $record->userdeleted
+                || !is_enrolled($coursecontext, $record->userid)
+            ) {
+                // Delete ratings.
+                if (!$cm = get_coursemodule_from_instance('diary', $record->dataid)) {
+                    continue;
+                }
+                $datacontext = context_module::instance($cm->id);
+                $ratingdeloptions->contextid = $datacontext->id;
+                $ratingdeloptions->itemid = $record->id;
+                $rm->delete_ratings($ratingdeloptions);
+
+                // Delete any files that may exist.
+                if ($contents = $DB->get_records('diary_entries', ['recordid' => $record->id], '', 'id')) {
+                    foreach ($contents as $content) {
+                        $fs->delete_area_files($datacontext->id, 'mod_data', 'content', $content->id);
+                    }
+                }
+                $notenrolled[$record->userid] = true;
+
+                core_tag_tag::remove_all_item_tags('mod_diary', 'diary_entries', $record->id);
+
+                $DB->delete_records('diary_entries', ['recordid' => $record->id]);
+            }
+        }
+        $rs->close();
+        $status[] = ['component' => $componentstr, 'item' => get_string('deletenotenrolled', 'diary'), 'error' => false];
+    }
+
+    // Remove all ratings.
+    if (!empty($data->reset_data_ratings)) {
+        if ($datas = $DB->get_records_sql($alldatassql, [$data->courseid])) {
+            foreach ($datas as $dataid => $unused) {
+                if (!$cm = get_coursemodule_from_instance('diary', $dataid)) {
+                    continue;
+                }
+                $datacontext = context_module::instance($cm->id);
+
+                $ratingdeloptions->contextid = $datacontext->id;
+                $rm->delete_ratings($ratingdeloptions);
+            }
+        }
+
+        if (empty($data->reset_gradebook_grades)) {
+            // Remove all grades from gradebook.
+            diary_reset_gradebook($data->courseid);
+        }
+
+        $status[] = ['component' => $componentstr, 'item' => get_string('deleteallratings'), 'error' => false];
+    }
+
+    // Remove all the tags.
+    if (!empty($data->reset_data_tags)) {
+        if ($datas = $DB->get_records_sql($alldatassql, [$data->courseid])) {
+            foreach ($datas as $dataid => $unused) {
+                if (!$cm = get_coursemodule_from_instance('data', $dataid)) {
+                    continue;
+                }
+
+                $context = context_module::instance($cm->id);
+                core_tag_tag::delete_instances('mod_diary', null, $context->id);
+            }
+        }
+        $status[] = ['component' => $componentstr, 'item' => get_string('tagsdeleted', 'data'), 'error' => false];
+    }
+
+    // Updating dates - shift may be negative too.
+    if ($data->timeshift) {
+        // Any changes to the list of dates that needs to be rolled should be same during course restore and course reset.
+        // See MDL-9367.
+        shift_course_mod_dates(
+            'diary',
+            [
+                'timeopen',
+                'timeclose',
+                'assesstimestart',
+                'assesstimefinish',
+            ],
+            $data->timeshift,
+            $data->courseid,
+        );
+        $status[] = ['component' => $componentstr, 'item' => get_string('datechanged'), 'error' => false];
+    }
+
+    return $status;
+}
+
+/**
+ * Returns gradebook data in module.
+ *
+ * @param  object $courseid
+ * @param  object $type
+ * @return array
+ */
+function diary_reset_gradebook($courseid, $type = '') {
+    global $DB;
+
+    $sql = "SELECT d.*, cm.idnumber as cmidnumber, d.course as courseid
+              FROM {diary} d, {course_modules} cm, {modules} m
+             WHERE m.name='diary' AND m.id=cm.module AND cm.instance=d.id AND d.course=?";
+
+    if ($diaries = $DB->get_records_sql($sql, [$courseid])) {
+        foreach ($diaries as $diary) {
+            diary_grade_item_update($diary);
+        }
+    }
+}
+
+/**
+ * Print diary overview.
+ *
+ * @param object $courses
+ * @param array $htmlarray
+ */
+function diary_print_overview($courses, $htmlarray) {
+    global $USER, $CFG, $DB;
+
+    if (!get_config('diary', 'overview')) {
+        return [];
+    }
+
+    if (empty($courses) || ! is_array($courses) || count($courses) == 0) {
+        return [];
+    }
+
+    if (!$diarys = get_all_instances_in_courses('diary', $courses)) {
+        return [];
+    }
+
+    $strdiary = get_string('modulename', 'diary');
+
+    $timenow = time();
+    foreach ($diarys as $diary) {
+        if (empty($courses[$diary->course]->format)) {
+            $courses[$diary->course]->format = $DB->get_field('course', 'format', ['id' => $diary->course]);
+        }
+        if ($courses[$diary->course]->format == 'weeks' && $diary->days) {
+            $coursestartdate = $courses[$diary->course]->startdate;
+
+            $diary->timestart = $coursestartdate + (($diary->section - 1) * 608400);
+            if (!empty($diary->days)) {
+                $diary->timefinish = $diary->timestart + (3600 * 24 * $diary->days);
+            } else {
+                $diary->timefinish = 9999999999;
+            }
+            $diaryopen = ($diary->timestart < $timenow && $timenow < $diary->timefinish);
+        } else {
+            $diaryopen = true;
+        }
+        if ($diaryopen) {
+            // 20230810 Changed based on pull rquest #29.
+            $url = new moodle_url($CFG->wwwroot . '/mod/diary/view.php', ['id' => $diary->coursemodule]);
+            $str = '<div class="diary overview"><div class="name">'
+                . $strdiary . ': <a '
+                . ($diary->visible ? '' : ' class="dimmed"')
+                . ' href="' . $url->out(false) . '">'
+                . $diary->name . '</a></div></div>';
+            if (empty($htmlarray[$diary->course]['diary'])) {
+                $htmlarray[$diary->course]['diary'] = $str;
+            } else {
+                $htmlarray[$diary->course]['diary'] .= $str;
+            }
+        }
+    }
+}
+
+/**
+ * Get diary grades for a user.
+ *
+ * @param object $diary
+ *            if is null, all diarys
+ * @param int $userid
+ *            if is false all users
+ * @return object $grades
+ */
+function diary_get_user_grades($diary, $userid = 0) {
+    global $CFG;
+    require_once($CFG->dirroot . '/rating/lib.php');
+    // 20200812 Fixed ratings.
+    $ratingoptions = new stdClass();
+    $ratingoptions->component = 'mod_diary';
+    $ratingoptions->ratingarea = 'entry';
+    $ratingoptions->modulename = 'diary';
+    $ratingoptions->moduleid = $diary->id;
+    $ratingoptions->userid = $userid;
+    $ratingoptions->aggregationmethod = $diary->assessed;
+    $ratingoptions->scaleid = $diary->scale;
+    $ratingoptions->itemtable = 'diary_entries';
+    $ratingoptions->itemtableusercolumn = 'userid';
+    $rm = new rating_manager();
+    return $rm->get_user_grades($ratingoptions);
+}
+
+/**
+ * Update diary activity grades.
+ *
+ * @category grade
+ * @param object $diary If is null, then all diaries.
+ * @param int $userid If is false, then all users.
+ * @param boolean $nullifnone Return null if grade does not exist.
+ */
+function diary_update_grades($diary, $userid = 0, $nullifnone = true) {
+    global $CFG;
+    require_once($CFG->libdir . '/gradelib.php');
+    $cm = get_coursemodule_from_instance('diary', $diary->id);
+    $diary->cmidnumber = $cm->idnumber;
+    if (!$diary->assessed) {
+        diary_grade_item_update($diary);
+    } else if ($grades = diary_get_user_grades($diary, $userid)) {
+        diary_grade_item_update($diary, $grades);
+    } else if ($userid && $nullifnone) {
+        $grade = new stdClass();
+        $grade->userid = $userid;
+        $grade->rawgrade = null;
+        diary_grade_item_update($diary, $grade);
+    } else {
+        diary_grade_item_update($diary);
+    }
+}
+
+/**
+ * Update or create grade item for given diary.
+ *
+ * @param stdClass $diary Object with extra cmidnumber.
+ * @param array $grades optional array/object of grade(s); 'reset' means reset grades in gradebook
+ * @return int 0 if ok, error code otherwise.
+ */
+function diary_grade_item_update($diary, $grades = null) {
+    global $CFG;
+    require_once($CFG->libdir . '/gradelib.php');
+
+    $params = [
+        'itemname' => $diary->name,
+        'idnumber' => $diary->cmidnumber,
+    ];
+
+    if (!$diary->assessed || $diary->scale == 0) {
+        $params['gradetype'] = GRADE_TYPE_NONE;
+    } else if ($diary->scale > 0) {
+        $params['gradetype'] = GRADE_TYPE_VALUE;
+        $params['grademax'] = $diary->scale;
+        $params['grademin'] = 0;
+    } else if ($diary->scale < 0) {
+        $params['gradetype'] = GRADE_TYPE_SCALE;
+        $params['scaleid'] = - $diary->scale;
+    }
+    if ($grades === 'reset') {
+        $params['reset'] = true;
+        $grades = null;
+    }
+    return grade_update('mod/diary', $diary->course, 'mod', 'diary', $diary->id, 0, $grades, $params);
+}
+
+/**
+ * Delete grade item for given diary.
+ *
+ * @param object $diary
+ * @return object grade_item
+ */
+function diary_grade_item_delete($diary) {
+    global $CFG;
+
+    require_once($CFG->libdir . '/gradelib.php');
+
+    return grade_update('mod/diary', $diary->course, 'mod', 'diary', $diary->id, 0, null, ['deleted' => 1]);
+}
+
+/**
+ * Return only the users that have entries in the specified diary activity.
+ * Used by report.php.
+ *
+ * @param object $diary
+ * @param object $currentgroup
+ * @param object $sortoption return object $diarys
+ */
+function diary_get_users_done($diary, $currentgroup, $sortoption) {
+    global $DB;
+
+    $params = [];
+
+    $sql = "SELECT DISTINCT u.*
+              FROM {diary_entries} de
+              JOIN {user} u ON de.userid = u.id ";
+
+    // Group users.
+    if ($currentgroup != 0) {
+        $sql .= "JOIN {groups_members} gm ON gm.userid = u.id AND gm.groupid = ?";
+        $params[] = $currentgroup;
+    }
+    // 20201014 Changed to a sort option preference to sort lastname ascending or descending.
+    $sql .= " WHERE de.diary = ? ORDER BY " . $sortoption;
+
+    $params[] = $diary->id;
+
+    $diarys = $DB->get_records_sql($sql, $params);
+
+    $cm = diary_get_coursemodule($diary->id);
+    if (!$diarys || ! $cm) {
+        return null;
+    }
+
+    // Remove unenrolled participants.
+    foreach ($diarys as $key => $user) {
+        $context = context_module::instance($cm->id);
+
+        $canadd = has_capability('mod/diary:addentries', $context, $user);
+        $entriesmanager = has_capability('mod/diary:manageentries', $context, $user);
+
+        if (!$entriesmanager && ! $canadd) {
+            unset($diarys[$key]);
+        }
+    }
+    return $diarys;
+}
+
+/**
+ * Returns the diary instance course_module id.
+ *
+ * @param integer $diaryid
+ * @return object
+ */
+function diary_get_coursemodule($diaryid) {
+    global $DB;
+
+    return $DB->get_record_sql("SELECT cm.*
+                                  FROM {course_modules} cm
+                                  JOIN {modules} m ON m.id = cm.module
+                                 WHERE cm.instance = ?
+                                   AND m.name = 'diary'", [$diaryid]);
+}
+
+/**
+ * Serves the diary files.
+ *
+ * @param stdClass $course Course object.
+ * @param stdClass $cm Course module object.
+ * @param stdClass $context Context object.
+ * @param string $filearea File area.
+ * @param array $args Extra arguments.
+ * @param bool $forcedownload Whether or not force download.
+ * @param array $options Additional options affecting the file serving.
+ * @return bool False if file not found, does not return if found - just send the file.
+ */
+function diary_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = []) {
+    global $DB, $USER;
+
+    if ($context->contextlevel != CONTEXT_MODULE) {
+        return false;
+    }
+
+    require_course_login($course, true, $cm);
+
+    if (!$course->visible && !has_capability('moodle/course:viewhiddencourses', $context)) {
+        return false;
+    }
+
+    // 20260503 Split handler into two branches: prompt files (visible to any enrolled user)
+    // and entry/attachment files (owner or manager only), matching backup file areas.
+    if ($filearea === 'prompt') {
+        // Prompt media files: any user who can view the activity may access them.
+        if (
+            !has_capability('mod/diary:viewentries', $context)
+            && !has_capability('mod/diary:addentries', $context)
+            && !has_capability('mod/diary:manageentries', $context)
+        ) {
+            return false;
+        }
+
+        $promptid = intval(array_shift($args));
+        if (empty($promptid) || !is_numeric($promptid)) {
+            return false;
+        }
+
+        $fs = get_file_storage();
+        $relativepath = implode('/', $args);
+        $fullpath = "/$context->id/mod_diary/$filearea/$promptid/$relativepath";
+        $file = $fs->get_file_by_hash(sha1($fullpath));
+        if (!$file || $file->is_directory()) {
+            return false;
+        }
+        send_stored_file($file, null, 0, $forcedownload, $options);
+        return true;
+    }
+
+    if ($filearea !== 'entry' && $filearea !== 'attachment') {
+        return false;
+    }
+
+    // Args[0] should be the entry id.
+    $entryid = intval(array_shift($args));
+
+    // 20260110 Fix for PostgreSQL "invalid input syntax for type bigint: ''" error:
+    // Ensure $entryid is a valid, non-empty integer before querying the DB.
+    if (empty($entryid) || !is_numeric($entryid)) {
+        // Handle the case where no valid ID was provided.
+        // Depending on the function's purpose, you might return false, throw an exception,
+        // or perhaps load a default state. For this error, returning false is likely safe
+        // and lets surrounding code handle the "no entry found" scenario gracefully.
+        return false;
+    }
+
+    $entry = $DB->get_record('diary_entries', ['id' => $entryid], 'id, userid', MUST_EXIST);
+
+    $canmanage = has_capability('mod/diary:manageentries', $context);
+    if (!$canmanage && ! has_capability('mod/diary:addentries', $context)) {
+        // Even if it is your own entry.
+        return false;
+    }
+
+    // Students can only see their own entry.
+    if (!$canmanage && $USER->id !== $entry->userid) {
+        return false;
+    }
+
+    $fs = get_file_storage();
+    $relativepath = implode('/', $args);
+    $fullpath = "/$context->id/mod_diary/$filearea/$entryid/$relativepath";
+    $file = $fs->get_file_by_hash(sha1($fullpath));
+    if (!$file || $file->is_directory()) {
+        return false;
+    }
+
+    // Finally send the file.
+    send_stored_file($file, null, 0, $forcedownload, $options);
+    return true;
+}
+
+
+/**
+ * Extends the settings navigation with the diary settings.
+ *
+ * This function is called when the context for the page is a diary module. This is not called by AJAX
+ * so it is safe to rely on the $PAGE.
+ *
+ * @param settings_navigation $settingsnav
+ * @param navigation_node $navref
+ */
+function diary_extend_settings_navigation(settings_navigation $settingsnav, navigation_node $navref) {
+    global $PAGE, $DB, $USER;
+
+    $cm = $PAGE->cm;
+    if (!$cm) {
+        return;
+    }
+
+    $context = $cm->context;
+    $course = $PAGE->course;
+
+    if (!$course) {
+        return;
+    }
+
+    // Link to add automatic time released prompts to Diary activities. Visible to teachers and admin only.
+    if (has_capability('mod/diary:addinstance', $context)) {
+        $link = new moodle_url('/mod/diary/prompt_edit.php', ['id' => $cm->id, 'jumptocurrent' => 1]);
+        $linkname = get_string('promptstitle', 'diary');
+        $icon = new pix_icon('icon', '', 'diary', ['class' => 'icon']);
+        $node = $navref->add($linkname, $link, navigation_node::TYPE_SETTING, null, null, $icon);
+    }
+
+    // Link to transfer Journal entries to Diary entries. Visible to admin only.
+    if (is_siteadmin()) {
+        $link = new moodle_url('/mod/diary/journaltodiaryxfr.php', ['id' => $cm->id]);
+        $linkname = get_string('journaltodiaryxfrtitle', 'diary');
+        $icon = new pix_icon('icon', '', 'diary', ['class' => 'icon']);
+        $node = $navref->add($linkname, $link, navigation_node::TYPE_SETTING, null, null, $icon);
+    }
+}
+
+
+/**
+ * Obtains the automatic completion state for this diary based on the rule
+ * on its completion settings.
+ *
+ * @param stdClass $course Course
+ * @param cm_info|stdClass $cm Course-module
+ * @param int $userid User ID
+ * @param bool $type Type of comparison (or/and; can be used as return value if no conditions are met)
+ * @return bool True if completed, false if not, $type if conditions not met.
+ */
+function diary_get_completion_state($course, $cm, $userid, $type) {
+    global $DB;
+
+    // No need to check for the 'view' condition, completion_info_custom::get_state
+    // already checks for the 'view' rule before calling this function.
+
+    $diary = $DB->get_record('diary', ['id' => $cm->instance]);
+    if (!$diary) {
+        return $type;
+    }
+
+    // Metric and prompt requirements are hard completion gates when configured.
+    $promptcompletion = prompts::get_prompt_completion_progress($diary, $userid);
+    if (!empty($promptcompletion['applies']) && empty($promptcompletion['complete'])) {
+        return false;
+    }
+
+    $metriccompletion = diary_get_metric_requirements_progress($diary, $userid);
+    if (!empty($metriccompletion['applies']) && empty($metriccompletion['complete'])) {
+        return false;
+    }
+
+    if (!empty($diary->completion_create_entry)) {
+        return $DB->record_exists('diary_entries', ['diary' => $diary->id, 'userid' => $userid]);
+    }
+
+    return $type;
+}
+
+/**
+ * Synchronize stored activity completion with Diary prompt-mode progress.
+ *
+ * Core completion still evaluates view/grade/pass-grade requirements. For
+ * prompt-driven diary modes, this helper clamps the final stored state back to
+ * incomplete until the user has completed the required prompt count.
+ *
+ * @param stdClass $course Course record.
+ * @param cm_info|stdClass $cm Course module.
+ * @param int $userid User id. Defaults to current user.
+ * @param stdClass|null $diary Optional diary record to avoid reloading it.
+ * @return void
+ */
+function diary_sync_completion_state($course, $cm, $userid = 0, $diary = null) {
+    global $DB, $USER;
+
+    if (empty($userid)) {
+        $userid = $USER->id;
+    }
+
+    $completion = new completion_info($course);
+    if ($cm->completion != COMPLETION_TRACKING_AUTOMATIC || !$completion->is_enabled($cm)) {
+        return;
+    }
+
+    $current = $completion->get_data($cm, false, $userid);
+    if (!empty($current->overrideby)) {
+        return;
+    }
+
+    if ($diary === null) {
+        $diary = $DB->get_record('diary', ['id' => $cm->instance], '*', MUST_EXIST);
+    }
+
+    $promptcompletion = prompts::get_prompt_completion_progress($diary, $userid);
+    $metriccompletion = diary_get_metric_requirements_progress($diary, $userid);
+
+    // First let Moodle recalculate the normal automatic rules (view/grade/pass grade).
+    $completion->update_state($cm, COMPLETION_UNKNOWN, $userid);
+
+    $promptrequired = !empty($promptcompletion['applies']);
+    $metricsrequired = !empty($metriccompletion['applies']);
+    if (!$promptrequired && !$metricsrequired) {
+        return;
+    }
+
+    $current = $completion->get_data($cm, false, $userid);
+    if (!empty($current->overrideby)) {
+        return;
+    }
+
+    $promptcomplete = !$promptrequired || !empty($promptcompletion['complete']);
+    $metricscomplete = !$metricsrequired || !empty($metriccompletion['complete']);
+    if ($promptcomplete && $metricscomplete) {
+        return;
+    }
+
+    if ((int)$current->completionstate === COMPLETION_INCOMPLETE) {
+        return;
+    }
+
+    $current->completionstate = COMPLETION_INCOMPLETE;
+    $current->timemodified = time();
+    $current->overrideby = null;
+    $completion->internal_set_data($cm, $current);
+}

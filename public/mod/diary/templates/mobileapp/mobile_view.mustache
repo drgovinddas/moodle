@@ -1,0 +1,582 @@
+{{!
+    @template mod_diary/mobileapp/mobile_view
+
+    Mobile view page for Diary entries and teacher grading actions.
+
+    Example context (json):
+    {
+        "cmid": 12,
+        "name": "Diary",
+        "intro": "Diary intro",
+        "isteacher": false,
+        "hasentry": true,
+        "text": "Student entry"
+    }
+}}
+
+<div class="ion-padding">
+    {{#warning}}
+        <core-alert message="{{warning}}" type="warning"></core-alert>
+        <div style="margin: 8px 0 12px; padding: 10px; border-left: 4px solid #b45309; background: #fff7ed; color: #7c2d12; border-radius: 4px;">
+            <strong>{{warning}}</strong>
+        </div>
+    {{/warning}}
+
+    <ion-card>
+        <ion-card-header>
+            <ion-card-title>{{name}}</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+            <core-format-text text="{{intro}}" component="mod_diary" component-id="{{cmid}}"></core-format-text>
+        </ion-card-content>
+    </ion-card>
+
+    {{#hasmobilecontext}}
+        <ion-card>
+            <ion-card-content>
+                {{#promptmode_summary}}<p><strong>{{promptmode_summary}}</strong></p>{{/promptmode_summary}}
+                {{#promptcount_total}}<p>{{{promptcount_total}}}</p>{{/promptcount_total}}
+                {{#promptcount_breakdown}}<p>{{{promptcount_breakdown}}}</p>{{/promptcount_breakdown}}
+
+                {{#haspromptsummary}}
+                    <div style="margin-top: 12px;">
+                        <h3 style="margin: 0 0 6px;">{{prompttitle}}</h3>
+                        {{#promptdates}}<p><i>{{promptdates}}</i></p>{{/promptdates}}
+                        <core-format-text text="{{promptbody}}" component="mod_diary" component-id="{{cmid}}"></core-format-text>
+                    </div>
+                {{/haspromptsummary}}
+
+                {{#haslimitnotes}}
+                    <div style="margin-top: 12px;">
+                        {{#limitnotes}}<p>{{{html}}}</p>{{/limitnotes}}
+                    </div>
+                {{/haslimitnotes}}
+
+                {{#hasmetricrequirements}}
+                    <div style="margin-top: 12px;">
+                        <h3 style="margin: 0 0 6px;">{{metricrequirementstitle}}</h3>
+                        <ion-list>
+                            {{#metricrequirements}}
+                                <ion-item lines="none">
+                                    <ion-label>{{text}}</ion-label>
+                                </ion-item>
+                            {{/metricrequirements}}
+                        </ion-list>
+                    </div>
+                {{/hasmetricrequirements}}
+            </ion-card-content>
+        </ion-card>
+    {{/hasmobilecontext}}
+
+    <!-- TEACHER/MANAGER GRADING VIEW -->
+    {{#showgrading}}
+        {{#canadd}}
+            <div class="ion-margin-bottom">
+                <ion-button
+                    fill="outline"
+                    size="small"
+                    core-site-plugins-new-content
+                    title="{{#str}}entry, mod_diary{{/str}}"
+                    component="mod_diary"
+                    method="mobile_course_view"
+                    [args]="{cmid: '{{cmid}}', courseid: '{{courseid}}', showgrading: 0}">
+                    {{#str}}entry, mod_diary{{/str}}
+                </ion-button>
+            </div>
+        {{/canadd}}
+
+        {{#showgroupselector}}
+            <details class="ion-margin-bottom" style="border: 1px solid #ddd; border-radius: 8px; padding: 6px 10px; background: #fff;">
+                <summary style="cursor: pointer; font-size: 14px; color: #333;">
+                    {{#str}}groups{{/str}}: {{selectedgroupname}}
+                </summary>
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+                    {{#groupoptions}}
+                        <ion-button
+                            size="small"
+                            {{#selected}}color="primary"{{/selected}}
+                            {{^selected}}fill="outline"{{/selected}}
+                            core-site-plugins-new-content
+                            title="{{name}}"
+                            component="mod_diary"
+                            method="mobile_course_view"
+                            [args]="{cmid: '{{cmid}}', courseid: '{{courseid}}', showgrading: 1, groupid: '{{id}}', userid: '{{selecteduserid}}', sortmode: '{{selectedsortmode}}'}">
+                            {{name}}
+                        </ion-button>
+                    {{/groupoptions}}
+                </div>
+            </details>
+        {{/showgroupselector}}
+
+        {{#hasuserselector}}
+            <details class="ion-margin-bottom" style="border: 1px solid #ddd; border-radius: 8px; padding: 6px 10px; background: #fff;">
+                <summary style="cursor: pointer; font-size: 14px; color: #333;">
+                    View single user: {{selectedusername}}
+                </summary>
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+                    {{#useroptions}}
+                        <ion-button
+                            size="small"
+                            {{#selected}}color="primary"{{/selected}}
+                            {{^selected}}fill="outline"{{/selected}}
+                            core-site-plugins-new-content
+                            title="{{name}}"
+                            component="mod_diary"
+                            method="mobile_course_view"
+                            [args]="{cmid: '{{cmid}}', courseid: '{{courseid}}', showgrading: 1, groupid: '{{selectedgroupid}}', userid: '{{id}}', sortmode: '{{selectedsortmode}}'}">
+                            {{name}}
+                        </ion-button>
+                    {{/useroptions}}
+                </div>
+            </details>
+        {{/hasuserselector}}
+
+        <details class="ion-margin-bottom" style="border: 1px solid #ddd; border-radius: 8px; padding: 6px 10px; background: #fff;">
+            <summary style="cursor: pointer; font-size: 14px; color: #333;">
+                Sort: {{selectedsortlabel}}
+            </summary>
+            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+                {{#sortoptions}}
+                    <ion-button
+                        size="small"
+                        {{#selected}}color="primary"{{/selected}}
+                        {{^selected}}fill="outline"{{/selected}}
+                        core-site-plugins-new-content
+                        title="{{label}}"
+                        component="mod_diary"
+                        method="mobile_course_view"
+                        [args]="{cmid: '{{cmid}}', courseid: '{{courseid}}', showgrading: 1, groupid: '{{selectedgroupid}}', userid: '{{selecteduserid}}', sortmode: '{{id}}'}">
+                        {{label}}
+                    </ion-button>
+                {{/sortoptions}}
+            </div>
+        </details>
+
+        <h3>{{#str}}entries, mod_diary{{/str}}</h3>
+        {{#gradingsummary}}
+            <p style="margin: 0 0 8px; color: #666; font-size: 13px;">{{gradingsummary}}</p>
+        {{/gradingsummary}}
+
+        {{#hasgradingpager}}
+            <div class="ion-margin-bottom" style="display: flex; gap: 8px;">
+                {{#hasgradingprev}}
+                    <ion-button
+                        fill="outline"
+                        size="small"
+                        core-site-plugins-new-content
+                        title="Previous"
+                        component="mod_diary"
+                        method="mobile_course_view"
+                        [args]="{cmid: '{{cmid}}', courseid: '{{courseid}}', showgrading: 1, groupid: '{{selectedgroupid}}', userid: '{{selecteduserid}}', sortmode: '{{selectedsortmode}}', gradeoffset: '{{gradingprevoffset}}'}">
+                        Previous
+                    </ion-button>
+                {{/hasgradingprev}}
+
+                {{#hasgradingnext}}
+                    <ion-button
+                        fill="outline"
+                        size="small"
+                        core-site-plugins-new-content
+                        title="Next"
+                        component="mod_diary"
+                        method="mobile_course_view"
+                        [args]="{cmid: '{{cmid}}', courseid: '{{courseid}}', showgrading: 1, groupid: '{{selectedgroupid}}', userid: '{{selecteduserid}}', sortmode: '{{selectedsortmode}}', gradeoffset: '{{gradingnextoffset}}'}">
+                        Next
+                    </ion-button>
+                {{/hasgradingnext}}
+            </div>
+        {{/hasgradingpager}}
+
+        {{^submissions}}
+            <core-alert message="{{#str}}noentriesmanagers, mod_diary{{/str}}" type="info"></core-alert>
+        {{/submissions}}
+
+        <ion-list>
+            {{#submissions}}
+            <div id="rating-anchor-{{entryid}}" style="height: 1px;"></div>
+            <ion-card style="box-shadow: 2px 2px 10px #dedede;">
+                <!-- Student Header -->
+                <ion-item lines="none">
+                    <ion-avatar slot="start">
+                        {{{studentpic}}}
+                    </ion-avatar>
+                    <ion-label>
+                        <h2>{{studentname}}</h2>
+                        <p>{{timemodified}}</p>
+                    </ion-label>
+                </ion-item>
+
+                <!-- Student Entry Content -->
+                <ion-card-content>
+                    <core-format-text text="{{text}}" component="mod_diary" component-id="{{cmid}}"></core-format-text>
+                </ion-card-content>
+
+                <hr style="background: var(--ion-card-border-color);">
+
+                <div class="ion-padding">
+
+                    {{#hasresultsblock}}
+                        <div style="margin-bottom: 12px;">
+                            <div id="diary-results-block-{{entryid}}">
+                                <core-format-text text="{{resultsblockhtml}}" component="mod_diary" component-id="{{cmid}}"></core-format-text>
+                            </div>
+                        </div>
+                    {{/hasresultsblock}}
+
+                    <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                        <ion-button
+                            class="diary-feedback-action"
+                            data-entryid="{{entryid}}"
+                            data-action="add"
+                            onclick="return window.modDiaryApplyFeedbackAction ? window.modDiaryApplyFeedbackAction('{{entryid}}', 'add') : true;"
+                            size="small"
+                            color="warning"
+                            expand="block">
+                            {{#str}}addtofeedback, mod_diary{{/str}}
+                        </ion-button>
+
+                        <ion-button
+                            class="diary-feedback-action"
+                            data-entryid="{{entryid}}"
+                            data-action="clear"
+                            onclick="return window.modDiaryApplyFeedbackAction ? window.modDiaryApplyFeedbackAction('{{entryid}}', 'clear') : true;"
+                            size="small"
+                            color="warning"
+                            expand="block">
+                            {{#str}}clearfeedback, mod_diary{{/str}}
+                        </ion-button>
+                    </div>
+
+                    <!-- 
+                         GRADING FORM CONTAINER
+                         Using <form ngNoForm> is crucial here. 
+                         It prevents Angular from throwing "Cannot find control" errors for the inputs inside.
+                         It provides a clean DOM scope for the core-site-plugins-call-ws directive to scrape data.
+                    -->
+                    <form id="diary-feedback-{{entryid}}" ngNoForm>
+
+                        <!-- Required identifiers for the save_feedback Web Service -->
+                        <input type="hidden" name="cmid" value="{{cmid}}">
+                        <input type="hidden" name="entryid" value="{{entryid}}">
+                        <input type="hidden" name="userid" value="{{studentid}}">
+
+                        <!-- Grade Selector -->
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; color: #666; font-size: 12px; margin-bottom: 5px;">
+                                {{#str}}rating, mod_diary{{/str}}
+                            </label>
+                            <select name="grade"
+                                    data-role="grade-visible"
+                                    style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; background: white; -webkit-appearance: none;">
+                                <option value="-1" {{rating_minus_one}}>{{#str}}nograde, mod_diary{{/str}}</option>
+                                {{#gradeoptions}}
+                                    <option value="{{val}}" {{selected}}>{{label}}</option>
+                                {{/gradeoptions}}
+                            </select>
+                            {{#averagegrade}}<p style="margin: 8px 0 0; color: #666;">{{averagegrade}}</p>{{/averagegrade}}
+                        </div>
+
+                        <!-- Feedback Editor -->
+                        <div style="margin-bottom: 15px;">
+                            <label style="display: block; color: #666; font-size: 12px; margin-bottom: 5px;">
+                                {{#str}}feedback{{/str}}
+                            </label>
+
+                            <div
+                                data-role="feedback-visible"
+                                data-entryid="{{entryid}}"
+                                contenteditable="true"
+                                spellcheck="true"
+                                style="width: 100%; min-height: 140px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #fff; color: #111; white-space: normal; overflow-wrap: anywhere;">{{{feedback_raw}}}</div>
+                            <input type="hidden" name="feedback" data-role="feedback-hidden" value="{{feedback_raw}}">
+                        </div>
+
+                        <!-- itemid required by WS, keep 0 for now -->
+                        <input type="hidden" name="itemid" value="0">
+                    </form>
+
+                    <textarea id="diary-feedback-seed-{{entryid}}" style="display:none;">{{feedback_seed}}</textarea>
+                    <textarea id="diary-feedback-seed-html-{{entryid}}" style="display:none;">{{feedback_seed_html}}</textarea>
+                    <input type="hidden" id="diary-autorating-value-{{entryid}}" value="{{autorating_value}}">
+
+                    <div class="ion-margin-top">
+                        <!-- 
+                            SAVE BUTTON
+                            The directive is placed directly on the ion-button.
+                            form="diary-feedback-{{entryid}}" links this button to the form above.
+                        -->
+                        <ion-button
+                            class="diary-save-feedback"
+                            data-entryid="{{entryid}}"
+                            onclick="return window.modDiaryPrepareFeedbackSave ? window.modDiaryPrepareFeedbackSave('{{entryid}}') : true;"
+                            expand="block"
+                            core-site-plugins-call-ws
+                            name="mod_diary_save_feedback"
+                            form="diary-feedback-{{entryid}}"
+                            refreshOnSuccess="false"
+                            successMessage="{{#str}}changessaved, mod_diary{{/str}}">
+                                {{#str}}savefeedback, mod_diary{{/str}}
+                        </ion-button>
+                    </div>
+
+                </div>
+            </ion-card>
+            {{/submissions}}
+        </ion-list>
+    {{/showgrading}}
+
+    <!-- STUDENT VIEW -->
+    {{^showgrading}}
+        {{#managerlanding}}
+            <div class="ion-margin-bottom">
+                {{#canadd}}
+                <ion-button
+                    fill="outline"
+                    size="small"
+                    core-site-plugins-new-content
+                    title="{{#showstartnewentry}}{{#str}}startnewentry, mod_diary{{/str}}{{/showstartnewentry}}{{#showstartoredit}}{{#str}}startoredit, mod_diary{{/str}}{{/showstartoredit}}"
+                    component="mod_diary"
+                    method="mobile_entry_edit"
+                    [preSets]="{getFromCache: 0, saveToCache: 0}"
+                    [args]="{cmid: '{{cmid}}', courseid: '{{courseid}}', cachekey: '{{cachekey}}'}">
+                    {{#showstartnewentry}}{{#str}}startnewentry, mod_diary{{/str}}{{/showstartnewentry}}{{#showstartoredit}}{{#str}}startoredit, mod_diary{{/str}}{{/showstartoredit}}
+                </ion-button>
+                {{#hasmanagerlatestentry}}
+                <ion-button
+                    fill="outline"
+                    size="small"
+                    core-site-plugins-new-content
+                    title="{{#str}}editthisentry, mod_diary{{/str}}"
+                    component="mod_diary"
+                    method="mobile_entry_edit"
+                    [preSets]="{getFromCache: 0, saveToCache: 0}"
+                    [args]="{cmid: '{{cmid}}', courseid: '{{courseid}}', entryid: '{{managerlatestentryid}}', cachekey: '{{cachekey}}'}">
+                    {{#str}}eeditlabel, mod_diary{{/str}}
+                </ion-button>
+                {{/hasmanagerlatestentry}}
+                {{/canadd}}
+                <ion-button
+                    fill="clear"
+                    size="small"
+                    style="--padding-start: 0; --padding-end: 0; text-decoration: underline;"
+                    core-site-plugins-new-content
+                    title="{{viewallentrieslabel}}"
+                    component="mod_diary"
+                    method="mobile_course_view"
+                    [args]="{cmid: '{{cmid}}', courseid: '{{courseid}}', showgrading: 1}">
+                    <span style="text-decoration: underline;">{{viewallentrieslabel}}</span>
+                </ion-button>
+            </div>
+
+            {{#canedit}}
+                {{#haseditableentries}}
+                    <ion-card>
+                        <ion-item-divider>
+                            <ion-label>{{#str}}entries, mod_diary{{/str}}</ion-label>
+                        </ion-item-divider>
+                        {{#editableentrysummary}}
+                            <p style="margin: 10px 16px 0; color: #666; font-size: 13px;">{{editableentrysummary}}</p>
+                        {{/editableentrysummary}}
+                        <ion-list>
+                            {{#editableentries}}
+                                <ion-item lines="full">
+                                    <ion-label>
+                                        <h3>{{title}}</h3>
+                                        {{#promptlabel}}<p>{{#str}}writingpromptlable2, mod_diary{{/str}}{{promptlabel}}</p>{{/promptlabel}}
+                                        {{#hasattachments}}<p>Attachments: {{attachmentcount}}</p>{{/hasattachments}}
+                                        <p>{{timemodified}}</p>
+                                        {{#preview}}<p>{{preview}}</p>{{/preview}}
+                                    </ion-label>
+                                    <ion-button
+                                        slot="end"
+                                        fill="outline"
+                                        size="small"
+                                        core-site-plugins-new-content
+                                        title="{{#str}}editthisentry, mod_diary{{/str}}"
+                                        component="mod_diary"
+                                        method="mobile_entry_edit"
+                                        [preSets]="{getFromCache: 0, saveToCache: 0}"
+                                        [args]="{cmid: '{{cmid}}', courseid: '{{courseid}}', entryid: '{{entryid}}', cachekey: '{{cachekey}}'}">
+                                        {{#str}}eeditlabel, mod_diary{{/str}}
+                                    </ion-button>
+                                </ion-item>
+                            {{/editableentries}}
+                        </ion-list>
+
+                        {{#haseditablepager}}
+                            <div class="ion-padding-top ion-padding-start ion-padding-end" style="display: flex; gap: 8px;">
+                                {{#haseditableprev}}
+                                    <ion-button
+                                        fill="outline"
+                                        size="small"
+                                        core-site-plugins-new-content
+                                        title="Previous"
+                                        component="mod_diary"
+                                        method="mobile_course_view"
+                                        [args]="{cmid: '{{cmid}}', courseid: '{{courseid}}', showgrading: 0, entryoffset: '{{editableprevoffset}}'}">
+                                        Previous
+                                    </ion-button>
+                                {{/haseditableprev}}
+
+                                {{#haseditablenext}}
+                                    <ion-button
+                                        fill="outline"
+                                        size="small"
+                                        core-site-plugins-new-content
+                                        title="Next"
+                                        component="mod_diary"
+                                        method="mobile_course_view"
+                                        [args]="{cmid: '{{cmid}}', courseid: '{{courseid}}', showgrading: 0, entryoffset: '{{editablenextoffset}}'}">
+                                        Next
+                                    </ion-button>
+                                {{/haseditablenext}}
+                            </div>
+                        {{/haseditablepager}}
+                    </ion-card>
+                {{/haseditableentries}}
+            {{/canedit}}
+        {{/managerlanding}}
+
+        {{^managerlanding}}
+
+        {{#hasentry}}
+            <ion-card>
+                <ion-item-divider>
+                    <ion-label>{{#str}}entry, mod_diary{{/str}}</ion-label>
+                </ion-item-divider>
+                <ion-card-content>
+                    <p><strong>{{#str}}lastedited, moodle{{/str}}:</strong> {{lastedited}}</p>
+                    {{#entrypromptlabel}}<p><strong>{{#str}}writingpromptlable2, mod_diary{{/str}}</strong>{{entrypromptlabel}}</p>{{/entrypromptlabel}}
+                    {{#hasattachments}}<p><strong>Attachments:</strong> {{attachmentcount}}</p>{{/hasattachments}}
+                    <core-format-text text="{{text}}" component="mod_diary" component-id="{{cmid}}"></core-format-text>
+                    {{#hasattachmentspreviews}}
+                        <core-format-text text="{{attachmentshtml}}" component="mod_diary" component-id="{{cmid}}"></core-format-text>
+                    {{/hasattachmentspreviews}}
+                </ion-card-content>
+            </ion-card>
+
+            {{#hasfeedback}}
+            <ion-card>
+                <ion-item-divider>
+                    <ion-label>{{#str}}entrycomment, mod_diary{{/str}}</ion-label>
+                </ion-item-divider>
+                <ion-item lines="none">
+                    <ion-avatar slot="start">
+                        {{{teacherpic}}}
+                    </ion-avatar>
+                    <ion-label>
+                        <h2>{{teachername}}</h2>
+                        <p>{{feedbackdate}}</p>
+                    </ion-label>
+                </ion-item>
+                <ion-card-content>
+                    {{#grade}}<p><strong>{{#str}}rating, mod_diary{{/str}}:</strong> {{grade}}</p>{{/grade}}
+                    <hr>
+                    <core-format-text text="{{feedbacktext}}" component="mod_diary" component-id="{{cmid}}"></core-format-text>
+                </ion-card-content>
+            </ion-card>
+            {{/hasfeedback}}
+        {{/hasentry}}
+
+        {{^hasentry}}
+            {{^canedit}}
+                <core-alert message="{{#str}}notstarted, mod_diary{{/str}}" type="info"></core-alert>
+            {{/canedit}}
+        {{/hasentry}}
+
+        <!-- Student edit action: open separate page (no duplicate inline editor/preview) -->
+        {{#canedit}}
+            <ion-card>
+                <ion-item-divider>
+                    <ion-label>{{#str}}startoredit, mod_diary{{/str}}</ion-label>
+                </ion-item-divider>
+                <ion-card-content>
+                    {{#info}}<p><i>{{info}}</i></p>{{/info}}
+
+                    <!-- 
+                        NAVIGATE TO EDIT PAGE
+                        We use core-site-plugins-new-content to push a new page onto the stack.
+                        This calls 'mobile_entry_edit' in mobile.php.
+                    -->
+                    <ion-button
+                        expand="block"
+                        core-site-plugins-new-content
+                        title="{{#showstartnewentry}}{{#str}}startnewentry, mod_diary{{/str}}{{/showstartnewentry}}{{#showstartoredit}}{{#str}}startoredit, mod_diary{{/str}}{{/showstartoredit}}"
+                        component="mod_diary"
+                        method="mobile_entry_edit"
+                        [preSets]="{getFromCache: 0, saveToCache: 0}"
+                        [args]="{cmid: '{{cmid}}', courseid: '{{courseid}}', cachekey: '{{cachekey}}'}">
+                        {{#showstartnewentry}}{{#str}}startnewentry, mod_diary{{/str}}{{/showstartnewentry}}{{#showstartoredit}}{{#str}}startoredit, mod_diary{{/str}}{{/showstartoredit}}
+                    </ion-button>
+                </ion-card-content>
+            </ion-card>
+
+            {{#haseditableentries}}
+                <ion-card>
+                    <ion-item-divider>
+                        <ion-label>{{#str}}entries, mod_diary{{/str}}</ion-label>
+                    </ion-item-divider>
+                    {{#editableentrysummary}}
+                        <p style="margin: 10px 16px 0; color: #666; font-size: 13px;">{{editableentrysummary}}</p>
+                    {{/editableentrysummary}}
+                    <ion-list>
+                        {{#editableentries}}
+                            <ion-item lines="full">
+                                <ion-label>
+                                    <h3>{{title}}</h3>
+                                    {{#promptlabel}}<p>{{#str}}writingpromptlable2, mod_diary{{/str}}{{promptlabel}}</p>{{/promptlabel}}
+                                    {{#hasattachments}}<p>Attachments: {{attachmentcount}}</p>{{/hasattachments}}
+                                    <p>{{timemodified}}</p>
+                                    {{#preview}}<p>{{preview}}</p>{{/preview}}
+                                </ion-label>
+                                <ion-button
+                                    slot="end"
+                                    fill="outline"
+                                    size="small"
+                                    core-site-plugins-new-content
+                                    title="{{#str}}editthisentry, mod_diary{{/str}}"
+                                    component="mod_diary"
+                                    method="mobile_entry_edit"
+                                    [preSets]="{getFromCache: 0, saveToCache: 0}"
+                                    [args]="{cmid: '{{cmid}}', courseid: '{{courseid}}', entryid: '{{entryid}}', cachekey: '{{cachekey}}'}">
+                                    {{#str}}eeditlabel, mod_diary{{/str}}
+                                </ion-button>
+                            </ion-item>
+                        {{/editableentries}}
+                    </ion-list>
+
+                    {{#haseditablepager}}
+                        <div class="ion-padding-top ion-padding-start ion-padding-end" style="display: flex; gap: 8px;">
+                            {{#haseditableprev}}
+                                <ion-button
+                                    fill="outline"
+                                    size="small"
+                                    core-site-plugins-new-content
+                                    title="Previous"
+                                    component="mod_diary"
+                                    method="mobile_course_view"
+                                    [args]="{cmid: '{{cmid}}', courseid: '{{courseid}}', showgrading: 0, entryoffset: '{{editableprevoffset}}'}">
+                                    Previous
+                                </ion-button>
+                            {{/haseditableprev}}
+
+                            {{#haseditablenext}}
+                                <ion-button
+                                    fill="outline"
+                                    size="small"
+                                    core-site-plugins-new-content
+                                    title="Next"
+                                    component="mod_diary"
+                                    method="mobile_course_view"
+                                    [args]="{cmid: '{{cmid}}', courseid: '{{courseid}}', showgrading: 0, entryoffset: '{{editablenextoffset}}'}">
+                                    Next
+                                </ion-button>
+                            {{/haseditablenext}}
+                        </div>
+                    {{/haseditablepager}}
+                </ion-card>
+            {{/haseditableentries}}
+        {{/canedit}}
+        {{/managerlanding}}
+    {{/showgrading}}
+</div>

@@ -1,0 +1,1694 @@
+This files describes API changes and other work in the diary code.
+
+Upgrade.txt working notes:
+- Keep entries in chronological order within the appropriate section.
+- Ticket line format: YYYYMMDD iContent_NNNN[suffix] - short summary.
+- Status suffixes used here: bt = being tested, r = resolved, w = not fixed but waiting.
+- For a verification pass: confirm the fix in current code first, then change bt to r.
+- Add a dated follow-up verification line under the ticket: YYYYMMDDNN - iContent_NNNN: Verified in current code; concise evidence summary.
+- Keep verification notes factual and brief; mention key files, functions, or behaviors only as needed.
+- Preserve prior history lines; append follow-up notes instead of rewriting older notes unless the status itself changes.
+- Add new unreleased tickets to the Deferred section or the appropriate pending version section.
+
+Before release, run the checklist in mod/diary/RELEASE_RUN_SHEET.md.
+=== Deferred until fixed. ===
+20210815 Diary_737 - Config settings are not all named the same. Added mod_ to
+    the four items that were missing it. As of 20220828 still have three.
+20230501 Diary_1038 - I think define_restore_log_rules for view all and transfer
+    in restore_diary_activity_task.class is missing.
+20240221 Diary_1211 - Feature request - Would be nice to be able to use a grading rubric.
+20250123 - Feature needed - Need an event, class entry_deleted extends \core\event\base {.
+    Created event file and it's contents, entry_deleted.php. Added new string,
+    $string['evententrydeleted'] = 'Diary entry deleted';
+20250211 Diary_1370 - Feature request - Need a new mdl_diary_entries field such as,
+    mailedsubmission.
+
+=== 5.1.0 === pending
+20201006 Diary_627bt - Included files are not restored correctly.
+    2026043003 Progress - Root cause identified and fixed as part of Diary_1458
+    backup/restore implementation: backup annotations were using component names
+    'mod_diary_entries'/'mod_diary_prompts' (incorrect) instead of 'mod_diary'
+    with file areas 'entry'/'prompt' (correct). File area names now match actual
+    editor component/area usage. Entry and prompt media files should now survive
+    backup/restore cycles correctly.
+20210515 Diary_719bt - Media files are NOT there after a restore.
+    2026043003 Progress - Consolidated with Diary_627: same root cause
+        (file-area annotation mismatch). See Diary_627 fix above.
+    2026050306 Progress - Fixed TinyMCE-embedded media (audio/video recordings) not
+        persisting in diary entries: classes/local/results.php
+        diary_get_editor_and_attachment_options() now includes maxfiles and maxbytes
+        so file_postupdate_standard_editor calls file_save_draft_area_files and
+        moves recordings from draft area to mod_diary/entry permanent file area.
+        Same fix applied to prompt_edit.php editoroptions for prompt-embedded media.
+        diary_pluginfile() in lib.php extended to serve the prompt filearea (any
+        enrolled user) in addition to the existing entry filearea, with a null-file
+        guard before send_stored_file. file_rewrite_pluginfile_urls added for prompt
+        text in view.php, results.php (report pages), and lib.php course-topic output
+        so embedded media URLs resolve correctly on display. Backup/restore already
+        annotates and restores both mod_diary/entry and mod_diary/prompt file areas
+        (fixed in 2026043003), so recordings now survive the full round trip.
+20220228 Diary_824bt - The Moodle Mobile app is not supported. Link to Diary_1399.
+    2026050305 Progress - Mobile support now implemented: db/mobile.php registers
+        the mobile_course_view handler; db/services.php maps the WS functions;
+        classes/output/mobile.php drives student view, edit, and teacher grading
+        flows; templates/mobileapp/ contains the mustache templates. Mobile now
+        supports entry create/edit with prompt selection, teacher grading with
+        Add/Clear/Save feedback, paged grading list, paged personal entry list,
+        group/user/sort selectors, and prompt-mode/results context parity with
+        desktop. See Diary_1451, Diary_1475 for detailed progress notes.
+20230419 Diary_1036bt - Diary - Modify Prompts to use Modes to fire up based on restricted
+    access or completion.
+20260327 Diary_1454bt - Feature Request -Modify the prompt system to allow for other than
+    just sequential use.
+    2026042901 Progress - Added planned prompt mode: Partial Complete x of xx,
+        where the student must complete a teacher-assigned number of prompts from
+        the prompt pool.
+    2026042902 Progress - All 5 prompt modes verified runtime via CLI and live
+        browser on cmid=7880 (diaryid=214): Sequential returns 0 with no active
+        date-window prompt; Choice returns first prompt or honors requested
+        promptid; Random samples the pool (returns varying promptids across
+        runs); CompleteAll returns first incomplete prompt or honors requested
+        promptid; PartialComplete returns next uncompleted prompt until the
+        required count is met, then returns 0 indicating completion.
+    2026042903 Progress - When Display description is enabled, course topic cards
+        now show the active prompt mode below the current-prompt text.
+        lib.php diary_get_coursemodule_info() fetches promptmode and
+        requiredpromptcount; outputs "Prompt mode: <name>" for modes 0-3 and
+        "Prompt mode: Partial complete (x of y required)" for mode 4. Two new
+        language strings added: coursetopiccurrentpromptmode and
+        coursetopiccurrentpromptmodepartial.
+    2026042904 Progress - view.php now shows a compact prompt picker for
+        non-sequential modes. Choice lets the student pick a prompt before
+        starting a new entry; Complete all and Partial complete show the same
+        compact list with completed/current state; Random shows the assigned
+        prompt highlighted and now persists that assignment across page reloads
+        for the same user until the remaining prompt pool changes.
+    2026042905 Progress - Renamed the former Partial complete mode to Choice x
+        of xx and added a new Random x of xx mode. mod_form.php now offers both
+        x-of-xx variants, requiredpromptcount applies to both, course-topic mode
+        labels distinguish Choice vs Random x-of-xx, and prompts.php resolves the
+        new Random x-of-xx mode by auto-assigning remaining prompts with the same
+        per-user persistence used to prevent reload-based prompt changes.
+    2026042906 Progress - Polished prompt picker UX: (a) picker headings are now
+        mode-distinct (CompleteAll "complete every prompt", ChoiceX "choose N more",
+        RandomX "assigned N of M remaining"); (b) each prompt item now shows
+        Closed or Not yet open badges based on its datestart/datestop window, and
+        non-open prompts are rendered as plain text (not links) so students cannot
+        select unavailable prompts; (c) resolver now builds the selectable pool
+        from open prompts only, so Random and RandomX modes never assign a closed
+        or future prompt; (d) picker items render at 0.78rem and expand on hover
+        for readability without consuming vertical space at rest.
+    2026042907 Progress - Added optional title field to mdl_diary_prompts (nullable
+        VARCHAR 255). Teachers can enter a short label shown as the pill text in the
+        compact prompt picker; when blank the picker falls back to the first 90 chars
+        of the prompt body text as before. Changes touch install.xml, upgrade.php
+        (savepoint 2026042902), version.php, prompts_form.php, prompt_edit.php,
+        prompts.php (get_prompt_summary_text), lang/en/diary.php, and
+        backup/moodle2/backup_diary_stepslib.php.
+    2026042908 Progress - Added studentvisible toggle to mdl_diary_prompt_autograde_rules
+        (tinyint 1, NOT NULL, DEFAULT 1). When 0, the phrase rule still affects
+        the grade silently but is never surfaced in the student's missing-phrase
+        feedback. Changes touch install.xml, upgrade.php (savepoint 2026042903),
+        version.php, prompts.php (save_autograde_rule), prompt_edit.php (rule list
+        badge, edit form select), diarystats.php (evaluate_prompt_autograde_rules
+        gates missingphrases[] on studentvisible), lang/en/diary.php, and
+        backup/moodle2/backup_diary_stepslib.php.
+    2026042909 Progress - Added teacher-facing confirmation message when all prompt
+        phrase-rules are present for an entry. In report-style contexts, if no
+        phrase-rules are missing and the prompt has rule(s), Diary now shows:
+        "Detected that all X prompt phrase-rules are being used." Missing-rule
+        warnings remain unchanged.
+    2026042910 Progress - Follow-up fix for 2026042909: report/reportone/reportsingle
+        now reliably resolve module context even when cmid is not present on the
+        diary object (fallback via get_coursemodule_from_instance), so the
+        all-rules-used confirmation message appears correctly for teachers.
+    2026043001 Progress - Fixed prompt-mode completion sync so completionstate
+        now stays incomplete until required prompt progress is met and flips to
+        complete when it is. Added sync calls across entry create/update/delete,
+        view, and feedback save paths, including the reportsingle Add to
+        feedback flow (results.php) where a missing course object caused errors.
+    2026043004 Progress - Fixed backup/restore omission: promptmode and
+        requiredpromptcount were missing from backup element attributes in
+        backup_diary_stepslib.php. After restore, promptmode defaulted to 0
+        (Sequential), causing the overlapping-prompts fatal warning to fire
+        incorrectly on non-sequential activities. Both fields added to the
+        backup attribute list; restore carries them via insert_record
+        automatically as direct mdl_diary columns.
+    2026043005 Progress - Verified by rerunning a full course backup from
+        moodledev and replace-contents restore into moodledemo: restored
+        prompt-mode activities retained promptmode/requiredpromptcount and no
+        longer fell back to Sequential or triggered the false overlapping-
+        prompts warning.
+20260331 Diary_1458bt - Feature Request - Settings to require meeting certain automatic
+    results limits.
+    2026043002 Progress - Added optional completion requirements for advanced
+        writing metrics (independent of existing min/max settings): Unique words,
+        Unique short/medium/long words, Characters per sentence, Sentences per
+        paragraph, Words per sentence, Long words per sentence, Total syllables,
+        Average syllables per word, Average word length (characters), Average
+        words per paragraph, Lexical density, FK Grade, Flesch reading ease,
+        and Fog index. Teachers can enable one or more metrics, choose >= or <=,
+        and set a threshold for each. Completion sync now keeps the activity
+        incomplete until at least one user entry satisfies all selected metric
+        requirements.
+    2026043003 Progress - Completed backup/restore implementation for metric
+        requirements: backup_diary_stepslib.php now includes metricrequirements
+        field in backup element with SQL source fetching from config_plugins;
+        restore_diary_stepslib.php extracts and persists metric requirements to
+        new diary config key after apply_activity_instance. Also fixed file-area
+        mismatch root cause of Diary_627/719 (see below): backup file annotations
+        now use correct component 'mod_diary' with areas 'entry'/'prompt' instead
+        of mismatched 'mod_diary_entries'/'mod_diary_prompts'. Verified
+        implementation: metric requirements config + entry media files both
+        survive round-trip backup/restore cycle.
+20260501 Diary_1475bt - Need to upgrade Mobile to use new prompt and results as needed.
+    2026050101 Progress - First mobile parity pass: classes/output/mobile.php
+        now exposes prompt-mode summary, prompt counts, current/resolved prompt
+        content, min/max notes, edit-limit notes, and completion metric
+        requirement summaries to the mobile templates so student mobile view and
+        mobile edit pages show the same prompt/results context as desktop. A
+        follow-up pass is still needed for full interactive prompt-selection
+        parity in Choice-style mobile flows.
+    2026050101 Progress - Desktop report anchor reliability fix: per-entry Save
+        all my feedback buttons in report.php and reportsingle.php now carry a
+        data-entryid attribute with the adjacent entry's ID; the client-side
+        click handler reads this value directly (data-entryid first, then
+        field-change fallback) instead of the previous fragile DOM walk, so
+        scroll-back to the graded entry after Save is now reliable. Add to
+        feedback and Clear feedback continue to use the existing SESSION-based
+        scroll path (rating-anchor-{id}) unchanged.
+    2026050102 Progress - Mobile create/edit now carries promptid through
+        classes/external/set_text.php and renders a prompt selector on mobile
+        edit pages for Choice, Complete all, and Choice x of xx modes using the
+        same open/incomplete prompt constraints as desktop. Student mobile views
+        now also label each saved entry with its prompt title/summary for better
+        entry-context parity.
+    2026050103 Progress - Fixed mobile grading Add to feedback on Android/app
+        report views: classes/output/mobile.php now seeds the mobile Add action
+        from computed stats/common-errors/autorating text (desktop parity)
+        instead of relying only on existing entrycomment content, so the button
+        no longer no-ops when feedback is initially empty.
+    2026050104 Progress - Fixed two mobile grading regressions in report view:
+        (a) Save feedback no longer posts helper seed fields as unexpected WS
+        parameters (seed fields moved outside the form and read by JS only),
+        resolving "Invalid parameter value detected" on save; (b) for managers
+        with access-all-groups, mobile grading now defaults to All participants
+        when no group filter is explicitly selected, preventing entries from
+        being unintentionally hidden by prior/current group context.
+    2026050105 Progress - Mobile grading interaction parity follow-up:
+        Add to feedback now always appends the computed feedback block (matching
+        desktop repeated-add behavior) and Save feedback now uses refreshOnSuccess
+        so the persisted feedback/result state is immediately visible after save.
+    2026050106 Progress - Mobile report-grading layout and behavior parity pass:
+        teacher cards now include the same computed results block (stats/common
+        errors/possible rating) directly under each entry before grading controls;
+        controls are ordered to match desktop flow (Add/Clear, rating selector,
+        average-grade line, feedback area, Save feedback); and Android click
+        handling now resolves buttons via composedPath() (Shadow DOM safe), so
+        Add/Clear actions trigger reliably in app WebView builds.
+    2026050107 Progress - Mobile feedback action/save reliability hardening:
+        grading cards now use a visible feedback textarea plus a hidden WS
+        feedback field that is synchronized on typing, Add, Clear, and Save
+        click (before WS submit), ensuring manual feedback text and Add/Clear
+        updates persist on Save in Android app WebView builds; direct onclick
+        fallbacks were also added for Add/Clear/Save prep to avoid no-op cases
+        when delegated click handling is suppressed.
+    2026050108 Progress - Mobile grading save regression follow-up:
+        removed the extra named textarea field (feedback_visible) from the
+        grading form because it was being posted as an unexpected WS parameter
+        (triggering "Invalid parameter value detected"); kept only the expected
+        feedback field in payload and moved global Add/Clear/Save-prep handler
+        bootstrap earlier in page JS so inline fallback handlers are available
+        before lifecycle bind timing in app WebView contexts.
+    2026050109 Progress - Mobile grading action no-op root-cause fix:
+        mobile page JS methods were calling helper functions through an unbound
+        self reference (resolving to window.self in app runtime), so Add/Clear
+        and pre-save feedback-field sync calls could fail silently inside guarded
+        event handlers. Added an explicit top-level `var self = this;` binding in
+        the mobile view JS block so feedback actions and Save payload sync target
+        the actual page controller instance consistently.
+    2026050110 Progress - Mobile grading persistence hardening follow-up:
+        simplified grading form back to a single named feedback textarea (removed
+        hidden mirror field) so WS submit always reads the directly edited value;
+        this avoids Android/WebView sync race paths where edited text could revert
+        to older payload values at Save time. Clear feedback action now also resets
+        the grade selector to No grade (-1) for expected clear-all behavior.
+    2026050111 Progress - Mobile Clear-rating and Add fallback hardening:
+        switched grading submit to a canonical hidden grade field synchronized from
+        the visible rating selector (including on Save and Clear) so WebView form
+        scraping always posts the intended grade value; this resolves cases where
+        Clear feedback removed text but left rating unchanged after save. Also added
+        Add-to-feedback fallback: if seed payload is empty, insert plain text pulled
+        from the currently rendered results block so Add no longer appears to no-op.
+    2026050112 Progress - Mobile grading regression rollback and seed robustness:
+        restored direct grade submission from the visible select (name="grade")
+        because the hidden-grade mirror path prevented manual rating changes in app
+        retests. Clear now sets the same visible selector to No grade before save.
+        Also hardened Add seed generation server-side: when html_to_text yields an
+        empty result for rich results HTML, Diary now derives a plain-text seed from
+        stripped/decoded results markup so Add has visible content to insert.
+    2026050113 Progress - Mobile action reliability follow-up:
+        Add now reads its plain-text seed from a hidden textarea (instead of hidden
+        input value attr) to preserve multiline/encoded content across app WebView
+        rendering paths. Clear now forces both select.value and option.selected state
+        for No grade (-1) before save, preventing cases where UI text cleared but
+        rating selection was not persisted as cleared.
+    2026050114 Progress - Mobile Add auto-rating parity restore:
+        Add to feedback now also sets the rating selector to the computed auto-
+        rating value for that entry (when a valid scale option exists), matching
+        desktop report behavior where Add applies both feedback text and auto-rating.
+    2026050201 Progress - Mobile grading stability + feedback-format follow-up:
+        teacher grading cards no longer duplicate the full results HTML in a
+        hidden HTML seed field, reducing the rendered grading page payload for
+        large activities such as diary 7880; Add to feedback now prefers the
+        already-rendered HTML results block so saved feedback keeps its table
+        layout; and Save feedback no longer forces a full page refresh, which
+        keeps the teacher in place instead of jumping back to the top of the
+        grading list after each save.
+    2026050202 Progress - Mobile grading load-size follow-up for large activities:
+        teacher grading list now loads in small pages (5 submissions per view)
+        with Previous/Next controls, instead of rendering all submissions at
+        once. This significantly reduces initial template payload size on phone
+        (diary 7880 grading view dropped from ~498KB to ~170KB in local render
+        checks), improving reliability where the app reported template-display
+        errors on open.
+    2026050203 Progress - Mobile teacher entry-preview fallback for very long
+        submissions: grading cards now send a capped plain-text preview of each
+        student entry body (instead of the full formatted entry HTML) to reduce
+        template payload pressure from large individual entries while preserving
+        grading controls, Add/Clear feedback actions, and computed results blocks.
+    2026050204 Progress - Mobile open-path reliability for manager accounts:
+        first load now always opens the lighter landing view (instead of
+        auto-entering grading mode for manage-only roles), and grading list
+        rendering is triggered only when explicitly requested (showgrading=1).
+        This avoids immediate template/render pressure during initial open on
+        large activities while preserving one-tap access to grading from the
+        existing View x diary entries control.
+    2026050205 Progress - Mobile manager landing-template compatibility pass:
+        simplified the non-grading manager controls to a single "View x diary
+        entries" app button and removed the extra raw link + collapsible group
+        selector block from first-load markup. This reduces manager-only
+        template complexity on initial open while keeping direct access to
+        grading mode.
+    2026050206 Progress - Mobile manager first-open isolation mode:
+        when a user has manage capability and has not explicitly requested
+        grading, the handler now serves a minimal landing payload (single
+        "View x diary entries" action) and defers student-entry/prompt-context
+        rendering until grading is requested. This removes additional manager-
+        path template branches from initial app load for large activities.
+    2026050207 Progress - Mobile manager workflow restore (post-isolation):
+        kept the safe first-open manager landing, but re-added manager
+        convenience actions and report-style grading selectors: (a) manager
+        landing now includes Start new/edit entry action for personal notes;
+        (b) grading view now shows Visible groups selector and View single
+        user selector, and pager navigation preserves both selected group and
+        selected user filters while stepping through submissions.
+    2026050208 Progress - Mobile selector UX + re-edit follow-up: grading
+        selectors now render in compact dropdown-style sections (summary row +
+        expandable options) instead of always-visible button walls, and manager
+        landing now includes a quick "Edit" action for the most recent personal
+        entry so teacher/admin note entries can be reopened and continued.
+    2026050209 Progress - Mobile grading toolbar slice (sorting) added:
+        grading view now includes a compact Sort control with options for
+        Current entries, First entries, Name A-Z, and Name Z-A. Selected sort
+        mode is preserved while changing group/user filters and when using
+        paging controls, providing report-style workflow continuity in app.
+    2026050210 Progress - Mobile grading selector order + sort parity follow-up:
+        moved the Sort selector to appear after Visible groups and View single
+        user (matching teacher report workflow order), and expanded mobile sort
+        options to include Latest modified entry, Lowest grade entry, and Highest
+        grade entry in addition to current/first/name sorting.
+    2026050211 Progress - Mobile/desktop Add-Clear regression fix: restored
+        HTML-format seed path for Add to feedback so inserted results retain
+        table/markup formatting, and hardened grading action button handlers
+        with direct per-button click/touch binding (in addition to delegated
+        listener path) so Add/Clear updates apply reliably in desktop browser
+        contexts as well as app WebView.
+    2026050212 Progress - Mobile Add formatting follow-up for phone WebView:
+        Add to feedback now decodes entity-encoded HTML from the hidden seed
+        field before insertion and prioritizes that decoded HTML path over plain
+        fallback content, preventing stats/result table structure from being
+        flattened in phone display/save flows.
+    2026050213 Progress - Mobile Add readability correction: reverted Add
+        insertion to structured plain-text seed (instead of raw HTML insertion)
+        so feedback textarea no longer shows literal table tags on phone;
+        improved seed builder now preserves row/column readability using line
+        breaks and separators derived from stats/result table markup.
+    2026050214 Progress - Mobile Add->Save payload hardening: grading form now
+        uses an unnamed visible feedback textarea plus a hidden named feedback
+        field synchronized on typing/Add/Clear/save-prep, so phone WebView form
+        scraping reliably submits the updated Add-to-feedback text to
+        mod_diary_save_feedback.
+    2026050301 Progress - Mobile PHPCS pre-release cleanup: ran phpcbf then
+        manual split on classes/local/prompts.php:854 to bring mod/diary fully
+        clean (18 auto-fixed + 1 manual split); mod/diary now reports 0 errors
+        and 0 warnings under vendor/bin/phpcs --standard=moodle.
+    2026050302 Progress - Mobile feedback HTML rendering: switched grading
+        feedback editor from plain textarea to contenteditable div (backed by
+        a hidden input for WS submission) so saved HTML feedback displays with
+        its original table/markup formatting in the phone feedback text area
+        instead of as a single unformatted line.
+    2026050303 Progress - Mobile view editable-entry paging: build_user_editable_entries
+        now accepts offset/limit args and returns total/offset alongside items;
+        mobile_course_view slices to 5 per page, exposes summary + pager data,
+        and renders Previous/Next controls in both the manager-landing and
+        student-view entry cards. Both directions and boundary conditions
+        confirmed stable on phone.
+    2026050304 Progress - Mobile view paging template-error fix: entry list
+        preview/title/promptlabel payloads are now sanitized through
+        clean_param(PARAM_TEXT) and stripped of { } < > tokens before being
+        sent to the mobile template, preventing Angular template parse errors
+        caused by Generico tokens and raw HTML snippets in older entry content.
+    2026050307 Progress - Mobile grading media-render follow-up: teacher grading
+        cards now keep the formatted entry HTML path for entries containing
+        embedded TinyMCE media (audio/video) while ordinary text entries still use
+        the lighter plain-text preview path. This restores playable media on mobile
+        grading/report cards without fully reverting the payload-size reduction for
+        non-media entries.
+    2026050308 Progress - Mobile entry-edit regression fix on phone: replaced the
+        missing title label key with diarytitle string, removed the extra
+        entryeditor form key from the rich-editor control (preventing WS error
+        "Unexpected keys (entryeditor)"), and removed the duplicate visible plain
+        textarea so only one entry input area is shown while keeping hidden
+        payload/fallback fields for save reliability.
+    2026050309 Progress - Mobile save payload follow-up for phone: moved the
+        core-rich-text-editor control outside the submitted form and updated
+        mobile JS extraction to target the editor via data-role/data-cmid,
+        preventing app form-scrape submission of unexpected custom-element keys
+        (including "core-rich-text-editor"/"ore-rich-text-editor").
+    2026050310 Progress - Mobile edit-open follow-up for phone: restored expected
+        field order (title above entry editor) and added JS hydration/bootstrap
+        for the detached core-rich-text-editor so existing entry text is forced
+        into the editor on open (with retry for delayed WebView render), while
+        preserving the outside-form placement that prevents unexpected-key WS
+        payload errors on save.
+    2026050311 Progress - Mobile edit-body blank follow-up: changed mobile route
+        otherdata payload from JSON string to native object so
+        CONTENT_OTHERDATA.text binds correctly in app templates, and hardened
+        rich-editor hydration/extraction to check host + shadow-root nodes and
+        value/writeValue fallbacks for WebView builds where editor internals are
+        not exposed through light-DOM querySelector.
+    2026050312 Progress - Mobile edit data-loss prevention follow-up: replaced
+        the unstable phone rich-editor input path with a single visible textarea
+        in the edit form and updated save-sync logic to prioritize edited visible
+        text while preserving existing hidden HTML payload when body text is
+        unchanged. This prevents further empty-body saves (Blank entry records)
+        seen in recent phone/PC retests.
+    2026050313 Progress - Mobile edit follow-up: fixed an unbound `self`
+        reference in the edit-page JS controller that could bypass
+        modDiaryPrepareEntrySave synchronization before submit (causing text
+        payload loss), and forced explicit white background/dark text styling
+        for the mobile entry textarea to restore readability on dark phone themes.
+    2026050314 Progress - Mobile edit save hardening follow-up: made the visible
+        entry textarea the canonical submitted WS `text` field (removed hidden
+        textarea from submitted text key path) and changed
+        window.modDiaryPrepareEntrySave to always rebind for the current edit
+        controller instance, preventing stale global-handler sync behavior from
+        prior mobile pages.
+    2026050315 Progress - Delete-entry runtime fix: added missing
+        `namespace mod_diary\\event;` declaration to
+        classes/event/entry_deleted.php so deleteentry.php can resolve
+        mod_diary\event\entry_deleted without fatal class-not-found.
+    2026050316 Progress - Mobile edit persistence reliability follow-up: mobile
+        edit form ids are now unique per rendered edit page (instead of cmid-only)
+        and Save/Save-and-continue now pass/target that specific form id in JS.
+        This prevents cached app pages with duplicate form ids from submitting a
+        stale form payload and reverting title/body changes on later saves.
+    2026050317 Progress - Mobile edit rollback to plain-text mode by request:
+        removed rich-editor/hidden-text sync plumbing from mobile entry edit flow
+        and now submit only the visible title + plain textarea body fields directly
+        to mod_diary_set_text. This restores the stable plain-text-only mobile edit
+        behavior and intentionally drops in-editor recording expectations in app.
+    2026050318 Progress - Mobile entry-edit upgraded to rich text editor: replaced
+        plain textarea with core-rich-text-editor component using FormBuilder.control
+        pattern per official Moodle App site-plugin docs. Buttons now use [params] to
+        pass WS fields directly (no form scraping). Draft file area is pre-allocated
+        server-side (file_prepare_draft_area for existing entries,
+        file_get_unused_draft_itemid for new ones) so embedded media and the
+        "Advanced" file-attachment section (Photo albums, Camera, Audio, Video, File)
+        resolve correctly; itemid is passed through to mod_diary_set_text which calls
+        file_save_draft_area_files to move attachments to the permanent entry file area.
+    2026050319 Progress - Mobile entry-edit follow-up for student UX parity:
+        added Forum-style Advanced accordion below the rich-text editor with a
+        core-attachments block bound to diary maxfiles/maxbytes settings so the
+        attachment chooser path is visible in app (matching the expected
+        Advanced toggle location under the editor).
+    2026050320 Progress - Mobile edit-open error fix after 2026050319:
+        removed array payload from mobile otherdata (app site-plugin responses
+        require scalar otherdata values) and switched attachment list binding to
+        JS state, resolving "Invalid response value detected ... Scalar type
+        expected, array or object received" when opening Edit. Also set safe
+        fallback attachment limits for activities where Diary maxfiles is not
+        yet exposed in settings so Advanced can render for student entry-edit.
+    2026050321 Progress - Mobile Advanced/media save follow-up:
+        fixed missing Advanced label string by using core "advanced" string
+        lookup in the site-plugin template (removed bad component lookup that
+        showed [[advanced,...]]). Added attachment draft-id handoff in mobile
+        WS params and server-side draft merge in classes/external/set_text.php
+        so files selected from Advanced (camera/audio/video/file) are merged
+        into the same draft area as the rich editor before file_save_draft_area_files,
+        preventing attachment loss on save.
+    2026050501 Progress - Mobile attachment persistence/visibility follow-up:
+        mobile entry-edit now seeds core-attachments from the current draft area
+        (existing files are visible when re-editing), attachment draft-id
+        extraction in mobile JS now accepts additional camera/WebView payload
+        variants (draftitemid/itemid/fileurl draft path), and student mobile
+        view now reports attachment count on the current-entry card.
+    2026050502 Progress - Mobile attachment-save root-cause fix:
+        mobile edit Save actions now upload the core-attachments file list to a
+        real draft area first (CoreFileUploader uploadOrReuploadFiles), then
+        call mod_diary_set_text with that returned attachments draft itemid.
+        This replaces the previous draft-id inference path that could not
+        persist new camera/album/audio/video/file picks because core-attachments
+        only mutates a local file list and does not upload by itself.
+    2026050503 Progress - Attachment visibility parity follow-up:
+        desktop entry rendering now lists entry-file attachments (download links)
+        under each entry body in view.php and report-style output via new
+        classes/local/results.php helper diary_render_entry_attachments().
+    2026050504 Progress - Attachment inline video playback follow-up:
+        diary_render_entry_attachments() now renders HTML5 inline players for
+        video attachments (including phone-recorded mp4 and editor-style webm)
+        while keeping the attachment list/download links unchanged below.
+    2026050505 Progress - Inline preview duplication + control follow-up:
+        fixed duplicate inline players by skipping attachment-preview rendering
+        when the same file is already referenced in entry body text
+        (TinyMCE/pluginfile path). Added a new per-activity Appearance toggle,
+        Show inline attachment previews, with site default in settings, so
+        teachers can turn inline preview rendering on/off while keeping normal
+        attachment download links.
+    2026050506 Progress - Mobile save/preview regression follow-up:
+        fixed mobile save flow so default submit returns to view page (save
+        button order + redirect guard for explicit save-and-continue only).
+        Expanded inline attachment previews to include audio and image files in
+        addition to video, and reduced preview media sizing to a mobile-safe
+        max width so phone recordings do not render oversized.
+    2026050507 Progress - Mobile attachment visibility/persistence follow-up:
+        fixed app save path so Advanced attachment uploads are persisted to the
+        dedicated mod_diary attachment file area (instead of being treated as
+        editor-inline files and dropped when not referenced in entry text).
+        Entry rendering now reads both entry and attachment file areas for
+        links/previews, and mobile edit seeding now includes existing attachment
+        files so they are visible when re-editing entries.
+    2026050508 Progress - Mobile video MIME compatibility follow-up:
+        fixed inline attachment preview source typing for phone recordings by
+        normalizing MIME types from file extension when stored-file metadata is
+        generic/incorrect, and omitting invalid source type attributes. This
+        prevents browser player errors like "No video with supported format and
+        MIME type found" for otherwise valid saved recordings.
+    2026050509 Progress - Attachment file serving follow-up:
+        fixed diary_pluginfile() to serve mod_diary attachment filearea files
+        (same access rules as entry filearea). This restores actual media bytes
+        for phone-saved attachment previews and resolves player failures where
+        audio/video controls appeared but playback failed.
+    2026050510 Progress - Mobile student visibility + save UX follow-up:
+        mobile student view now renders attachment links/previews for the
+        current entry (same helper used by desktop view/report), attachment
+        counts in mobile lists now include both entry and attachment file areas,
+        edit page opens Advanced by default when attachments exist, and save
+        navigation now returns even if toast API differences occur in app builds.
+    2026050601 Progress - Mobile edit cache + attachment visibility fix:
+        fixed stale-data issue where mobile edit page showed original entry text
+        instead of latest desktop-edited content by adding [preSets] cache-control
+        directives to all mobile_entry_edit navigation buttons and a server-side
+        cache-key parameter (time()) in the course-view data to force fresh edit
+        payloads on each open. Also fixed attachment render call signature in
+        mobile edit and desktop edit to use correct diary_render_entry_attachments
+        API (takes $entry, $course, $cm). Mobile users can now edit entries and
+        see up-to-date text and attachment previews; desktop edits no longer get
+        overwritten by stale mobile payloads. Verified stable across phone/desktop
+        edit flows over ~8 hours of testing.
+20260505 Diary_1478bt - Completion Metric requirements not completly implemented.
+    2026050602 Progress - Completion metric requirements are now enforced in
+        automatic completion state evaluation (lib.php diary_get_completion_state):
+        if prompt or metric requirements are configured and not met, completion is
+        forced incomplete until satisfied. Added per-metric help icons in
+        mod_form.php Completion metric requirements section (same pattern as Min/Max
+        help buttons) and added missing metric *_help language strings in
+        lang/en/diary.php so each metric row has working help text.
+    2026050603 Progress - Auto-rating penalty summary rows were restructured in
+        classes/local/diarystats.php to match the new row model: prompt phrase-rule
+        penalty remains its own row, min/max autorating penalty row now excludes
+        phrase penalty, four new grouped autorating rows now report unmet metric-
+        requirement counts for Unique/Per/Total+Average/Egg-head metric groups,
+        common-error penalty remains separate, and current potential rating now
+        calculates from rows 10-15 (excluding phrase penalty row). Add-to-feedback
+        and rating selector sync continue to use the updated current potential rating
+        returned by get_auto_rating_stats().
+    2026050604 Progress - Teachers can now set individual penalty points for each
+        completion metric requirement in mod_form.php. Metric requirement JSON now
+        stores penalty values in lib.php (defaulting legacy rules to 1 point when
+        missing), and grouped auto-rating rows in classes/local/diarystats.php now
+        calculate weighted penalties from unmet metric penalties instead of using a
+        fixed 1-point-per-unmet rule.
+
+
+=== 5.0.0 === 2026040400
+20200601 Diary_526r - Make toggle to allow grade and feedback for users with no
+    entry.
+    2026033109 Progress - Reopened and moved into 5.0.0 pending for a modern
+    rework targeting report.php behavior.
+    2026033110 Progress - report.php now provides an Assign zero and create
+    entry action for users with no submission, creating a teacher-marked
+    placeholder entry with zero grade so feedback/grading can proceed.
+    2026033111 Progress - Fixed report.php regression: list show/hide selector
+    no longer triggers unintended feedback-save processing, and feedback HTML
+    styling is preserved during Save all feedback updates.
+    2026033112 Progress - Emergency hotfix: removed stray pre-bootstrap
+    optional_param() calls in report.php that caused fatal page load failures;
+    report page now loads correctly in production checks.
+    2026033113 Progress - Restored anchor-jump behavior for the no-entry
+    Assign zero and create entry action by persisting the newly created
+    entry ID for post-submit scroll targeting.
+    2026033114 Progress - Restored compact inline rendering for the report.php
+    Show users without entries selector so it no longer stretches full width
+    of the page.
+    2026040101 Progress - Hardened anchor restore for Assign zero and create
+    entry by switching to a post-submit redirect that includes the exact
+    rating-anchor-ENTRYID fragment.
+    2026040102 Progress - Fixed redirect timing notice in report.php by
+    moving page output to run after submission processing, so create-zero
+    redirects occur before any output is sent.
+    2026040103 Progress - Stabilized create-zero landing by redirecting to a
+    per-user anchor (user-anchor-USERID) instead of relying only on
+    entry-id anchors, eliminating intermittent off-target scroll positions.
+    2026040104 Progress - Updated create-zero landing behavior to target the
+    next user-without-entry anchor when available; otherwise fall back to a
+    bottom-of-report anchor near final controls for continued grading flow.
+    2026040105 Progress - Refined create-zero fallback targeting so when the
+    clicked user is the last no-entry item with others still above, landing
+    goes to the last remaining no-entry user instead of the bottom controls.
+20210815 Diary_736r - Need a way to selectively turn off autosave. It is not
+    needed when starting a totally new entry. Note: Same for tags.
+    2026033102 Progress - Desktop new-entry editor now disables autosave while
+    existing-entry editing keeps normal autosave behavior.
+20230831 Diary_1069r - Would be nice if current prompt info was added to the activity
+    description in the course topic.
+    2026040201 Progress - Verified current-prompt details are injected into Diary
+    description output paths: view.php prints prompts_viewcurrent() with prompt
+    counts, and diarystats::get_minmaxes() appends current-prompt text and prompt
+    totals to diary intro content for edit-related flows.
+    2026040202 Progress - Added diary_get_coursemodule_info() in lib.php so when
+    Show description is enabled, course topic cards append the current prompt text
+    (if one is active by date window) under the Diary description.
+    2026040203 Progress - Fixed DML parameter mismatch in the new
+    course-topic current-prompt query by using distinct named placeholders
+    for start/end date comparisons (startnow, finishnow).
+    2026040204 Progress - Fixed course-topic current-prompt query to use
+    diary_prompts.datestop (actual schema field) instead of non-existent
+    datefinish.
+    2026040205 Progress - Refined course-topic prompt messaging for clarity:
+    single active prompt now displays with explicit "Current writing prompt:"
+    label; multiple active prompts display "Current writing prompts: X to
+    choose from." to avoid implying only one prompt applies.
+    2026040206 Progress - Re-verified current code path for course topics:
+    lib.php diary_get_coursemodule_info() appends current-prompt output with
+    single/multiple active prompt handling, using language strings and CSS hook.
+    2026040207 Progress - Fixed modinfo/cache build notice in
+    diary_get_coursemodule_info(): disabled text filters when formatting the
+    current prompt for course-topic summary output so PAGE context is not required.
+20240426 Diary_1237r - New feature request - show individual names for selection in the,
+    Visible groups dropdown.
+    2026040101 Progress - Added manager/teacher user selectors on view.php
+    and report.php that jump directly to reportsingle.php for the selected
+    user (respecting current group filtering).
+20250113 Diary_1351r - Feature Request - Need to have new entry fields for feedback and text
+    background colors. Existing settings already exist; converted from plain text inputs
+    to color selector controls.
+    2026040101 Progress - Converted entrybgc and entrytextbgc in mod_form.php from
+    plain text inputs to native color pickers using the same inline-script technique
+    as prompts_form.php, matching the admin_setting_configcolourpicker already used
+    in settings.php. Diary_1449 (20260323) is a duplicate of this ticket and has
+    been folded in.
+20250211 Diary_1371r - Feature request - Send email to student when teacher clicks,
+    Clear feedback, on report pages.
+    2026033105 Progress - Clear feedback now sends a student notification email
+    using the diary_entry_confirmation provider when studentemail is enabled.
+    2026033107 Progress - Improved clear-feedback email formatting (plain + HTML)
+    and fixed the review-entry link generation to use the resolved diary cmid URL.
+20250803 Diary_1381r - Email message is not working.
+    2026033101 Progress - Fixed teacher notification delivery defaults so
+    immediate mode no longer depends on unset user preference, and updated
+    cron to keep entries in queue when any send fails (retry on next run).
+20250808 Diary_1383r - Feature Request - Email message needs to be sent when teacher uses,
+    Clear feedback.
+    2026033106 Progress - Consolidated with Diary_1371: report.php,
+    reportsingle.php, and reportone.php now use idempotent clear-feedback
+    handling to prevent duplicate mail from repeated clicks and send one
+    student notification per actual clear action.
+    2026033108 Progress - Follow-up polish: corrected clear-feedback email body
+    formatting and fixed the student review-entry link target.
+20260206 Diary_1403r - Issue #51 - Feature request - Upgrade possible for Global Search Index.
+    2026040101 Progress - Fixed get_doc_url() in search/entry.php: replaced
+    fragment-in-path URL construction with moodle_url + set_anchor(), updated
+    anchor name to user-anchor-USERID matching current report.php scheme.
+    Set owneruserid to entry->userid so per-user search privacy filtering works.
+    Fixed activity.php get_search_fileareas() to remove the non-existent 'content'
+    file area (only 'intro' is valid at activity level for Diary).
+20260225 Diary_1414r - CSS theming support: replace hardcoded styling with classes and allow
+    theme-level control. 
+    Requests: remove borders, allow theme color overrides, show dates/statistics on one line,
+    and render dates/statistics text as non-bold via CSS.
+    2026040201 Progress - Replaced inline styling in view/report/results/diarystats paths with
+    class-based hooks; added themeable CSS variables for entry/prompt colors and border removal,
+    and updated stats/date meta rendering to one-line, non-bold CSS-driven output.
+    2026040202 Progress - Added border visibility as a configurable setting (site default +
+    per-activity override) and wired border CSS variables through view/report/results rendering
+    so borders can be toggled independently from entry/prompt color settings.
+    2026040203 Progress - Added border style (Thin/Double) and border color settings
+    (site default + per-activity override), applied to both entry and prompt borders
+    through shared border CSS-variable output in view/report/results paths.
+    2026040204 Progress - Added a third border style option (None) in both site defaults
+    and per-activity settings, while retaining the explicit border on/off toggle plus
+    style/color controls; border CSS vars now treat style=None as no border.
+    2026040205 Progress - Updated border style defaults to None (site setting default,
+    activity form fallback, and runtime helper fallback) so new Diary instances align
+    with typical borderless Moodle plugin presentation.
+    2026040206 Progress - Fixed two follow-ups: current prompt block on view.php now
+    uses the shared prompt border CSS-variable path (matching needed-prompt blocks),
+    and stats/autorating tables now wrap and constrain width to prevent right-edge overflow.
+    2026040207 Progress - Follow-up reminder: on a Moodle 4.5 demo site, report.php
+    entries appeared squeezed into a narrow right-side column; needs investigation
+    next session.
+    2026040301 Progress - Fixed report entry/table squeeze for report.php,
+    reportsingle.php, and reportone.php by removing forced width:100% from
+    diaryuserentry table cells and using auto column sizing so title/entry and
+    autorating/math blocks can use the full content column width.
+    2026040302 Progress - Added explicit 3-column sizing (narrow/user content/
+    actions) for diaryuserentry rows so layout remains stable when optional
+    autograding/math output is enabled or disabled by Diary settings.
+    2026040303 Progress - Verified current code paths: report.php,
+    reportsingle.php, and reportone.php all render entry blocks via
+    classes/local/results.php diary_print_user_entry(), and styles.css
+    applies matching 3-column td sizing selectors for all three page ids.
+    2026040304 Progress - Fixed reportone.php border-display mismatch by
+    removing a conflicting template wrapper class (entry) in
+    templates/reportone.mustache so entry border rendering matches report.php
+    and reportsingle.php.
+    2026040305 Progress - Refined reportone.php wrapper to match report.php/
+    reportsingle.php exactly: template now uses the standard
+    entry diary-entry-themed container with border CSS vars supplied from
+    classes/output/renderer.php (diary_get_border_css_vars), restoring
+    expected border visibility and rounded corners.
+20260323 Diary_1449r - Feature Request - Change activity Appearance color inputs to use color
+    selectors. Duplicate of Diary_1351; primary fix information posted there.
+20260326 Diary_1451r - Mobile edits top of the list instead of starting a new entry.
+    2026033001 Progress - mobile_entry_edit now mirrors desktop currententry behavior:
+    when editdates is enabled, it starts a new entry (entryid 0) instead of loading
+    the latest entry; also starts a new entry when the previous one is from a prior day.
+    2026033002 Progress - Added mobile entry picker list in student view so older
+    entries can be opened directly for editing. mobile_entry_edit now accepts an
+    explicit entryid and loads that specific user-owned entry.
+20260326 Diary_1452r - Feature Request - Add prompt autograde rules capability to each prompt
+    as desired.
+    2026032601 Progress - Phase 1 completed: added new table
+    mdl_diary_prompt_autograde_rules in install.xml, upgrade step in db/upgrade.php,
+    and version/release bump. Phase 2 completed: backup/restore wiring added for
+    full rule record export/import with prompt/diary/user mapping.
+    2026032602 Progress - Phase 3 completed: prompt editor now includes autograde
+    rules CRUD (add/edit/delete/list), with new prompts helper methods and language
+    strings for rule management UI/messages.
+    2026032603 Progress - Phase 4 completed: auto-rating now evaluates prompt
+    phrase rules in diarystats, applies phrase-miss penalties to the current
+    potential rating calculation, and shows phrase-rule penalty details in output.
+20260326 Diary_1453r - Diary - Feature request - Implement an edit counter limit.
+    2026032604 Progress - Added diary-level max edit openings per entry (maxeditopens)
+    with per-entry editcount tracking/enforcement, and extended prompts with a
+    prompt-level override (prompt maxeditopens): -1 inherit diary setting,
+    0 one-and-done (no re-open), >0 explicit edit-open cap.
+    2026032605 Progress - Added pre-limit edit guidance text so users see the
+    applicable edit-open cap before lockout: shown at the end of min/max Notes
+    when no prompt override is active, and shown on the next line after prompt
+    min/max details when a prompt is in use (view.php and edit.php paths).
+    2026032606 Progress - Fixed regression from 2026032605: restored full non-prompt
+    min/max Notes output and kept the edit-open-cap guidance line inside the
+    bordered prompt block when a prompt is in use.
+20260331 Diary_1459r - Feature Request - Add a button for, Save and continue editing.
+    2026033103 Progress - Added Save and continue editing to desktop edit_form/edit.php,
+    and mobile edit templates now include a continue-edit button with entryid sync
+    after save so continued edits update the same mobile entry.
+20260331 Diary_1460r - Feature Request - Optional menu to control showing required
+    auto-graded phrases.
+    2026040101 Progress - Prompt autograde rules editor in prompt_edit.php
+    now uses a band-style layout (grouped rule cards + grouped edit fields)
+    to align more closely with Essay autograde UI expectations.
+    2026040102 Progress - Refined prompt_edit.php target phrase UI to follow
+    Essay-style phrasing blocks and behavior controls more closely, including
+    sentence-style rule display and grouped behavior selectors.
+    2026040103 Progress - Tighter Essay visual parity pass: rule list switched
+    from cards to col-label/col-body row-divider layout; behavior controls
+    flattened to one inline select row with auto widths and dot separators;
+    "of the entry grade." phrasing adopted; form-control/form-select Bootstrap
+    classes applied to all edit inputs and selects.
+20260331 Diary_1461r - Feature request - Tag should be empty for new entries for normal
+    or mobile use.
+    2026033104 Progress - Desktop edit.php now loads tags from the actual entryid in
+    context and forces empty tags for brand-new entries, preventing carry-over from
+    previously edited entries.
+20260401 Diary_1462r - There are two more settings for Glossary of Common Errors that
+    are missing.
+    2026040101 Progress - Added missing Common errors matching selectors in mod_form.php
+    (Case sensitive and Ignore line breaks), and updated diarystats glossary matching
+    to honor diary-level errorfullmatch, errorcasesensitive, and errorignorebreaks
+    settings during concept/alias matching.
+    2026040102 Progress - Refined Common errors UI in mod_form.php to match
+    Essay-style layout by rendering Full match, Case sensitive, and Ignore
+    line breaks selectors on one line under a single Error matching behavior label.
+    2026040103 Progress - Verified three selectors render on one line in Classic
+    and all tested non-Boost themes. Boost theme forces third selector to wrap
+    due to its fixed-width center layout constraint; this is a Boost-level
+    limitation beyond Diary plugin control. Feature complete and working as designed.
+20260402 Diary_1463r - Issue #45 - came across a small flaw regarding permission settings.
+    2026040201 Progress - Enforced mod/diary:rate separation in shared report logic
+    (classes/local/results.php): rating selector and rating writes now require rate
+    capability, while manageentries-only users can still update feedback text.
+20260402 Diary_1464r - Issue #21 Email preference toggles whenever diary activity page
+    is loaded.
+    2026040201 Progress - Verified in moodledev runtime: diary_emailpreference value
+    remained unchanged across two view.php reloads with no selector change; no
+    auto-toggle observed.
+
+
+=== 4.0.1 === 2026022601
+20260130 Diary_1363v - Feature request - The index.php file should include how many diary entries
+    need grading. Completed and working simple version now. Will add more info later.
+20260306 Diary_1430v - Invalid get_string() identifier for messageprovider:diary_entry_confirmation
+    on Site administration -> Messaging -> Notification settings in Moodle 5.1.
+    Added missing language string in lang/en/diary.php.
+20260306 Diary_1431v - All the Behat *.feature files need maintenance and upgrading.
+    Refactored and modernized the Diary Behat .feature suite by removing numeric filenames,
+    deleting duplicate scenarios, and updating outdated steps/selectors to align with
+    current Diary UI behavior. Added three new test scenarios (delete confirmation, notification
+    provider, mobile grading) and enabled headed Firefox mode for observable test execution.
+20260307 Diary_XXXXv - Code precheck cleanup for Diary templates and docs.
+    Added missing @template headers and Example context sections to mustache templates,
+    improved reportone.mustache form HTML validity, and updated mobile template button handlers.
+20260307 Diary_XXXXv - Code precheck cleanup for Diary CSS and PHPDocs.
+    Removed !important usage in styles.css and completed phpdoc parameter/return lists in
+    diarystats.php, prompts.php, results.php, classes/output/renderer.php, and renderer.php.
+20260307 Diary_XXXXv - Gherkin precheck cleanup for duplicate feature names.
+    Renamed duplicate Feature: titles in Diary behat files so each feature name is unique.
+2026030701 Diary_XXXXv - Post-Node-upgrade gherkinlint one-liner.
+    Exact command: npx grunt gherkinlint --root=mod/diary
+2026030702 Diary_XXXXv - Mobile support scaffolding (Step 2) for Moodle App.
+    Added db/mobile.php handler registration, db/services.php web-service mapping,
+    new external endpoints (view_diary, set_text, save_feedback), output mobile class,
+    and wired templates under templates/mobileapp/ per current mobile path guidance.
+2026030703 Diary_XXXXv - Mobile webservice registration fix for app actions.
+    Bumped plugin version and added upgrade savepoint so new Diary mobile functions
+    (mod_diary_view_diary, mod_diary_set_text, mod_diary_save_feedback) are registered
+    in external_functions and available to Moodle App buttons.
+2026030704 Diary_XXXXv - Mobile UX follow-up for grading anchors and edit readability.
+    Added grading-list anchor ids and client-side anchor restore after Save feedback
+    refresh, and forced readable light textarea styling for mobile edit-entry input.
+2026030705 Diary_XXXXv - Mobile anchor restore hardening for feedback saves.
+    Reworked grading-page anchor restore to use delegated click capture, reliable
+    plain DOM anchor targets, and retry-based post-refresh scroll handling.
+2026030801 Diary_XXXXv - Mobile grading save no-refresh behavior.
+    Removed refreshOnSuccess from the Save feedback button in the mobile grading
+    list so saving feedback does not auto-refresh the page and jump back to top.
+2026030802 Diary_XXXXv - Mobile grading feedback readability enhancement.
+    Added a formatted existing-feedback preview above the editable feedback textarea
+    so prior teacher feedback structure is preserved for quick scanning.
+2026030803 Diary_XXXXv - Mobile Add/Clear feedback controls and layout retention.
+    Added per-entry Add to feedback/Clear feedback controls in mobile grading list,
+    matched warning color style, and changed Add action to insert HTML seed content
+    so feedback layout is retained when copied into the textarea.
+2026030804 Diary_XXXXv - Mobile teacher view parity with view.php links/button.
+    In manager non-grading mobile view, added two top links (view entries list and
+    view all course diaries) and switched the single entry-action button label to
+    dynamic Start new entry vs Start new or edit today's entry based on editdates.
+2026030805 Diary_XXXXv - Mobile manager group selector parity and spacing tune.
+    Added group selector controls for manager mobile view when group mode is active,
+    wired selected group filtering into grading list retrieval, and tightened top-row
+    link spacing for better readability on narrow phone widths.
+2026030806 Diary_XXXXv - Mobile group selector collapsed layout.
+    Changed manager group selector to a collapsed panel (tap to expand) so
+    group options do not consume vertical space on initial mobile view.
+2026030807 Diary_XXXXv - Mobile group header and entries-link visual parity.
+    Updated collapsed group summary to show current group name (Groups: selected)
+    and styled the View x diary entries control as underlined link-style text.
+2026030808 Diary_XXXXv - Mobile editing-ended status parity for weekly/day windows.
+    Updated mobile open/closed status checks to include weekly course format +
+    Diary days-based finish calculation so the "Editing period has ended" message
+    appears consistently with desktop view.php behavior.
+2026030809 Diary_XXXXv - Mobile open/close status logic parity rewrite.
+    Reworked mobile get_open_status() to follow desktop view.php timing flow:
+    weekly days windows, unavailable fallback via timeopen/timeclose, and default
+    open window handling for consistent editing-ended/not-open messaging.
+2026030810 Diary_XXXXv - Mobile warning visibility hardening.
+    Added a plain warning banner fallback in mobile_view template (in addition to
+    core-alert) so closed-period messages remain clearly visible across app builds.
+20260307 Notes - Future feature planning details are documented in mod/diary/future_development.txt.
+20260307 Notes - Mobile capability request roadmap is documented in mod/diary/future_development.txt.
+
+=== 4.0.0 === 2026022600
+20210515  Diary_720v - I am getting the String [grade, core] is deprecated debug message in
+    multiple locations. Made changes to deprecated.txt and diary.php files but most
+    notable change occurred when I switch to TinyMCE editor. No More error.
+20211130 Diary_779v - Need to work on the help pop up windows for stats. Currently
+    set this ticket status to waiting. As of 20260224 this ticket is completed. See the
+    ticket for details of the fix. Replaced legacy popover anchor links in diarystats.php
+    with Moodle help_icon output.
+20230306 Diary_1016v - Need to see about creating a view single entry page especially going
+    from a tag item or tag list. I have created a page, reportone.php, that seems to be
+    working the way I want it to, but the feedback is only partially working, so far.
+20240117 Diary_1173v - Prompts are NOT restored after a backup and restore operation. Fixed
+    errors in backup files.
+20240206 Diary_1196v - Toolbar is missing on the reportsingle.php page. Copied the toolbar
+    code from the report.php file over into the reportsingle.php file. I then commented
+    out the sort by ascending and descending last name tool button. Had to reopen due to
+    not getting records based on current userid.
+20240206 Diary_1197v - Diary - Feature request - Toggle hide/view and sort prompts. Added
+    arrow toggle code similar to MooTyper owngrades.php to hide the whole list of prompts.
+20240209 Diary_1201v - Feature request - Need a reportone.php page for single user entry from
+    a Grade Me link. The fix for ticket Diary_1016 fixes this ticket also.
+20240209 Diary_1202v - Feature request - Need new by name link to go to proposed reportone.php
+    page. 2026030601 Diary_1202v - Verified by-name/tag navigation for managers now targets
+    reportone.php with user+entryid (currententry) and opens the intended single entry.
+20240304 Diary_1223v - Major bug - Editing an OLD entry with a current timed prompt showing,
+    the current prompt over writes the OLD and becomes required. 20250113 Fixed, I think, but
+    due to the amount of changes, see the ticket for details.
+20240408 Diary_1231v - Deprecated: Creation of dynamic property mod_diary_renderer::$cm.
+    Changed the code, see ticket for details. Deprecation warning no longer occurs.
+    2024042901 I have reverted to the previous code that gets the deprecated message.
+    Otherwise, when anyone is on the view page, they get undefined id in line 80 of the
+    renderer.php file.
+    2026030701 Diary_1231v - Re-verified on current code: active renderer path is
+    mod/diary/classes/output/renderer.php (view.php uses $PAGE->get_renderer('mod_diary')),
+    and toolbar() now normalizes $cm id safely while legacy mod_diary_renderer also declares
+    $cm; deprecated dynamic-property warning is no longer expected.
+20240410 Diary_1233v - Numbers do not match between prompt and description. Modified
+    diarystats.php file to use the data from the diary_prompts table. See ticket for details. 
+20240429 Diary_1238v - My mdl_diary_entries table defines promptid as null but needs to
+    be not null. Made a copy of the table, mdl_diary_entries2. Exported the tables and
+    saved both in today's development folder. I then dropped the original table, edited
+    the sql file so the field gets created as not null 0, then imported the table back
+    into the moodledev database.
+20240519 Diary_1243v - The following options are not valid: promptid, promptbgc, timeopen,
+    timeclose, editall, editdates, action, texttrust, maxbytes, maxfiles, subdirs, enable_filemanagement.
+    Moved them all from editoroptions to form.
+20240520 Diary_1246v - There is no place for default $promptbgc to be set. Added code for a default
+    $promptbgc setting in the prompt_edit.php file, about line 39. See the ticket for details.
+20240520 Diary_1247v - Need a setting to allow for deleting an entry. As of 20250123 I have
+    deleteentry.php working for entries and user tag instances. See the ticket for more details.
+20240527 Diary_1249v - core\string_manager_standard_test::test_validate_deprecated_strings_files
+    is failing #42. I had created the deprecated.txt file in the wrong format and did not
+    have all the needed strings in the correct section of the diary.php language file.
+20240603 Diary_1250v - In prompt_edit.php, Past, Current, and Future need to have strings created.
+    Created three new strings, promptsc, promptsf, and promptsp, for Current, Future, and Past. 
+20240604 Diary_1251v - TinyMCE Editor problem in prompt_edit.php page - fails to show the
+    toolbar. Was missing <!DOCTYPE HTML> at start and </html> at end of the page.
+20240806 Diary_1258v - Need to change all occurrences of, // @codingStandardsIgnoreLine, over to,
+    // phpcs:ignore. There are a bunch of places that needed changing. See the ticket for details.
+20240806 Diary_1294v - Got browser debug message regarding multiple invalid options when trying
+    to edit prompts. Made modifications in the prompt_edit.php and mod_form.php files. See the
+    ticket for details of the changes.
+20241119 Diary_1338v - Removes unnecessary version check in *_supports() callback. #49. Completed
+    merge request that changes the collaboration case and removes the Moodle version check.
+20241125 Diary_1341v - Add to feedback button on new reportone.php page is broken. Fixed the
+    $param test and stats and auto rating now are added/cleared from the feedback textarea when
+    the, Add to feedback, or the, Clear feedback buttons are clicked. 20260206 Still does NOT
+    correctly update the students grade/average.
+20241125 Diary_1341v - Add to feedback button on new reportone.php page is broken. Fixed the
+    $param test and stats and auto rating now are added/cleared from the feedback textarea when
+    the, Add to feedback, or the, Clear feedback buttons are clicked.
+20241203 Diary_1343v - When the, Add to feedback, button is clicked, the feedback textarea info
+    icons are VERY large! 20250112 I think this is going to be one of those that I cannot fix
+    and will therefore switch it's status to, Waiting. The problem is editor related. The icons
+    are rendered 16x16 when using the Atto editor, even though the intrinsic size is 150x150.
+    However, when using the TinyMCE editor, the icons size automatically contracts/expands to
+    fill the table cell. 20260211 This is now fixed by code change in diarystats.php.
+20241204 Diary_1344v - Need entry delete tool when teacher is using any report page. Added needed
+    code to the results.php page so that any report page now has the, Delete entry, icon.
+20250114 Diary_1352v - Auto-rating does not seem to update Diary student grades. Modified code
+    in results.php about line 745. See ticket for details of the code change.
+20250122 Diary_1353v - Feature request - Moved tags from below stats to end of the actual entry.
+    Moved the code from about line 664 in view.php up to about line 608 of the same view.php file.
+    Also moved it in results.php to new location starting about line 616, to fix report.php,
+    reportone.php, and reportsingle.php files.
+20250123 Diary_1355v - Feature needed - Need an event, class entry_tags_deleted extends \core\event\base {.
+    Created event file and it's contents, entry_tags_deleted.php. Also added,
+    $string['evententrytagsdeleted'] = 'Diary entry tags deleted';
+20250123 Diary_1356v - Feature needed - Might need an event, class invalid_access_attempt
+    extends \core\event\base {. The needed files and strings already exist, so will just
+    need to test and post my results. - Access prevented, so far.
+20250124 Diary_1357v - Diary - Feature needed - Need a new admin only capability to delete entries.
+    Modified line 518 of the view.php to allow a site admin delete capability at any time.
+20250203 Diary_1365v - Needs Fixing - Link to logs on the More tab is broken. Completed. See
+    the ticket and code for further details.
+20250204 Diary_1366v - Immediate email from student to teacher is broken. Another can of worms
+    as I had to add new files for messages, new strings for the new messages, bump the version,
+    plus testing! See the ticket for details.
+20250206 Diary_1368v - Delayed email, Email later, from student to teacher does not work.
+    Added code. Used Gemini for help and now have emails from student to teacher working. If there
+    are multiple teachers in a course, and they have the same setting selected, then all get emails
+    at the same time. However, if only one has, Email now, they are the only one who will get an email.
+20250211 Diary_1369v - Report pages when clicking, Clear feedback, only removes the rating
+    from the DB. Even though this was in v3.8.0, I reopened, due to message needing grading was not
+    being updated correctly. 20260224 Now message shows even when feedback is cleared.
+20250301 Diary_1372v - Feature Request - Submission email enable/disable. Created new setting
+    that is in the Diary settings and then enabled for each teacher via user preference.
+20250512 Diary_1377v - Undefined property $promptbgc in prompt_edit.php line 262.
+    I already have a fix for this in the works as part of, Diary_1246 - There is no place
+    for default $promptbgc to be set. Added setting about line 39 of prompt_edit.php file.
+20250714 Diary_1380v - Icon is clipped on the corners when using tiles course format. 2026021701 Have
+    been in contact with the OP, and the corner clip problem is no longer there. However, the Diary
+    icon is slightly larger than other icons. I said I would see about changing it's size in the
+    release after Diary v4.0.0.
+20250804 Diary_1382v - Help contents string does not exist: [submissionemail_help, mod_diary].
+    Added new string. Moved from v4.0.0 due to needing a correction. See ticket for details.
+20260108 Diary_1391v - Diary - ERROR: invalid input syntax for type bigint: "" Issue#52.
+    Modified lib.php now at about line 893 to 902, by checking existence of entryid.
+    Keep open until Diary v4.0.0 release, then close GitHub Issue #52.
+20260109 Diary_1392v - Diary - Exception - Attempt to assign property "datestart" on null Issue#56.
+    See ticket. Fixed 2 variable and 1 typo error in restore_diary_stepslib.php.
+20260109 Diary_1393v - Diary - Implicitly marking parameter $context as nullable is deprecated.
+    Added a question mark before the \context part of line 53 of the search/entry.php page.
+20260112 Diary_1394v - Feature request - Diary needs to support course overview. See ticket.
+    Modified the code in index.php to use the new overview.php file in any Moodle where,
+    $CFG->version > 2025041400.
+20260113 Diary_1395v - Feature request - cron generated emails should have a date time/stamp.
+    Dates and times are now included in the emails generated by edit.php and cron_task.php.
+20260116 Diary_1396v - The edit.php file, entry updated event, does not work. Found a first.js
+    Uncaught TypeError, that needed to be fixed. Used Gemini to give code change suggestions
+    to the event processing and getting correct/expected log entries.
+20260116 Diary_1397v - In whichever php file, the date format defined in settings should be used.
+    Added to code in edit.php. ?????
+20260124 Diary_1398v - Need to rebuild messages code and files used for Diary. Email now code
+    is in edit.php and email later code is in cron_task.php file. 20260205 Added greeting string.
+20260124 Diary_1399v - Need to start developing mustache templates - reportone.php first.
+    Reportone.php-DONE. Testing seems okay for everything I've checked.
+20260124 Diary_1400v - If needed, move completion rules/code to /diary/classes/completion. Not
+    needed as Diary only uses built in Moodle API Completion code.
+20260203 Diary_1401v - Feature request - Change promptbgc to a color selector instead of text input.
+    Used Gemini for suggestions and now have a working color selector. See ticket for details.
+20260205 Diary_1402v - Drop-down menu - More -> Logs generates a Warning. Rewrote the files,
+    entry_deleted.php and entry_tags_deleted.php to remove the warning.
+20260207 Diary_1404v - Need mustache template for index.php. Got a simple version working.
+20260209 Diary_1405v - Add to feedback on report pages does not update system rating. Changed
+    the code in results.php around line 746. See ticket for details. Anchor works now, too.
+20260212 Diary_1406v - Average of ratings xx/xxx calculates wrong. Completed. See ticket and
+    the code for actual details.
+20260214 Diary_1407v - Add to feedback button does NOT keep any prior text but wipes it out.
+    Completed. Look at the ticket and code for details.
+20260223 Diary_1408v - Need to simplify code for getting the diary record in use in view.php.
+    Made simplified code change. See ticket for details.
+20260224 Diary_1409v - Need to simplify the switch code in view.php. Completed. Look at the code
+    in view.php for the details.
+20260224 Diary_1410v - Redundant selector code in line 330 of the view.php file. Completed.
+    Look at the ticket for details.
+20260224 Diary_1411v - Rating Count should warn if point total is over 10. Completed. Look
+    at the ticket for details.
+20260225 Diary_1412v - Prompts column on prompt_edit.php page color not showing bgc. To me, the fix
+    looks even better than before since it now includes the same border style used elsewhere.
+20260225 Diary_1413v - Feature request - Change prompt_edit.php to show each prompt in two rows.
+    Completed. See ticket for further details.
+20260226 Diary_1415v - Diary - Feature request - Add more anchor points on the prompt_edit.php page.
+    Multiple changes made to the lib.php, prompt_edit.php, and view.php files.
+
+=== 3.7.9 === (Build: 2024042100)
+2024042400 Diary_1235v - Bug fix release for github issue #38 Module will update and produce
+    error. Made changes as needed in the version.php file.
+
+=== 3.7.8+ === (Build: 2024020203)
+20240409  Diary_1232v - Wrong column name 'titleson'/'enabletitles' in table mdl_diary #37.
+    Renamed field and saved new version of install.xml. Made code changes in upgrade.php
+    that renames the field if it finds it as titleson so that it becomes enabletitles. 
+
+=== 3.7.8 === (Build:2024020202)
+20230523 Diary_1050v - When editing or creating an entry, there are two tag headers. At
+    some time, or another, this seems to have resolved itself, so closing this ticket
+    and marked as being included in this version.
+20231208 Diary_1128v - Need to add a field for prompt background color. Added code and
+    settings to the files, as needed. See ticket for details.
+20240116 Diary_1172v - Prompts are missing from the report.php and reportsingle.php
+    pages. Created new .promptentry, in the style.css file and used in the two report
+    files as needed along with new code in results.php to render in report and reportsingle.
+20240206 Diary_1196-reopened in Diary 3.8.0 - Toolbar is missing on the reportsingle.php page.
+    Copied the toolbar code from the report.php file over into the reportsingle.php file.
+    I then commented out the sort by ascending and descending last name tool button.
+
+=== 3.7.7 === (Build: 2023111100)
+20220124 Diary_813v - Audio files are being counted as sentences. Only counted if it
+    is the only thing in an entry. If there is any other text that starts with a
+    paragraph tag, line feed tag, or carriage return with new line tag, the sentence
+    count is correct, so the one mode for the error, will not be fixed.
+20230523 Diary_1049v - Seem to be using wrong string source in diary/lib.php in line 604.
+    Created missing string and changed Diary code to use it. System logs now show entries
+    when tags are added, removed, and deleted.
+20230609 Diary_1052v - Diary - Request for possible CSS to hide empty entries. This does
+    the same as the next ticket and I prefer the method I used there, so this is done.
+20230609 Diary_1053v - Request to not show empty entries. Added code to create a user
+    preference for each Diary activity that can be set or changed by the teacher.
+20231010 Diary_1093v - Toggle emails to, Email now, does not seem to eliminate the edit
+    time delay for non-editing teachers. Added missing code to edit.php to send emails
+    to course non-editing teachers, which was entirely missing.
+20231108 Diary_1113v - There has been a new capability requested for a title/description
+    for each entry. Now have titles working. Refer to the ticket for details.
+20231109 Diary_1114v - Add further capability to the new title for each Diary and it's
+    entries. All the needed code and strings have been added and the setting works.
+    Refer to the ticket for all the details, as it is a bunch.
+20231110 Diary_1115v - Need to add titles to each report entry. Added the needed code
+    in the classes/local/results.php page in the, function diary_print_user_entry.
+    Putting the code there fixed the views for both the, report and reportsingle, pages.
+20231111 Diary_1116v - Need to add Titles to downloads. Added the needed code, performed
+    a download, and the titles have been added just before the entries, in the CSV
+    download. Do need to investigate using another download format.
+20231111 Diary_1117v - The provider.php file needs to also handle titles. Created two
+    new lines of code at line 70 and line 240, so that titles are included in the
+    metadata and in the export. Request for personal data download works as expected.
+
+
+
+
+=== 3.7.6+ === (Build: 2023092501) (2023092501)
+20231013 Diary_1098v - The journal_to_diary_entries_transfer.php file is missing a closing
+    bracket in line 76. Changed character from ) to ] on line 76 of the file.
+
+=== 3.7.6 === 2023100800 STABLE (Build date: 2023092500)
+20230925 Diary_1075v - Some defaults are missing from the mod_form.php page. Added site
+    defaults for editall and editdates to the mod_form.php file. Pending daysavailable.
+20231002 Diary_1087v - Latest codechecker says "Import statements must not begin with a
+    leading backslash". Made code changes as needed. See ticket for details.
+20231002 Diary_1088v - Latest codechecker requires convert from long array(), to short
+    array []. Made code changes as needed. See ticket for details.
+20231005 Diary_1089v - CSV Download from view.php is generating debug error. Added
+    $PAGE->set_url('/mod/diary/view.php', ['id' => $cm->id]); which seems to fix
+    the problem with the download.
+20231005 Diary_1090v - CSV Download from report.php is generating debug error. Added
+    $PAGE->set_url('/mod/diary/view.php', ['id' => $cm->id]); which seems to fix
+    the problem with the download.
+
+=== 3.7.5 === 2023080900 STABLE
+20230511 Diary_1041v - View completion does not seem to be implemented. Added the needed,
+    two lines of code, to the view.php file.
+20230809 Diary_1064v - 10 file pull request generated by Catalyst IT Australia. Reviewed all
+    code changes and completed the merge. Had a problem with the results.php file and
+    fixed it by adding, use moodle_url, at the start of the file.
+20230810 Diary_1066v - The index.php file is passing the wrong groupid to results.php
+    for diary_count_entries($diary, $groupid = 0). See the ticket for details, but
+    I changed the code to pass just the current group ID instead of the whole array.
+20230814 Diary_1067v - Pull request #30 from Herbert Owen of Catalyst IT Australia.
+    Completed the merge and then tested by making changes to a journal in the test
+    course for this. Appears to have worked without any problems.
+20230823 Diary_1068v - Pull request #31 and #32 Fix error when resetting courses
+    with mod_diary options turned on. 2023082301 Reviewed the two pull requests
+    and completed the merge.
+
+=== 3.7.4 === 20230508 STABLE
+20210819 Diary_748v - Need Diary settings for errorfullmatch, errorcasesensitive,
+    and errorignorebreaks. Added fields to the xml file. Updated the upgrade.php
+    file. Updated backup files. Updated the mod_form.php file. 20230508 I have
+    implemented the strings and code to use errorfullmatch. For now, my plan is
+    to not use errorcasesensitive and erroignorebreaks. I have those covered in
+    other ways.
+20230506 Diary1039v - At times the function get_common_errors($text, $diary) does not
+    return correct results. Two problems, did not have some "i" entries in the glossary
+    and needed to remove code that was skipping over matches that were sub-strings.
+    In reality, the code was actually working correctly. I just did not truly understand
+    what was going on.
+
+=== 3.7.3 === 20230409 STABLE
+20200601 Diary_520v - Need to remove un-needed functions from lib.php.20211229 Removed
+    function diary_user_complete($course, $user, $mod, $diary) { as it has been
+    superseded by public static function diary_print_user_entry($context, $course,
+    $diary, $user, $entry, $teachers, $grades) in the results.php file. 20230409
+    Removed, function diary_log_info($log) {, from lib.php.
+20230409 Diary_1029v - In Moodle 4.2 I am getting multiple Invalid event function
+    defined messages. Went through all diary files and removed deprecated log code. 
+
+
+=== 3.7.2 === 20230402 STABLE
+20220220 Diary_823v - Missing completion information on the view.php page. Got
+    it working on course page - BUT - might need another ticket for further
+    development to also require X number of Posts.
+20220912 Diary_920v - It would be nice to have a button that would let users show/hide stats
+    on view.php. 20230322 As of today, I have a nice selection list working for this.
+    This also clears Diary_935.
+20221012 Diary_933v - Should, Character count, include spaces? 20230129 Currently, I
+    have the code changed so that spaces are not counted, and I have asked for votes in
+    the General Help Forum. So far, the consensus is to not count spaces.
+20221013 Diary_935v - Since the page for each entry is getting longer, might be nice
+    to be able to toggle stats view on/off. I have added, Hide stats/Show stats, icons
+    at the end of the each entry title or edit pencil. 
+    20230322 of of this day, I totally changed the code and have a selection list working.
+20221116 Diary_954v - View x diary entries count seems to be wrong. It was not taking the
+    correct groupid to use for the count. See the ticket for further details on the fix.
+20221124 Diary_962v - The prompt_edit.php page shows, Static text testing $diaryid,
+    that should not be there. Needed to put it back for development, so as of 20230129
+    it is still there, so I opened another ticket, Diary_1003.
+20230128 Diary_1001v - Issue #18 Link to documentation on github wrong? 20230128 Changed
+    the link and made it current, so that instead of pointing to the github wiki it
+    points to the Moodle wiki. 
+20230128 Diary_1002v - Issue #19 Untranslatable string "create new prompt" 20230128 Added
+    new string in en language file. Modified the code in file, prompt_edit.php, at about
+    line 385 to use the new string, $string['createnewprompt'] = 'Create new prompt';
+20230128 Diary_1003v - Issue #20 Untranslatable string (or thing) Static text testing
+    $diaryid. 20230129 Line 476 of mod_form.php was added just for development, and
+    then I got so used to it being there that I just forgot to remove it. It will be
+    removed from the next release.
+20230131 Diary_1005v - Change email toggle to icon and move it to the toolbar. Instead
+    of an icon on the toolbar, I have created a selector. It can only be seen by entrymanagers.
+20230131 Diary_1006v - In the results.php file, there are 12 places where $esql should
+    just be $sql. Changed all 12 from $esql to $sql.
+20230204 Diary1007v - Need to change email default settings. In the settings file,
+    I changed the default from 1, to 0, in lines 256 and 260.
+20230204 Diary_1008v - Need email settings added to the mod_form.php page. Added settings,
+    added fields, updated install.xml, updated backup. bumped version. 
+20230227 Diary_1014v - Need to see about adding a Tag field when editing/creating a
+    new diary entry. Added code as needed using example from, Tag API.
+20230313 Diary_1020v - Need to add the prompt used for an entry to the view.php page.
+    Added the needed code in view.php, starting down around line 493. 
+20230325 Diary_1025v - The tag index page should only show a student their personal Diary
+    entries, but all entries to teachers, etc. Added needed code to function mod_diary_get
+    _tagged_entries in locllib.php. See ticket for further details.
+20230326 Diary_1026v - Emails being sent twice and need to improve the email messages located
+    in edit.php. Fixed the emailpreference code and added a preference menu on view.php page.
+20230327 Diary_1027v - Need to fix emailnow for when the teacher provides feedback. Changed
+    the $cuttofftime and added $cuttofftime2 in cron_task.php, plus, then added a check
+    of each entries timemarked vs applicable cuttofftime and emailpreference. 
+20230402 Diary_1028v - Text at about line 336 in edit.php needs to be changed to a string. 
+     Added the needed string to the diary/lang/en/diary.php, file.
+
+
+=== 3.7.0/1 === 20221123
+20210815 Diary_741v - Need to verify communications when rating or when student
+    adds/edits an entry. Added needed code in edit.php down around line 261. Need
+    to verify it works for sending an email as soon as a student saves an entry.
+    Verified it does as of 20221024.
+20210815 Diary_746v - Rating a zero results in student seeing, No Grade. Problem was due
+    to the way I was doing a branch check in results.php down around line 588. Dropped
+    the branch check and changed the way $gradestring was created.
+20220218 Diary_820v - A user requested adding teacher notification when student makes
+    an entry. Added needed code in edit.php down around line 261.
+20220426 Diary_847v - Would be nice to have automatic weekly writing prompts. Pending
+    20220930 Manual creation at the moment.
+    20220930 Can see them all for a diary via prompts_view.php plus two others
+    20221001 Can now delete a prompt and log the event Diary_924.
+    20221025 All appears to work as needed, including backup and restore.
+    20221027 Discovered restore was NOT correct. Now fixed. Also fixed the case where there
+             are too many current prompts. Only way to proceed is to fix the problem.
+    20221113 Rewrote CSV download file to include prompts.
+20220910 Diary_919v - Warning: Division by zero in line 364 and 367 of diarystats.php if
+    text is only numbers. Changed lines 364 and 367 to include max of 1, so when words is
+    zero, the 1 is substituted to eliminate the divide by zero error.
+20220917 Diary_922v - Need to modify Feature switch to detect need for FEATURE_MOD_PURPOSE.
+    Changed code to work the same way as Checklist. Also have same way as Journal, but
+    commented out.
+20221101 Diary_924v - Need to be able to remove prompts and log the removal. Have actually
+    worked on this for the past couple of days and have finally got both the actual delete
+    of a prompt record and a log entry of who did it, which course module it was done in,
+    and which prompt ID was deleted.
+20221101 Diary_925v - Need to give an error if any prompt dates overlap. Added needed code
+    in view.php.
+20221102 Diary_926v - In prompts_view.php when getting the prompts they need to be sorted
+    in datestart order. Added a sort in line 85 of prompts_view.php, where the prompts are
+    being retrieved via $prompts = $DB->get_records().
+20221002 Diary_927v - Need strings for table column headings in prompts_view.php and
+    yyyprompt_edit.php. Created the prompts and prepared both files to use them.
+20221103 Diary_928v - Prompt create works but update also creates a new prompt instead of
+    just updating the record. 20221017 Finally! I now have view, create, edit, and delete
+    working. I dropped back to the 20221005 version and then worked on the cases in the
+    switch in the yyyprompt_edit.php file until I started getting the results I wanted.
+    Changed from yyyprompt_edit.php to just prompt_edit.php after I dropped the previous
+    version of the file.
+20221107 Diary_929v - Fails to show No prompts when there are None available. 20221020
+    Showing the two strings that report the total prompts, past count, current count,
+    and future count. echo get_string('tcount', 'diary', $tcount); echo get_string
+    ('promptinfo', 'diary', ['past' => $past, 'current' => $current, 'future' => $future]);
+    I think this will be sufficient, but may try totally hiding info if there are not any prompts.
+20221111 Diary_931v - Sentence punctuation without a trailing space is counted as a sentence.
+    20221011 In diarystats.php down around line 888, I have changed the code for counting
+    sentences. I am experimenting with separating $entry into paragraphs, then reassemble
+    into one text blob, before trying to count sentences. With my change to the $pattern to
+    look at for splitting into sentences, I am able to ignore periods embedded in words.
+    This method seems pretty good at NOT counting something like, edit.php as the ending
+    and starting of a new sentence, but as one word.
+20221011 Diary_932v - Filenames with their extension are incorrectly counted as two words.
+    Changed to new code so that I am counting based on character groups (words) separated by
+    at least one space. This eliminates erroneously counting words, such as filenames.txt with
+    embedded periods, as two words.
+20221012 Diary_934v - Character count is wrong when using multibyte characters such as é.
+    20221012 Went to the php manual page for strlen() where I discovered it counts bytes,
+    so multibyte letters, such as é, was increasing the character count by at least one
+    extra. I discovered that I should have been using, iconv_strlen($entry), or
+    mb_strlen($entry). 20221012 Currently using mb_strlen().
+20221013 Diary_936v - Should add a radius to the, Start new entry, button on view.php
+    page. Added, "style" => "border-radius: 8px" in the two places needed for this.
+20221019 Diary_937v - The edit.php file line 369/370 is broken on my 3.11 sandbox site
+    on Onos. This was the same problem as Diary_949. While fixing, I discovered another
+    problem that is fixed as part of this ticket caused when Diary ID has been deleted.
+20221020 Diary_938v - Need to add a promptid field to the mdl_diary_entries table. See
+    the ticket for details as there is a lot of stuff listed on it.
+20221023 Diary_939v - Need to create new icons, monologo.svg and monologo.png. 20221023
+    Created both icons and they are being used in my Moodle 4.1.0 test site and my normal
+    dev site. 
+20221024 Diary_941v - Prompts are not backed up and restored correctly. Had one field
+    missing in the backup_diary_stepslib.php file of the entries table. Added field,
+    promptid, and backup and restore seems to be working correctly.
+20221025 Diary_942v - Need to add code to delete prompts when doing a course reset. Modified
+    the code so prompts are deleted when a diary is deleted. For individual prompts, still
+    in progress for detecting and preventing delete if it is still in use.
+20221027 Diary_944v - Language strings need fixing and sorted. Added strings as needed
+    and sorted the file contents so the string names are in alphabetical order.
+20221105 Diary_948v - Prompt events need to be implemented/worked on. Implemented
+    prompt_removed.php, prompts_viewed.php, prompt_edited.php, prompt_in_use.php, and
+    prompt_created.php.
+20221106 Diary_949v - Fatal errors in edit.php in Moodle 3.11.X+. Code for showing the
+    intro is the problem. Rewrote the code so it works for M311 and lower as well as
+    M4 and higher.
+20221107 Diary_950v - CSV file download needs re-write and changed to include prompt data.
+    Rewrote the file code in results.php to include the prompt data. 
+20221108 Diary_951v - The diary_entries and diary_prompts tables both have a text field
+    and need separate language strings for CSV downloads. 20221108 The mdl_diary_entries
+    table needs $string['entry'] = 'Entry'; and the mdl_diary_prompts table needs
+    $string['text'] = 'Enter your writing prompt'; Made the needed changes.
+20221113 Diary_952v - The results.php file down around line 364 sometimes can break due
+    to hardcoded index offset. Changed code to do an array_shift(array) first, then hard
+    coded to use an index offset of zero, instead of one. Works great.
+20221116 Diary_955v - First diary entry is duplicated in the CSV download file. Completely
+    rewrote the CSV download code. 
+20221117 Diary_956v - The provider.php function export_user_data() line 191 appears to be
+    a bug. Completely rewrote the provider.php file. This is not a problem, now. 
+20221120 Diary_960v - Missing the privacy:metadata:diary_entries:xxx strings. Added the
+    missing strings. 
+
+
+=== 3.6.0 === Released 20220909
+Diary_672v - Investigate using authenticated user role for front page access. Moodle
+    has changed so much over the past few releases, so this ticket has been resolved
+    by Moodle code changes. Moodle itself provides the capability to allow users to
+    have access to a front page Diary by just changing permissions for the individual
+    Diary activity and not for the whole front page, like I had to do when I first
+    opened this ticket.
+Diary_623v - Diary Restore is missing two strings. This was an old ticket for a
+    Diary activity on an old server. All needed strings are there, now.
+Diary_750v - V3.4.1 has three code style errors. Added the missing final blank line
+    to files diarystats.php, renderer.php, and settings.php. Pushed to github.
+    This ticket seems to be missing from my tracker system.
+Diary_812v - Diary v4.0 changes for Moodle 4.0. Made a number of changes. See
+    the ticket for details. Mostly was removing un-needed code.
+Diary_845v - Invalid get_string() identifier: 'lastedited' or component 'diary'.
+    Changed diary/db/mobile.php lang string from ['lastedited', 'diary'], so
+    that it is now ['lastedited', 'moodle'].
+Diary_883v - In Moodle 4.0.x the activity name, description, and completion labels get
+    duplicated. In view.php down around line 225, I added an if to check for an intro
+    and branch, to decide whether to show the items, or not.
+Diary_912v - When auto-rating is set for characters, it always reports zero. Basically,
+    changed a number of places where it was trying to use 'chars', so that it was
+    now using the full word, 'characters.' Also changed the final line of the
+    auto-rating to show 0%, instead of a negative number.
+Diary_913v - Need to change MOD_PURPOSE_COLLABORATION over to MOD_PURPOSE_ASSESSMENT.
+    Made the needed change from, MOD_PURPOSE_COLLABORATION, over to, MOD_PURPOSE
+    _ASSESSMENT. New color and new icon, look good. (See ticket Diary_914) 
+Diary_914v - Need a better icon version to use as the new monologo.svg file. Used
+    Inkscape to modify the icon.svg file then saved as monolog.svg. Works great.
+Diary_915v - Need to change auto rating from just one item, to any combination of
+    character, words, sentences or paragraphs. Modified and added a couple of
+    strings, and made a LOT of code changes and additions in the diarystat.php
+    file.
+Diary_916v - Need to change min and max to strings in diarystats.php file. Made
+    the needed changes in four places for each one and added the two need strings
+    to the language file. 
+Diary_917v - Backup and Restore results in missing data. Corrected 4 field names in
+    the backup_diary_stepslib.php file.
+
+=== 3.5.2 === Released 2022040100
+Diary_797v - Need new Moodle 4.0 icon. Created a branch check and
+    new switch for Moodle version higher than 3.11 that will use
+    the new MOD_PURPOSE_COLLABORATION.
+
+=== 3.5.1 === Released 2022021200
+Diary_815v - Issue#16 at github regarding hardcoded text.  20220208 Revisited
+    issue#16 as the .01+ version introduced some hard coded text checking that
+    needed to be changed to string checks so it would work with other languages.
+Diary_818v - Moodle reports two warnings for backup. Upon close examination of
+    the backup_diary_stepslib.php file, I found the errors. I changed multiple
+    field names, in the install.xml file, but I missed changing two field names
+    in the backup_diary_stepslib.php.
+Diary_822v - When I run php adhoc_task.php --execute I get an Undefined property
+    for $cmid. 20220220 Made changes in the privacy.php file as needed.
+
+
+=== 3.5.0.01+ === Released 2022012201
+Diary_815v - Issue#16 at github regarding hardcoded text. Changed strings as needed
+    and modified the three lines in the stats table regarding autorating item.
+    Modified its strings to use multiple {$a}'s and converted to just two lines
+    of text in the table. 20220208 Revisited issue#16
+Diary_817v - Math code missing for Potential Common error penalty. Switch string
+    to use multiple {$a}'s in strings and accidentally left off the math code
+    for this answer. Added the math calculation back and verified it is working
+    correctly.
+
+=== 3.5.0 === Released 2022012200
+Diary_514v - Sort order label needs css setting. Removed all the hard coded h5's.
+    There were about 21 of them, 19 in view.php and two in the language file. 
+    Added classes, one for the whole table and one for some table cells.
+Diary_654v - There is a request for using Atto editor in report.php for feedback.
+    Have added the Atto editor so it appears on both the report.php and
+    reportsingle.php pages. Still need to add file handling.
+Diary_707v - link to index.php page on report.php page should be on the same line
+    as the toolbar. Made code changes as needed to move the link.
+Diary_711v - File report.php has hard coded tags that should be removed. Removed
+    them as part of my work in CSS changes. 20211201 Converted more hardcoded
+    text to strings some of which were in diarystats.php.
+Diary_722v - Should move toolbar to the right like I did on the report.php page.
+    Moved toolbar to the right on view.php page.
+Diary_730v - Need an enablestats setting. 20210812 Created the new setting
+    along with new fields, selector, strings, and code as needed.
+20210812 Tested and seems to be working.
+Diary_732v - Missing the Diary icon on moodle.org. 20210815 This was Diary_765
+    on moodle311. 20210815 Forget what day I did it, but I changed from svg file
+    to gif and the icon now shows on moodle.org.
+Diary_733v - See about moving functions from mod_form to diarystats. Was Diary_764
+    which I have abandoned on moodle311. 20210712 Moved function get_item_types($itemtypes).
+    20210712 Moved function get_rating_options($plugin). 20210712 Moved 
+    get_showhide_options($plugin).
+Diary_734v - Need to convert from lib.php cron function to /classes/task/cron_task.php.
+    Added tasks.php file in db folder. Added task folder in classes folder. Added
+    cron_task.php file in classes/task/. The file, cron_tasks.php, still needs
+    some more work.
+Diary_738v - Need activity color setting for entry's. Added new fields for the
+    two colors in mdl_diary table. Made changes to the install.xml and upgrade.php
+    to add two new fields, entrybgc and entrytextbgc. Updated the mod_form.php
+    file to now have appearances settings for the two colors. Added code changes
+    so the new settings are actually used. Added code changes to backup, which
+    was tested and it worked as expected.
+Diary_739v - Teacher's name is missing from reports. Added a new line break which
+    moved Rating and Average of ratings down one line. Then added code to output
+    the name of the last teacher to give feedback/rating. Seems to be working as
+    expected.
+Diary_740v - Need new DB fields for new statistics settings. Added nine new fields
+    to the mdl_diary table. Have gone back and added more fields for added ratings.
+Diary_742v - Need to pass diary->errorcmid to the get common errors function. Instead
+    of just passing $text(cleaned plain text) and $errorcmid(actually $diary->errorcmid),
+    I switched to passing $text and $diary. I found that I needed another item from
+    $diary, so it is easiest just to use the whole $diary array.
+Diary_743v - The mod_form.php needs updating for new settings. Added new settings
+    and other bits of code as needed to implement the new settings. The list still
+    needs work. It is not saving and restoring, yet.
+Diary_744v - The settings.php needs updating for new settings. Added headings, strings,
+    and settings as needed. Some future use code is no longer there, but a copy
+    is in the beta and alpha code versions.
+Diary_745v - Need to develop additional statistics for each diary entry. Have
+    created 20 stats and now need to thoroughly test them. Still in development!
+    20210718 Rewrote count_syllables function and totalsyllables. 20210719 Added
+    two new class files: pluralise.php and syllables.php that greatly improve
+    the syllable count accuracy.
+Diary_749v - Multiple errors when, Type of countable items, is None. Added a check
+    to detect and prohibit when trying to autograde with None. 
+Diary_767v - Need Journal to Diary entries migration tool - admin only! Got a
+    version working with some error checking. 20211207 Added code, event string,
+    and journal_to_diary_entries_transfer.php file to log transfer events. 20211208
+    Made change to the diary id shown to reflect that of the destination diary
+    instead of the diary the admin is in.
+Diary_768v - Journal to Diary xfr needs to tag the feedback with info that it is
+    a transfer entry. Created initial code version and it works as expected. Updated
+    the code to fix error when the entry has no feedback in the journal as it is
+    going to have some added during the transfer. 2021201 Changed code so that the
+    inclusion of this is optional.
+Diary_769v - Journal to Diary xfr breaks if there are no Journal activities in the course.
+    This was fixed while working on other recent tickets -767, 768. Added a new string
+    for this: $string['journalmissing'] = 'Currently, there are not any Journal
+    activities in this course.';
+Diary_770v - Add autorating buttons Note: report.php > results.php has hardcoded
+    text on new buttons. - Fixed. Added code to create the two new buttons and they
+    both reliably work on report.php page. STILL NEEDS WORK on the reportsingle.php
+    page for the, Save all feedback and Add to feedback buttons!
+    CODE IS IN results.php DOWN AROUND LINE NUMBER 420. 20220108 Fixed and only
+    using the one, Save all feedback, button. Code for the, Add feedback, is there
+    but commented out for later possible use.
+Diary_771v - Need a title centered at the top of the xfr new menu item. I added
+    an h3 with a style to center align the new heading. Used an existing string.
+Diary_772v - The item being used in the auto-rating needs to detect when NOT short,
+    or you have more than required. Changed the code and now getting expected
+    results.
+Diary_773v - Would be nice to include percentage to shortwords, mediumwords, and
+    longwords. Added code to calculate the three percentages to two decimal places.
+Diary_774v - Would be nice to include a statistic for Average Syllables per word.
+    Added code and error prevention for divide by zero for cases where student
+    did not submit any text, only some kind of file.
+Diary_775v - Would be nice to include a statistic for Average word length in
+    characters. Added code and error prevention for divide by zero for cases
+    where student did not submit any text, only some kind of file.
+Diary_776v - Need to check for and prevent divide by zero errors in the stats.
+    Broke up the $currentstats variable build and added an if check for
+    uniquewords before I started adding any stats. Added a string for,
+    No text detected.
+Diary_777 - FK Grade formula needs to include max. Changed formula to use
+    max so that the FK Grade cannot go below zero.
+Diary_778v - Need to remove hard coded text and change to strings in diarystats.php.
+    Made changes as needed and converted some to use {$a} to help simplify the
+    code.
+Diary_780v - Need results displayed after doing a transfer. Added code in
+    journaltodiaryxfr.php file down around line 284 that checks counters added
+    around lines 34, 35, 97 and 161. Also added a string, xfrresults, for the output.
+Diary_781v - Would be nice to fill the remaining statistics cell with Average words
+    per paragraph. 20211208 Moved the last row, averages, of the statistics general
+    table up one row so that Lexical density, FK Grade, Flesch reading ease and Fog
+    index are in the last row of the table. I also added a new, Average words per
+    paragraph, statistic in the last cell of the, averages, row.
+Diary_782v - Reportsingle user page needs Save and stay here button. Changed the code
+    for the, Add to feedback and Clear feedback buttons along with a few other items
+    and now the Save all feedback button seems to work the way I want it to. 
+Diary_783v - Code for, Save all my feedback, button in report.php and reportsingle.php
+    needs cleanup. Eliminated all the escaped double quotes and changed them as
+    needed to singles. Also moved duplicate code to a single function in results.php.
+Diary_784v - Down about line 446 breaks the view.php page. 20211229 Over the past few
+    days, I have worked on this and other related "undefined" variable errors and
+    everything seems to be working now.
+Diary_785v - Autorating calculations are incorrect. 20211229 Over the past few weeks
+    I have worked on making sure the calculations are correct. Looks like they are
+    now, no matter which Item I select for the autorating.
+Diary_786v - View all course diaries, link is giving a debug warning. Got it fixed
+    but I think I need to revert the sql part of the code as it started causing an
+    undefined variable warning on the view.php page. Got that fixed, but in a way
+    I really don't like as it requires reading the diary record for every diary
+    in the course, whereas the original method only needs to read one file. I have
+    added the action in report.php line 397, and index.php line 146.
+Diary_787v - The, Save all my feedback, button on reportsingle.php page needs to
+    stay on the page. The button now stays on reportsingle.php page. Changed
+    form action from report.php to reportsingle.php.
+Diary_789v - View.php needs modifying due to changes in diarystats.php. Copied
+    the code that generates the stats from results.php to file view.php, and
+    stats table is now working again.
+Diary_791v - Need to move function diary_count_entries($diary, $groupid = 0)
+    from lib.php to results.php. 20211219 Copied the working function in the
+    lib.php file and moved it to classes/local/result.php, making changes as
+    needed to get it to work.
+Diary_792v - Notice: Undefined variable: currentstats in  
+    /var/www/moodle40/mod/diary/classes/local/diarystats.php on line 469.
+    Moved the return $currentstats; and return, inside the if and else of the,
+    function get_diary_stats($entry, $diary). 
+Diary_793v - When looking at Complete Report you get:- Exception - Call to
+    undefined function diary_format_entry_text(). Function was moved to
+    results.php but the call was not modified to: 
+Diary_795v - Automatically added Notes in the Description should only appear
+    when editing/making new entry. This is now handled as a function call
+    with the, public static function get_minmaxes($diary) { located in
+    diarystats.php.
+Diary_796v - enableautorating is not working correctly. This was actually
+    being caused by two problems, one in the mod_form.php file and one
+    in the diarystats.php file. See the ticket for details. 
+Diary_803v - Error message, No text detected, quit working correctly. Modified
+    code to add table definition and return $currentstats in diarystats.php
+    file down around line 460. 
+Diary_804v - the cron_task.php file line 32 needs to be changed, removed,
+    or commented out. Leaving it at line 32. Had a mistake in the branch
+    check. Added more log message details.
+Diary_805v - The Grade shown in various places is not being updated when the,
+    Clear feedback, button is clicked. Added code to delete the correct
+    rating table entry, then update the grade for the user.
+Diary_806v - The code in cron_task.php, public function execute(), does not
+    work correctly. Turned out that I only needed to add username to the
+    requireduserfields list at about line 70. I also moved the list so I
+    only had to create it once. I also tidied up the log messages, and added
+    ones for older versions of Moodle.
+Diary_810v - Need settings for alwaysshowdescription. Added new db field,
+    alwaysshowdescription, added it to settings.php, added it to mod_form.php,
+    added code for branch check on view.php, and added features,
+    FEATURE_MOD_INTRO and FEATURE_SHOW_DESCRIPTION.
+
+=== 3.4.1 === Released 2021062100
+Diary_741 - In results.php, function is_available, is duplicate of, function
+    diary_available . Removed code for, function is_available.
+Diary_742 - Issue#9 Possible to add entries for past date. Same fix as 743.
+Diary_743 - When editdates is disabled, Save, is broken. Added code that detects
+    a changed timecreated, and prevents it while automatically adding info about
+    the attempted change in the entry feeback (entrycomment) area.
+
+=== 3.4.0 === Released 2021061400
+Diary_142 - link to index.php page on report.php page should be on the same line
+    as the toolbar. Made code changes to move the link.
+Diary_143 - Backup is broken, see issue #12 and #13 on github. These two issues
+    were actually fixed in an earlier v3.2.x, but I forgot to close the ticket.
+Diary_145 - In Moodle 3.11 - String [grade,core] is deprecated. Added branch
+    check. 3.11 and above use gradenoun. 3.10 and below use grade.
+Diary_148 - Recent activity in M3.11 is showing user_picture::fields() is deprecated.
+    a branch check M3.11 and above use new method. M3.10 and below use old one.
+Diary_728 - Need to add word and character count to the report and
+    reportsingle page, entries. Added needed code and three new strings. Added
+    counts to view.php page entries, also. (raw, clean, and standardized)
+Diary_729 - two sets of buttons at bottom of report when everyone has at least one
+    entry. Added a check for empty $user list and if empty, skip last button set.
+Diary_730 - String [grade,core] is deprecated. Added a branch check for string
+    compatibility in renderer.php, diary_print_feedback function, about line 209.
+Diary_731v - In Moodle 3.11 user_picture::fields() is deprecated. Added a branch
+    check and code to fix the deprecated item. NOTE: In changing from one Moodle
+    to another, some ticket numbers got messed up. This is one of them and is
+    very similar to Diary_721v Recent activity in M3.11 is croaking regarding user
+    pictures, which was fixed a long time ago so I am marking it resolved, too.
+Diary_738 - It is possible to add entries for past dates. Added check in edit_form.php
+    that prevents sending the hidden calendar/date selector to the client computer.
+Diary_739 - A user can directly access edit.php via URL change when the diary is
+    closed. Added code to check to see if the diary is closed, and if so, log an
+    invalid access about it.
+
+=== 3.3.0 === Released 2021051600
+Diary_707 - link to index.php page on report.php page should be on the same
+    line as the toolbar. Moved the Index link down to the same line as the
+    group selector and the toolbar.
+Diary_581 - Need to redo the styles.css file and remove un-used entries.
+    Made changes as needed. Added a lot of comments.
+Diary_711 - File report.php has hard coded tags that should be removed. Removed
+    as part of CSS changes. 
+Diary_712 - In Moodle 3.11 - String [grade,core] is deprecated. Added a
+    branch check in results.php file about line 421.
+Diary_722 - Should move toolbar to the right like I did on the report.php page.
+    Used span to float it to the right. 
+Diary_144 - File report.php has hard coded tags that should be removed. Removed
+    tags as needed.
+Diary_66 - Sort order label needs css setting. Removed hard coded css.
+
+=== 3.2.1 ===
+Diary_703 - print_error deprecated - in multiple files. Fixed in
+    Multiple places.
+
+=== 3.2.0 ===
+Diary_696 - Need mode to start new entry each time you click the new
+    entry button. Added code in edit.php about line 87. Added new string.
+    Added code in view.php to decide what text to put on the Button.
+
+=== 3.1.2 ===
+* Fixed  CSS problems in styles.css reported by Moodle for v3.1.1.
+* Modified method to show/hide date time selector for editing entry dates.
+
+=== 3.1.1 ===
+* Added new reportsingle.php that lets the teacher see all of the
+    entries for a single user. Can then grade and add feedback
+    to one or more of the individual entries.
+* Fixed edit_form.php Edit all dates calendar selector. Use hideIf not enabled
+    and using Moodle 3.4 and higher. Use disableIf not enabled and using
+    Moodle 3.3 and lower.
+
+=== 3.1.0 ===
+* Fixed some code style errors in results.php and report.php.
+
+=== 3.0.0 ===
+* Diary_585 - Need capability to create an entry for a skipped day. Added
+    date time selector and language string for use on edit_form.php that
+    allows a user to change the date of the entry being edited.
+    
+=== 2.1.1 ===
+* Added missing header label for sort order at top of report.php page.
+* Added missing diary name header label at top of report.php page.
+
+=== 2.1.0 ===
+* Changed sql for lib.php, function diary_get_participants($diaryid).
+* Changed sql for lib.php, function diary_get_users_done($diary, $currentgroup, $sortoption)
+    by adding the $sortoption for the new toolbuttons on report.php page.
+* Added two new sort order toolbuttons to report.php for sort lastname ascending and descending.
+* Added, Edit all, setting to enable editing all entries. Disable means user can edit the
+    entry for the current day only.
+
+=== 2.0.0 ===
+* Fixed backup file to include ratings.
+
+=== 1.9.0 ===
+* Fixed a temporary restore so that ratings are now being generated as expected.
+* Modified travis.yml file and now getting email saying it passed.
+
+=== 1.8.2 ===
+* Added some more missing code to the backup and restore processes. Still not working as expected.
+* Modified travis.yml file.
+
+=== 1.8.1 ===
+* Added missing fields to the backup and restore.
+* Added function to create ratings in the restore process. Not working as expected.
+
+=== 1.8.0 ===
+* Added missing space in front of Toolbar label on report.php page.
+* Moved view.php sort order and rating type heading labels up five lines in the code
+    so that they are also visible when the Diary activity is closed.
+* Added, Editing period has ended, message just under the heading, that is shown
+    only when the activity is closed.
+
+=== 1.7.0 ===
+* Fixed toolbar in render.php. Changed from html_writer::alist to $output.
+* Fixed toolbar in report.php. Changed from html_writer::alist to $output.
+
+=== 1.6.3 ===
+* Fixed incorrect greeting in emails sent to users notifying them of feedback.
+* Fixed dates so they translate to language in use.
+
+=== 1.6.2 ===
+* Fixed Embedded images missing when editing an entry. (#3)
+* Fixed hardcoded strings.
+
+=== 1.6.1 ===
+* Added Availability help icons to the mod_form.php.
+* Set mod_form.php to hide the Days available setting unless using course weekly topic format.
+* Fixed error when student trying to edit post. (#4)
+
+=== 1.6.0 ===
+* Added help icons for all three date available items.
+
+=== 1.5.1 ===
+* Fixed savepoints problem.
+
+=== 1.5.0 ===
+* Fixed perpage selector that was broken by enabling timeopen and timeclose.
+* Fixed perpage count actually displayed that was off by one.
+* Added total entry count right after the Entries per page selector.
+* Added new string to show, out of xx entries., right after Entries per page selector.
+
+=== 1.4.0 ===
+* Added code to view.php to show all entries when timenow > timeclose.
+* Code cleanup.
+* Changed back to previous travis.yml
+
+=== 1.3.0 ===
+* Added availability dates to the Calendar.
+* Added code so that when not using weekly format, availability dates can be used to control diary access.
+* Code cleanup.
+
+=== 1.2.0 ===
+* Added user names salutation to strings used for message/emails sent to user.
+* Cleanup of more code prechecks listed for 1.0.1.(10|4)
+* Changed edit mode to show, Diary description instead of, Diary question.
+* On the view.php page, added a link for students to index.php page.
+* Added code to enable, Expect completed on, date.
+
+
+=== 1.1.0 ===
+* Cleanup of more code prechecks listed for 1.0.1.(21|4)
+* Added link on view.php to index.php to show all Diary's in the course.
+* Added link on report.php to index.php to show all Diary's in the course.
+
+=== 1.0.1 ===
+* Cleanup of most code prechecks listed for 1.0.0.
+
+=== 1.0.0 ===
+* Cleanup of code prechecks.
+* Added toolbar with download, page reload, edit, and four sorts to view.php page.
+* Added toolbar with download, page reload, edit, and four sorts to report.php page.
+* Added page format color setting to control look of view.php and report.php pages.
+* Added capability to start new entry each calendar day.
+* Added Save all feedback and Return to Diary, buttons between each entry on report.php page.
+* Added, Entries per page, selector on the view.php page.
+* Added timecreated to use as title for each entry on the view.php page.
+* Added Details listing to each entry on the view.php page.
+* Added notice that an entry has not been given feedback or rated yet, for each entry on view.php page.
+* Added Rating system.
+* Removed hard coded text in print_errors in edit.php and report.php.
+* Added an edit link/icon after the title of every entry on view.php page

@@ -1282,7 +1282,7 @@ class core_course_renderer extends plugin_renderer_base {
         $rhosts   = array();
         $rcourses = array();
         if (!empty($CFG->mnet_dispatcher_mode) && $CFG->mnet_dispatcher_mode==='strict') {
-            $rcourses = get_my_remotecourses($USER->id);
+            // $rcourses = get_my_remotecourses($USER->id);
             $rhosts   = get_my_remotehosts();
         }
 

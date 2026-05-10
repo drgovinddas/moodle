@@ -1,0 +1,658 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * This page opens the current report instance of diary.
+ *
+ * @package   mod_diary
+ * @copyright 2019 AL Rachels (drachels@drachels.com)
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+use mod_diary\local\results;
+
+require_once("../../config.php");
+require_once("lib.php");
+require_once($CFG->dirroot . '/rating/lib.php');
+
+$id = required_param('id', PARAM_INT); // Course module.
+
+
+if (!$cm = get_coursemodule_from_id('diary', $id)) {
+    throw new moodle_exception(get_string('incorrectmodule', 'diary'));
+}
+
+if (!$course = $DB->get_record('course', ['id' => $cm->course])) {
+    throw new moodle_exception(get_string('incorrectcourseid', 'diary'));
+}
+
+require_login($course, false, $cm);
+
+$context = context_module::instance($cm->id);
+
+require_capability('mod/diary:manageentries', $context);
+
+if (!$diary = $DB->get_record('diary', ['id' => $cm->instance])) {
+    throw new moodle_exception(get_string('invalidid', 'diary'));
+}
+$diaryid = optional_param('diary', $diary->id, PARAM_INT);
+$action = optional_param('action', 'currententry', PARAM_ALPHANUMEXT); // Action(default to current entry).
+$jumpuser = optional_param('jumpuser', 0, PARAM_INT);
+// 20201016 Get the name for this diary activity.
+$diaryname = format_string($diary->name, true, ['context' => $context]);
+
+// 20201014 Set a default sorting order for entry retrieval.
+if ($sortoption = get_user_preferences('sortoption')) {
+    $sortoption = get_user_preferences('sortoption');
+} else {
+    set_user_preference('sortoption', 'u.lastname ASC, u.firstname ASC');
+    $sortoption = get_user_preferences('sortoption');
+}
+
+$oldlistpreference = get_user_preferences('diary_listpreference_' . $diary->id, null);
+$listpreference = optional_param('listpreference', $oldlistpreference, PARAM_INT);
+$entryrater = has_capability('mod/diary:rate', $context);
+
+// Handle toolbar capabilities.
+if (! empty($action)) {
+    switch ($action) {
+        case 'download':
+            if (has_capability('mod/diary:manageentries', $context)) {
+                // Call download entries function in lib.php.
+                // 20231007 Added set_url to fix error.
+                $PAGE->set_url('/mod/diary/view.php', ['id' => $cm->id]);
+                results::download_entries($context, $course, $diary);
+            }
+            break;
+        case 'lastnameasc':
+            if (has_capability('mod/diary:manageentries', $context)) {
+                $stringlable = 'lastnameasc';
+                // 20201014 Set order and get ALL diary entries in lastname ascending order.
+                set_user_preference('sortoption', 'u.lastname ASC, u.firstname ASC');
+                $sortoption = get_user_preferences('sortoption');
+                $eee = $DB->get_records('diary_entries', ['diary' => $diary->id]);
+            }
+            break;
+        case 'lastnamedesc':
+            if (has_capability('mod/diary:manageentries', $context)) {
+                $stringlable = 'lastnamedesc';
+                // 20201014 Set order and get ALL diary entries in lastname descending order.
+                set_user_preference('sortoption', 'u.lastname DESC, u.firstname DESC');
+                $sortoption = get_user_preferences('sortoption');
+                $eee = $DB->get_records('diary_entries', ['diary' => $diary->id]);
+            }
+            break;
+        case 'currententry':
+            if (has_capability('mod/diary:manageentries', $context)) {
+                $stringlable = 'currententry';
+                // Get ALL diary entries in an order that will result in showing the users most current entry.
+                $eee = $DB->get_records('diary_entries', ['diary' => $diary->id]);
+            }
+            break;
+        case 'firstentry':
+            if (has_capability('mod/diary:manageentries', $context)) {
+                $stringlable = 'firstentry';
+                // Get ALL diary entries in an order that will result in showing the users very first entry.
+                $eee = $DB->get_records('diary_entries', ['diary' => $diary->id], $sort = 'timecreated DESC');
+            }
+            break;
+        case 'lowestgradeentry':
+            if (has_capability('mod/diary:manageentries', $context)) {
+                $stringlable = 'lowestgradeentry';
+                // Get ALL diary entries in an order that will result in showing the users
+                // oldest, ungraded entry. Once all ungraded entries have a grade, the entry
+                // with the lowest grade is shown. For duplicate low grades, the entry that
+                // is oldest, is shown.
+                $eee = $DB->get_records('diary_entries', ['diary' => $diary->id], $sort = 'rating DESC, timemodified DESC');
+            }
+            break;
+        case 'highestgradeentry':
+            if (has_capability('mod/diary:manageentries', $context)) {
+                $stringlable = 'highestgradeentry';
+                // Get ALL diary entries in an order that will result in showing the users highest
+                // graded entry. Duplicates high grades result in showing the most recent entry.
+                $eee = $DB->get_records('diary_entries', ['diary' => $diary->id], $sort = 'rating ASC');
+            }
+            break;
+        case 'latestmodifiedentry':
+            if (has_capability('mod/diary:manageentries', $context)) {
+                $stringlable = 'latestmodifiedentry';
+                // Get ALL diary entries in an order that will result in showing the users
+                // most recently modified entry. At the moment, this is no different from current entry.
+                // May be needed for future version if editing old entries is allowed.
+                $eee = $DB->get_records('diary_entries', ['diary' => $diary->id], $sort = 'timemodified ASC');
+            }
+            break;
+        default:
+            if (has_capability('mod/diary:manageentries', $context)) {
+                $stringlable = 'currententry';
+            }
+    }
+}
+
+// Header.
+$PAGE->set_url(
+    '/mod/diary/report.php',
+    [
+        'id' => $id,
+        'diary' => $diaryid,
+        'action' => $action,
+    ]
+);
+
+$PAGE->navbar->add((get_string("rate", "diary")) . ' ' . (get_string("entries", "diary")));
+$PAGE->set_title($diaryname);
+$PAGE->set_heading($course->fullname);
+
+// Get a list of groups for this course.
+$currentgroup = groups_get_activity_group($cm, true);
+if ($currentgroup) {
+    $groups = $currentgroup;
+} else {
+    $groups = '';
+}
+
+// Get a sorted list of users in the current group to use for processing the report.
+$users = get_users_by_capability($context, 'mod/diary:addentries', '', $sort = 'lastname ASC, firstname ASC', '', '', $groups);
+
+if ($jumpuser > 0 && isset($users[$jumpuser])) {
+    $singleurl = new moodle_url('/mod/diary/reportsingle.php', [
+        'id' => $id,
+        'user' => $jumpuser,
+        'action' => 'allentries',
+    ]);
+    redirect($singleurl);
+}
+
+if ($eee) {
+    // Now, filter down to get entry by any user who has made at least one entry.
+    foreach ($eee as $ee) {
+        $entrybyuser[$ee->userid] = $ee;
+        $entrybyentry[$ee->id] = $ee;
+        $entrybyuserentry[$ee->userid][$ee->id] = $ee;
+    }
+} else {
+    $entrybyuser = [];
+    $entrybyentry = [];
+}
+// Process incoming data if there is any.
+if ($data = data_submitted()) {
+    $postdata = (array)$data;
+    $createzerouserid = 0;
+    foreach ($postdata as $postkey => $postvalue) {
+        if (strpos((string)$postkey, 'createzero') === 0 && !empty($postvalue)) {
+            $createzerouserid = (int)substr((string)$postkey, strlen('createzero'));
+            break;
+        }
+    }
+
+    // Report-page only action: create a zero-grade placeholder entry for users with no entry.
+    $createdentryid = results::create_zero_entries_from_report_submission(
+        $cm,
+        $context,
+        $course,
+        $diary,
+        $postdata,
+        $users,
+        $entrybyuser,
+        $entrybyentry
+    );
+
+    // Deterministic anchor landing for create-zero actions: POST -> redirect with explicit fragment.
+    if ($createdentryid > 0) {
+        $redirectanchor = '';
+        $returnurl = new moodle_url('/mod/diary/report.php', [
+            'id' => $id,
+            'diary' => $diaryid,
+            'action' => $action,
+        ]);
+
+        if ($createzerouserid > 0) {
+            $foundclickeduser = false;
+            $lastremainingnoentryuserid = 0;
+            foreach ($users as $candidateuser) {
+                $candidateuserid = (int)$candidateuser->id;
+                if ($candidateuserid !== $createzerouserid && !isset($entrybyuser[$candidateuserid])) {
+                    $lastremainingnoentryuserid = $candidateuserid;
+                }
+
+                if (!$foundclickeduser) {
+                    if ($candidateuserid === $createzerouserid) {
+                        $foundclickeduser = true;
+                    }
+                    continue;
+                }
+
+                if (!isset($entrybyuser[$candidateuserid])) {
+                    $redirectanchor = 'user-anchor-' . $candidateuserid;
+                    break;
+                }
+            }
+
+            if ($redirectanchor === '') {
+                if ($lastremainingnoentryuserid > 0) {
+                    $redirectanchor = 'user-anchor-' . $lastremainingnoentryuserid;
+                } else {
+                    $redirectanchor = 'report-bottom-actions';
+                }
+            }
+        }
+
+        if ($redirectanchor !== '') {
+            $returnurl->set_anchor($redirectanchor);
+        } else {
+            $returnurl->set_anchor('report-bottom-actions');
+        }
+
+        redirect($returnurl);
+    }
+
+    // Only run full feedback persistence on explicit Save-all submit.
+    if (!empty($postdata['saveallfeedback'])) {
+        results::diary_entries_feedback_update($cm, $context, $diary, $data, $entrybyuser, $entrybyentry);
+    }
+
+    // 20260215 Re-fetch entries from database to display updated values after feedback save.
+    $eee = $DB->get_records('diary_entries', ['diary' => $diary->id]);
+    if ($eee) {
+        foreach ($eee as $ee) {
+            $entrybyentry[$ee->id] = $ee;
+            $entrybyuser[$ee->userid] = $ee;
+        }
+    }
+
+    // Trigger module feedback updated event.
+    $event = \mod_diary\event\feedback_updated::create(
+        [
+            'objectid' => $diary->id,
+            'context' => $context,
+        ]
+    );
+    $event->add_record_snapshot('course_modules', $cm);
+    $event->add_record_snapshot('course', $course);
+    $event->add_record_snapshot('diary', $diary);
+    $event->trigger();
+} else {
+    // Trigger module viewed event.
+    $event = \mod_diary\event\entries_viewed::create(
+        [
+            'objectid' => $diary->id,
+            'context' => $context,
+        ]
+    );
+    $event->add_record_snapshot('course_modules', $cm);
+    $event->add_record_snapshot('course', $course);
+    $event->add_record_snapshot('diary', $diary);
+    $event->trigger();
+}
+
+echo $OUTPUT->header();
+echo $OUTPUT->heading($diaryname);
+
+// 20240927 Working on new filter for user firstname and lastname. This from moodle/user/index.php file line 103.
+$participanttable = new \core_user\table\participants("user-index-participants-{$course->id}");
+
+// 20210511 Changed to using div and span.
+echo '<div class="sortandaggregate">';
+echo ('<span>' . get_string('sortorder', "diary"));
+echo (get_string($stringlable, "diary") . '</span>');
+
+// 20200827 Added link to index.php page. 20210501 Moved to here.
+echo '<span><a class="diary-link-right" href="index.php?id=' . $course->id . '">'
+    . get_string('viewalldiaries', 'diary') . '</a></span></div>';
+
+if (!$users) {
+    echo $OUTPUT->heading(get_string("nousersyet"));
+} else {
+    $output = '';
+    // Create download, reload, current, oldest, lowest, highest, and most recent tool buttons for all entries.
+    if (has_capability('mod/diary:manageentries', $context)) {
+        // 20201003 Changed toolbar code to $output instead of html_writer::alist.
+        $options = [];
+        $options['id'] = $id;
+        $options['diary'] = $diary->id;
+
+        // Add download button.
+        $options['action'] = 'download';
+        $url = new moodle_url('/mod/diary/report.php', $options);
+        $output .= html_writer::link(
+            $url,
+            $OUTPUT->pix_icon('i/export', get_string('csvexport', 'diary')),
+            [
+                'class' => 'toolbutton',
+            ]
+        );
+
+        // Add sort by lastname ascending button.
+        $options['action'] = 'lastnameasc';
+        $url = new moodle_url('/mod/diary/report.php', $options);
+        $output .= html_writer::link(
+            $url,
+            $OUTPUT->pix_icon('t/sort_asc', get_string('lastnameasc', 'diary')),
+            [
+                'class' => 'toolbutton',
+            ]
+        );
+
+        // Add sort by lastname descending button.
+        $options['action'] = 'lastnamedesc';
+        $url = new moodle_url('/mod/diary/report.php', $options);
+        $output .= html_writer::link(
+            $url,
+            $OUTPUT->pix_icon('t/sort_desc', get_string('lastnamedesc', 'diary')),
+            [
+                'class' => 'toolbutton',
+            ]
+        );
+
+        // Add reload toolbutton.
+        $options['action'] = $stringlable;
+        $url = new moodle_url('/mod/diary/report.php', $options);
+        $output .= html_writer::link(
+            $url,
+            $OUTPUT->pix_icon('t/reload', get_string('reload', 'diary')),
+            [
+                'class' => 'toolbutton',
+            ]
+        );
+
+        $options['action'] = 'currententry';
+        $url = new moodle_url('/mod/diary/report.php', $options);
+        $output .= html_writer::link(
+            $url,
+            $OUTPUT->pix_icon('i/edit', get_string('currententry', 'diary')),
+            [
+                'class' => 'toolbutton',
+            ]
+        );
+
+        $options['action'] = 'firstentry';
+        $url = new moodle_url('/mod/diary/report.php', $options);
+        $output .= html_writer::link(
+            $url,
+            $OUTPUT->pix_icon('t/left', get_string('firstentry', 'diary')),
+            [
+                'class' => 'toolbutton',
+            ]
+        );
+
+        $options['action'] = 'lowestgradeentry';
+        $url = new moodle_url('/mod/diary/report.php', $options);
+        $output .= html_writer::link(
+            $url,
+            $OUTPUT->pix_icon('t/down', get_string('lowestgradeentry', 'diary')),
+            [
+                'class' => 'toolbutton',
+            ]
+        );
+
+        $options['action'] = 'highestgradeentry';
+        $url = new moodle_url('/mod/diary/report.php', $options);
+        $output .= html_writer::link(
+            $url,
+            $OUTPUT->pix_icon('t/up', get_string('highestgradeentry', 'diary')),
+            [
+                'class' => 'toolbutton',
+            ]
+        );
+
+        $options['action'] = 'latestmodifiedentry';
+        $url = new moodle_url('/mod/diary/report.php', $options);
+        $output .= html_writer::link(
+            $url,
+            $OUTPUT->pix_icon('t/right', get_string('latestmodifiedentry', 'diary')),
+            [
+                'class' => 'toolbutton',
+            ]
+        );
+
+        // 20210511 Reorganized group and toolbar output. 20220102 Added action.
+        echo '<span>' . groups_print_activity_menu(
+            $cm,
+            $CFG->wwwroot . "/mod/diary/report.php?id=$cm->id&action=currententry"
+        ) . '</span>';
+
+        if (!empty($users)) {
+            $useroptions = [0 => get_string('selectuserforreport', 'diary')];
+            foreach ($users as $reportuser) {
+                $useroptions[(int)$reportuser->id] = fullname($reportuser);
+            }
+
+            echo '<form method="get" action="report.php" class="diary-inline-form">';
+            echo '<input type="hidden" name="id" value="' . $cm->id . '">';
+            echo '<input type="hidden" name="action" value="' . s($action) . '">';
+            echo html_writer::select(
+                $useroptions,
+                'jumpuser',
+                0,
+                false,
+                [
+                    'id' => 'jumpuserreport',
+                    'class' => 'custom-select diary-inline-select',
+                    'onchange' => 'if (this.value > 0) { this.form.submit(); }',
+                ]
+            );
+            echo '</form>';
+        }
+
+        echo '<span class="diary-toolbar-right">' . get_string('toolbar', 'diary') . $output . '</span>';
+    }
+
+    // Next line is different from Journal line 171 202. Difference is $journal->grade.
+    $grades = make_grades_menu($diary->scale);
+
+    if (! $teachers = get_users_by_capability($context, 'mod/diary:manageentries')) {
+        throw new moodle_exception(get_string('noentriesmanagers', 'diary'));
+    }
+
+    // 20211230 Changed action so that the sort order (action) is maintained.
+    // Start the page area where feedback and grades are added and will need to be saved.
+    // 20230810 Changed based on pull request #29.
+    $url = new moodle_url('report.php', ['id' => $id, 'diaryid' => $diaryid, 'action' => $action]);
+    echo '<form action="' . $url->out(false) . '" method="post" id="feedbackform">';
+    // 20260215 Add hidden field to track last edited entry for scroll-back functionality.
+    // This MUST be before the save button to only appear once.
+    echo '<input type="hidden" name="last_edited_entry" id="last_edited_entry" value="" />';
+
+    // Create a variable with all the info to save all my feedback, so it can be used multiple places.
+    // 20211027 changed to rounded buttons. 20211229 Removed escaped double quotes.
+    $saveallbutton = '';
+    $saveallbutton = '<p class="feedbacksave">';
+    $saveallbutton .= '<input type="hidden" name="id" value="' . $cm->id . '" />';
+    $saveallbutton .= '<input type="hidden" name="sesskey" value="' . sesskey() . '" />';
+    $saveallbutton .= '<input type="submit" name="saveallfeedback"'
+        . ' class="btn btn-primary diary-btn-rounded" data-entryid="0" value="'
+        . get_string("saveallfeedback", "diary") . '" />';
+    // 20200421 Added a return button.
+    // 20230810 Changed based on pull request #29.
+    $url = new moodle_url($CFG->wwwroot . '/mod/diary/view.php', ['id' => $id]);
+    $saveallbutton .= ' <a href="' . $url->out(false)
+                     . '" class="btn btn-secondary diary-btn-rounded" role="button">'
+                     . get_string('returnto', 'diary', $diary->name)
+                     . '</a>';
+
+    $saveallbutton .= '</p>';
+
+    // Add save button at the top of the list of users with entries.
+    echo $saveallbutton;
+
+    // 20210705 Added new activity color setting. Only the overall background here. Entry text bgc is in results.
+    $dcolor3 = $diary->entrybgc;
+    $bordercssvars = diary_get_border_css_vars($diary->id);
+
+    // Print a list of users who have completed at least one entry.
+    if ($usersdone = diary_get_users_done($diary, $currentgroup, $sortoption)) {
+        foreach ($usersdone as $user) {
+            echo '<div class="entry diary-entry-themed" style="--diary-entry-bg: ' . s($dcolor3) . ';' . s($bordercssvars) . '">';
+
+            // Based on toolbutton and on list of users with at least one entry, print the entries on screen.
+            echo results::diary_print_user_entry(
+                $context,
+                $course,
+                $diary,
+                $user,
+                $entrybyuser[$user->id],
+                $teachers,
+                $grades
+            );
+            echo '</div>';
+
+            // Since the list can be quite long, add a save button after each entry that will save ALL visible changes.
+            // Per-entry save button carries the entry ID for reliable scroll-back on Save.
+            echo str_replace('data-entryid="0"', 'data-entryid="' . $entrybyuser[$user->id]->id . '"', $saveallbutton);
+
+            // Remove users who are done from our list of everyone so we finish with a list of users with no entries.
+            unset($users[$user->id]);
+        }
+    }
+
+    // 20231103 Extend form and add selector for prefered list delivery.
+    // Need to check if user is an entry rater.
+    if ($entryrater) {
+        if ($listpreference != $oldlistpreference) {
+            set_user_preference('diary_listpreference_' . $diary->id, $listpreference);
+        }
+
+        $listoptions = [
+            1 => get_string('showlistyes', 'diary'),
+            2 => get_string('showlistno', 'diary'),
+        ];
+        // This creates the dropdown list for list preference on the report page above the first empty entry.
+        $selection = html_writer::select(
+            $listoptions,
+            'listpreference',
+            $listpreference,
+            false,
+            [
+                'id' => 'pref_lists',
+                'class' => 'custom-select diary-inline-select',
+                'onchange' => 'this.form.submit()',
+            ]
+        );
+
+        echo get_string('showlistpreference', 'diary') . ': ' . $selection;
+    }
+
+    // 20231103 If user preference is 1 then show users without an entry.
+    if ($listpreference == 1) {
+        // List remaining users with no entries.
+        foreach ($users as $user) {
+            // 20210511 Changed to class.
+            echo '<div class="entry diary-entry-themed" style="--diary-entry-bg: ' . s($dcolor3) . ';' . s($bordercssvars) . '">';
+
+            echo results::diary_print_user_entry(
+                $context,
+                $course,
+                $diary,
+                $user,
+                null,
+                $teachers,
+                $grades,
+                true
+            );
+            echo '</div><br>';
+        }
+
+        // 20210609 Check for empty list to prevent two sets of buttons at bottom of the report page.
+        if ($users) {
+            // Add a, Save all my feedback, button at the bottom of the page/list of users with no entries.
+            echo '<div id="report-bottom-actions"></div>';
+            echo $saveallbutton;
+        }
+    }
+
+    if (empty($users)) {
+        echo '<div id="report-bottom-actions"></div>';
+    }
+
+    // End the page area where feedback and grades are added and will need to be saved.
+    echo "</form>";
+}
+
+// 20260211 New: If a button was clicked, output JS to scroll back to that entry's rating area.
+global $SESSION;
+if (isset($SESSION->diary_clicked_entry)) {
+    echo '<script type="text/javascript">
+        document.addEventListener("DOMContentLoaded", function() {
+            var target = document.getElementById("rating-anchor-' . $SESSION->diary_clicked_entry . '");
+            if (target) {
+                // Auto scroll, align to top of viewport (but with margin via CSS)
+                target.scrollIntoView({
+                    behavior: "auto",   // Use "smooth" or "auto" for instant.
+                    block: "start",       // Aligns target to top (good with scroll-margin-top).
+                    inline: "nearest"
+                });
+            }
+        });
+    </script>';
+
+    // Clear the session var to avoid repeating on next loads.
+    unset($SESSION->diary_clicked_entry);
+}
+
+// 20260215 Added: Track which entry is being edited to enable scroll-back on save.
+// 20260215 Improved: Detect which save button was clicked to determine scroll-back entry.
+echo '<script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function() {
+        // Track the last edited entry from field changes.
+        var lastEditedEntry = 0;
+
+        // Listen for changes to rating fields.
+        var ratingSelects = document.querySelectorAll("select[id^=\"r\"]");
+        ratingSelects.forEach(function(select) {
+            select.addEventListener("change", function() {
+                var entryId = this.id.replace(/[^0-9]/g, "");
+                if (entryId) {
+                    lastEditedEntry = entryId;
+                }
+            });
+        });
+
+        // Listen for changes to all possible comment field types (textarea, input, contenteditable).
+        var commentFields = document.querySelectorAll(
+            "textarea[name^=\"c\"], input[name^=\"c\"], [name^=\"c\"][contenteditable]"
+        );
+        commentFields.forEach(function(field) {
+            field.addEventListener("input", function() {
+                var entryId = this.name.replace(/[^0-9]/g, "");
+                if (entryId) {
+                    lastEditedEntry = entryId;
+                }
+            });
+            field.addEventListener("change", function() {
+                var entryId = this.name.replace(/[^0-9]/g, "");
+                if (entryId) {
+                    lastEditedEntry = entryId;
+                }
+            });
+        });
+
+        // On save button click, set last_edited_entry from the button data-entryid (per-entry save
+        // buttons embed the entry ID) or fall back to field-change tracking.
+        var submitButtons = document.querySelectorAll("input[type=\"submit\"]");
+        submitButtons.forEach(function(button) {
+            button.addEventListener("click", function(e) {
+                var entryId = parseInt(button.getAttribute("data-entryid") || "0", 10);
+                if (entryId > 0) {
+                    document.getElementById("last_edited_entry").value = entryId;
+                } else if (lastEditedEntry > 0) {
+                    document.getElementById("last_edited_entry").value = lastEditedEntry;
+                }
+            });
+        });
+    });
+</script>';
+
+echo $OUTPUT->footer();
