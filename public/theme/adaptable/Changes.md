@@ -1,10 +1,17 @@
-Change log in version 501.1.3 (2025092508)
+Change log in version 502.1.1 (2026041201)
 ==========================================
 1. Fix deprecation of 'file_encode_url'.
 2. Add new setting 'tickervisible' to show the news ticker when 'Logged out', 'Logged in' or 'Logged in or out'.  Note: Sponsors only.
 3. Refactor logged in / out strings.
 4. Refactor deprecated CSS classes ml, mr, form-group and btn-block.
 5. Remove redundant CSS class 'coursesearchnavbar'.
+
+Change log in version 502.1.0 (2026041200)
+==========================================
+1. Change draw toggle icons, [MDL-88085](https://tracker.moodle.org/browse/MDL-88085).
+2. Add 'courseindexdrawercontrols'.
+3. Course index title and expand / collapse.
+4. Upgrade theme version ('fav' setting) of Font Awesome to 7.2.0.
 
 Change log in version 501.1.2 (2025092507)
 ==========================================
