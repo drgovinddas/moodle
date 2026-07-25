@@ -1,0 +1,16 @@
+grade,mod_diary
+itemcount_help,mod_diary
+itemcount,mod_diary
+itempercent_help,mod_diary
+itempercent,mod_diary
+itemtype_desc,mod_diary
+itemtype_descr,mod_diary
+itemtype_help,mod_diary
+itemtype_title,mod_diary
+itemtype,mod_diary
+itemtypefiles,mod_diary
+itemtypechars,mod_diary
+itemtypenone,mod_diary
+itemtypensentences,mod_diary
+itemtypeparagraphs,mod_diary
+itemtypewords,mod_diary
