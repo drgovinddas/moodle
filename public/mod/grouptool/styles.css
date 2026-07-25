@@ -1,0 +1,452 @@
+/*
+// This file is part of mod_grouptool for Moodle - http://moodle.org/
+//
+// It is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// It is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+*/
+/**
+ * Style definitions for mod_grouptool
+ *
+ * @package   mod_grouptool
+ * @author    Philipp Hager
+ * @copyright 2014 Academic Moodle Cooperation {@link http://www.academic-moodle-cooperation.org}
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+/** General Styles **/
+
+/** administration styles **/
+
+.path-mod-grouptool .error label[for=id_digits],
+.path-mod-grouptool .error label[for=id_from],
+.path-mod-grouptool .error label[for=id_to] {
+    /*let the digits label stay black - doesn't work right now*/
+    color: #000;
+}
+
+/** sortable grouplist styles **/
+
+.path-mod-grouptool .tabtree {
+    margin-bottom: 0;
+}
+
+.path-mod-grouptool .moodlegrpslnk {
+    margin-bottom: 3.5em;
+    text-align: right;
+}
+
+.path-mod-grouptool div.sortlist_container {
+    overflow: auto;
+}
+
+.path-mod-grouptool div.sortlist_container .ui-sortable-helper {
+    display: table;
+    width: 100%;
+}
+
+/* CSS Fallback to make sure it isn't visible! */
+.path-mod-grouptool .drag_area .draggable_item:first-child .moveupbutton,
+.path-mod-grouptool .drag_area .draggable_item:last-child .movedownbutton {
+    visibility: hidden;
+}
+
+.path-mod-grouptool div.checkbox_controls {
+    background: #ddd;
+    margin-left: 5px;
+    margin-right: 5px;
+    overflow: auto;
+    padding: 10px;
+    white-space: nowrap;
+}
+
+.path-mod-grouptool div.checkbox_controls .checkbox_controls_header {
+    font-weight: bold;
+}
+
+.path-mod-grouptool div.checkbox_controls .checkbox_control {
+    text-align: right;
+
+}
+
+.path-mod-grouptool div.checkbox_controls .checkbox_control .check_name {
+    clear: both;
+    display: inline-block;
+    text-align: left;
+}
+
+.path-mod-grouptool tr.mod_grouptool_sortlist_entry td {
+    -webkit-transition: padding-top, padding-bottom 600ms ease; /* Safari */
+    transition: padding-top, padding-bottom 600ms ease;
+}
+
+.path-mod-grouptool tr.slidup.mod_grouptool_sortlist_entry td {
+    padding-bottom: 0;
+    padding-top: 0;
+}
+
+.path-mod-grouptool .draggable_item .checkbox_container {
+    margin-left: 3px;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+.path-mod-grouptool .draggable_item .grpname,
+.path-mod-grouptool .draggable_item .addfield {
+    -moz-hyphens: auto;
+    -o-hyphens: auto;
+    -webkit-hyphens: auto;
+    -ms-hyphens: auto;
+    hyphens: auto;
+    overflow: hidden;
+    vertical-align: middle;
+    white-space: normal;
+}
+
+.path-mod-grouptool .draggable_item .grpname .text {
+    font-weight: bold;
+}
+
+.path-mod-grouptool .draggable_item .grpname .grouppix {
+    padding-right: 5px;
+    max-height: 35px;
+    max-width: 35px;
+}
+
+.path-mod-grouptool .draggable_item .grpname .grouppix img {
+    height: 35px;
+    width: 35px;
+    border-radius: 50%;
+}
+
+.path-mod-grouptool .draggable_item .grpsize {
+    font-weight: normal;
+    margin-left: 20px;
+    margin-right: 2px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.path-mod-grouptool .draggable_item .grpsize input {
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+.path-mod-grouptool .draggable_item .buttons {
+    margin-left: 5px;
+    margin-right: 0;
+    vertical-align: middle;
+}
+
+.path-mod-grouptool .draggable_item .buttons input[type=image],
+.draggable_item .buttons img {
+    background-color: transparent;
+}
+
+.path-mod-grouptool .js_invisible {
+    display: none;
+}
+
+.path-mod-grouptool .centered {
+    text-align: center;
+}
+
+.path-mod-grouptool .centeredblock {
+    margin-left: auto;
+    margin-right: auto;
+    text-align: left;
+}
+.path-mod-grouptool .grading_gradingtable {
+    display: table;
+    margin-left: auto;
+    margin-right: auto;
+}
+.path-mod-grouptool .grading_previewtable {
+    display: table;
+    margin-left: auto;
+    margin-right: auto;
+}
+.path-mod-grouptool .grading_previewtable td[rowspan] {
+    text-align: center;
+}
+
+.path-mod-grouptool .grading_previewtable td {
+    vertical-align: middle;
+}
+
+.path-mod-grouptool .indent {
+    margin-left: 2em;
+}
+
+.path-mod-grouptool div.box1embottom {
+    margin-bottom: 1em;
+}
+
+.path-mod-grouptool .gradeinfo {
+    color: black;
+    font-weight: normal;
+    text-align: left;
+    text-decoration: none;
+}
+
+.path-mod-grouptool .agrplist {
+    max-height: 250px;
+    overflow: auto;
+}
+
+/*styles for view->registration*/
+.path-mod-grouptool .showmembersoverlay table {
+    width: 100%;
+}
+
+.path-mod-grouptool .showmembersoverlay table thead {
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.path-mod-grouptool #registration_form .group {
+    border: 1px solid #e3e3e3;
+    border-radius: 4px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.05) inset;
+    display: flex;
+
+    margin-bottom: 1em;
+    margin-top: 1em;
+    max-height: 200px;
+    overflow: auto;
+    padding: 0.5em;
+    vertical-align: middle;
+}
+
+.path-mod-grouptool #registration_form .group.empty {
+    background-color: #f5f5f5;
+}
+
+.path-mod-grouptool #registration_form .group.alert-warning {
+    background-color: #fcf8e3;
+    border-color: #faebcc;
+    color: #8a6d3b;
+}
+
+.path-mod-grouptool #registration_form .group h2 {
+    font-size: 1.5em;
+    margin-bottom: 0;
+    margin-top: 0;
+}
+
+.path-mod-grouptool #registration_form .group div {
+    height: auto;
+    overflow: hidden;
+    vertical-align: middle;
+}
+
+.path-mod-grouptool #registration_form .group .panel-picture {
+    padding-left: 5px;
+    padding-right: 15px;
+}
+
+.path-mod-grouptool #registration_form .group .panel-picture img {
+    border-radius: 50%;
+    width: 100px;
+    height: 100px;
+}
+
+.path-mod-grouptool #registration_form .group .panel-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.path-mod-grouptool #registration_form .group .unregbutton {
+    display: inline;
+    margin-left: 1em;
+    margin-right: 1em;
+    vertical-align: middle;
+}
+
+.path-mod-grouptool #registration_form .group .regbutton {
+    display: inline;
+    margin-left: 1em;
+    margin-right: 1em;
+    vertical-align: middle;
+}
+
+.path-mod-grouptool #registration_form .group .unqueuebutton {
+    display: inline;
+    margin-left: 1em;
+    margin-right: 1em;
+    vertical-align: middle;
+}
+
+.path-mod-grouptool #registration_form .group .queuebutton {
+    display: inline;
+    margin-left: 1em;
+    margin-right: 1em;
+    vertical-align: middle;
+}
+
+.path-mod-grouptool #registration_form .group .rank {
+    display: inline;
+    margin-left: 1em;
+    margin-right: 1em;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.path-mod-grouptool #registration_form .group .showmembers {
+    margin-left: 1em;
+    margin-right: 1em;
+    vertical-align: middle;
+}
+.path-mod-grouptool #registration_form .group .queued {
+    margin-left: 1em;
+    margin-right: 1em;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.path-mod-grouptool #registration_form .group .fillratio {
+    margin-left: 1em;
+    margin-right: 1em;
+    vertical-align: middle;
+}
+
+.path-mod-grouptool .download.all {
+    margin-bottom: 1.5em;
+}
+
+.path-mod-grouptool .groupcontainer .download {
+    text-align: right;
+}
+
+@media (min-width: 600px) {
+    .path-mod-grouptool .groupcontainer .download {
+        float: right;
+    }
+}
+
+.path-mod-grouptool .late,
+.path-my .late {
+    color: red;
+}
+
+.path-mod-grouptool .early,
+.path-my .early {
+    background-color: #9f9;
+}
+
+.path-mod-grouptool .soon,
+.path-my .soon {
+    background-color: #ff9;
+}
+
+.path-mod-grouptool .overviewtable {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.path-mod-grouptool #importpreview th {
+    white-space: nowrap;
+}
+
+.path-mod-grouptool .groupcontainer.outdated {
+    background-color: #eee;
+    border-color: #fc9;
+}
+
+.path-mod-grouptool .grouptool_overview_filter form,
+.grouptool_overview_filter div {
+    display: inline;
+}
+
+.path-mod-grouptool .grouptool_userlist_filter form,
+.grouptool_userlist_filter div {
+    display: inline;
+}
+
+.path-mod-grouptool .userlist td,
+.userlist th {
+    vertical-align: middle;
+}
+
+.path-mod-grouptool .userlist th {
+    white-space: nowrap;
+}
+.path-mod-grouptool .userlist th div {
+    display: inline;
+}
+
+.path-mod-grouptool .userlist .collapselink {
+    margin-left: 3px;
+    vertical-align: middle;
+}
+
+.path-mod-grouptool .groupinfo {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.path-mod-grouptool .queue {
+    color: #999;
+}
+
+.path-mod-grouptool .moodlereg {
+    font-weight: bold;
+}
+
+.path-mod-grouptool .nowrap input,
+.path-mod-grouptool .nowrap label {
+    white-space: nowrap;
+}
+
+.path-mod-grouptool .no_queues,
+.path-mod-grouptool .no_registrations {
+    text-align: center;
+}
+
+.path-mod-grouptool .mform .fieldsetsimulation {
+    border: 1px solid #d9d9d9;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.path-mod-grouptool .mform .fcontainer .checkboxcontroller {
+    margin-left: 1em;
+    margin-top: 1em;
+}
+
+.path-mod-grouptool .mform .fcontainer .groupselectiontitle {
+    font-weight: bold;
+    margin-left: 1em;
+    margin-top: 1em;
+}
+
+.path-mod-grouptool .mform .fcontainer .simpletext {
+    margin-left: 1em;
+    margin-top: 1em;
+}
+
+.path-mod-grouptool .title {
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.path-mod-grouptool .status {
+    text-align: center;
+}
+
+.path-mod-grouptool .col-form-label {
+    padding-top: 0;
+}
+
+.path-mod-grouptool #group-message-button {
+    padding-left: 5px;
+}

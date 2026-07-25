@@ -1,0 +1,823 @@
+/*
+
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * This is the css style sheet for Diary.
+ *
+ * @package    mod_diary
+ * @copyright  2019 AL Rachels (drachels@drachels.com)
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later.
+ */
+
+/* 20210502 Added in view.php about line 278.*/
+#page-mod-diary-view .sortandaggregate,
+#page-mod-diary-report .sortandaggregate {
+    width: 100%;
+    font-size: 1.0em;
+    /*font-weight: bold;*/
+}
+
+/* 20210502 Added in view.php about line 281 and 282.*/
+#page-mod-diary-view .sortandaggregate .cell {
+    float: right;
+    padding: 5px;
+}
+
+#page-mod-diary-view .feedbackbox { /* Used in renderer.php. */
+    width: 85%;
+    border-collapse: separate;
+}
+
+#page-mod-diary-view .entrycontent { /* Used in renderer.php. */
+    padding: 3px;
+}
+
+#page-mod-diary-view .picture { /* Used in renderer.php with left. */
+    width: 35px;
+}
+
+#page-mod-diary-view .info { /* Cannot find this in use, anywhere. */
+    margin-bottom: 5px;
+    text-align: right;
+}
+
+#page-mod-diary-view .diarystart, /* Used in view.php. */
+#page-mod-diary-report .feedbacksave {
+    text-align: center;
+}
+
+#page-mod-diary-view .lastedit,
+#page-mod-diary-view .editend {
+    font-size: 0.7em;
+    margin: 5px;
+    text-align: center;
+}
+
+#page-mod-diary-view .needsedit,
+#page-mod-diary-view .editend {
+    font-size: 0.9em;
+    color: red;
+    text-align: center;
+}
+
+#page-mod-diary-view .author { /* Used in renderer.php about line 191. */
+    font-size: 1em;
+    font-weight: bold;
+}
+
+#page-mod-diary-view .time { /* Used in renderer.php about line 192. */
+    font-size: 0.7em;
+    font-style: italic;
+}
+
+#page-mod-diary-view .grade { /* Used in renderer.php about line 200. */
+    font-weight: bold;
+    font-style: italic;
+    text-align: right;
+}
+
+#page-mod-diary-index .cell { /* Cannot find this in use, anywhere. */
+    font-size: 0.8em;
+}
+
+/* 20241114 Added in deleteentry.php about line 199.*/
+/* 20210501 Added in view.php about line 381.*/
+/* 20210505 Added in report.php about lines 427 and 455 now 360 and 406.*/
+/* 20210505 Added in reportsingle.php about line 266 now 329.*/
+/* 20210505 Added in reportone.php about line 266 now 329.*/
+#page-mod-diary-deleteentry .entry,
+#page-mod-diary-view .entry,
+#page-mod-diary-report .entry,
+#page-mod-diary-reportsingle .entry,
+#page-mod-diary-reportone .entry {
+    --diary-entry-bg-default: var(--diary-entry-bg-default, #f9f5f0);
+    --diary-entry-border: var(--diary-entry-border, 0);
+    text-align: left;
+    font-size: 1em;
+    padding: 5px;
+    background: var(--diary-entry-bg, var(--diary-entry-bg-default));
+    border: var(--diary-entry-border);
+    -webkit-border-radius: 16px;
+    -moz-border-radius: 16px;
+    border-radius: 16px;
+}
+
+#page-mod-diary-view .feedbackbox .left,
+#page-mod-diary-view .feedbackbox .entryheader { /* Used in renderer.php about line 190. */
+    background-color: #ddd;
+}
+
+#page-mod-diary-view .feedbackbox {
+    -moz-border-radius-bottomleft: 15px;
+    -moz-border-radius-bottomright: 15px;
+    border-spacing: 0;
+    margin: 0 auto;
+}
+
+#page-mod-diary-view .feedbackbox .side {
+    -moz-border-radius-bottomleft: 15px;
+}
+
+#page-mod-diary-view .feedbackbox .entrycontent {
+    -moz-border-radius-bottomright: 15px;
+}
+
+#page-mod-diary-view .reportlink,
+#page-mod-diary-report .reportlink {
+    float: right;
+    padding: 15px;
+}
+
+.diary-link-right,
+.diary-toolbar-right {
+    float: right;
+}
+
+.diary-inline-form {
+    display: inline-block;
+    margin-left: 0.75rem;
+}
+
+.diary-inline-select {
+    display: inline-block;
+    width: auto;
+    max-width: 20rem;
+}
+
+.diary-btn-rounded {
+    border-radius: 8px;
+}
+
+.diary-intro-highlight {
+    font-weight: 600;
+}
+
+.diary-blankentry {
+    text-align: center;
+    font-weight: 600;
+}
+
+#page-mod-diary-report .diaryuserentry {
+    /*border: 1px solid #000000;*/
+    border-collapse: collapse;
+    border-spacing: 0;
+    width: 100%;
+    table-layout: auto;
+}
+
+#page-mod-diary-report .diaryuserentry td,
+#page-mod-diary-reportsingle .diaryuserentry td,
+#page-mod-diary-reportone .diaryuserentry td {
+    padding: 10px;
+    vertical-align: top;
+    width: auto;
+}
+
+#page-mod-diary-reportsingle .diaryuserentry,
+#page-mod-diary-reportone .diaryuserentry {
+    width: 100%;
+    table-layout: auto;
+}
+
+/* Keep report table layers transparent so configured Diary entry colors remain visible. */
+#page-mod-diary-report .diaryuserentry,
+#page-mod-diary-report .diaryuserentry tr,
+#page-mod-diary-report .diaryuserentry th,
+#page-mod-diary-report .diaryuserentry td,
+#page-mod-diary-reportsingle .diaryuserentry,
+#page-mod-diary-reportsingle .diaryuserentry tr,
+#page-mod-diary-reportsingle .diaryuserentry th,
+#page-mod-diary-reportsingle .diaryuserentry td,
+#page-mod-diary-reportone .diaryuserentry,
+#page-mod-diary-reportone .diaryuserentry tr,
+#page-mod-diary-reportone .diaryuserentry th,
+#page-mod-diary-reportone .diaryuserentry td {
+    background-color: transparent;
+    --bs-table-bg: transparent;
+    --bs-table-accent-bg: transparent;
+}
+
+#page-mod-diary-report .diaryuserentry td.userpix {
+    width: 35px;
+}
+
+#page-mod-diary-report .diaryuserentry td.userfullname {
+    white-space: nowrap;
+}
+
+#page-mod-diary-report .diaryuserentry tr > td:nth-child(1),
+#page-mod-diary-reportsingle .diaryuserentry tr > td:nth-child(1),
+#page-mod-diary-reportone .diaryuserentry tr > td:nth-child(1) {
+    width: 35px;
+}
+
+#page-mod-diary-report .diaryuserentry tr > td:nth-child(2),
+#page-mod-diary-reportsingle .diaryuserentry tr > td:nth-child(2),
+#page-mod-diary-reportone .diaryuserentry tr > td:nth-child(2) {
+    width: 100%;
+}
+
+#page-mod-diary-report .diaryuserentry tr > td:nth-child(3),
+#page-mod-diary-reportsingle .diaryuserentry tr > td:nth-child(3),
+#page-mod-diary-reportone .diaryuserentry tr > td:nth-child(3) {
+    width: 55px;
+}
+
+#page-mod-diary-report .diaryuserentry td .lastedit {
+    font-size: 0.7em;
+    margin-left: 10px;
+}
+
+#page-mod-diary-report .diaryuserentry td .needsedit {
+    font-size: 0.9em;
+    color: red;
+    margin-left: 10px;
+}
+
+/* Keep teacher feedback editor readable on mobile/dark themes in report views. */
+#page-mod-diary-report textarea[name^="c"],
+#page-mod-diary-report input[name^="c"],
+#page-mod-diary-reportsingle textarea[name^="c"],
+#page-mod-diary-reportsingle input[name^="c"],
+#page-mod-diary-reportone textarea[name^="c"],
+#page-mod-diary-reportone input[name^="c"] {
+    background-color: #fff;
+    color: #111;
+}
+
+.diary-entry-attachment-previews {
+    margin-top: 0.75rem;
+}
+
+.diary-entry-attachment-media-wrap {
+    margin-bottom: 0.75rem;
+}
+
+.diary-entry-attachment-media-name {
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+    word-break: break-word;
+}
+
+.diary-entry-attachment-media-wrap-video,
+.diary-entry-attachment-media-wrap-image {
+    max-width: 24rem;
+}
+
+.diary-entry-attachment-video {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    max-height: 300px;
+    height: auto;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.diary-entry-attachment-audio {
+    display: block;
+    width: 100%;
+    max-width: 24rem;
+}
+
+.diary-entry-attachment-image {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+}
+
+#page-mod-diary-view .entry .mediaplugin video,
+#page-mod-diary-view .entry video,
+#page-mod-diary-report .entry .mediaplugin video,
+#page-mod-diary-report .entry video,
+#page-mod-diary-reportsingle .entry .mediaplugin video,
+#page-mod-diary-reportsingle .entry video,
+#page-mod-diary-reportone .entry .mediaplugin video,
+#page-mod-diary-reportone .entry video {
+    width: auto;
+    max-width: 24rem;
+    max-height: 300px;
+    height: auto;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#page-mod-diary-view .entry .mediaplugin audio,
+#page-mod-diary-view .entry audio,
+#page-mod-diary-report .entry .mediaplugin audio,
+#page-mod-diary-report .entry audio,
+#page-mod-diary-reportsingle .entry .mediaplugin audio,
+#page-mod-diary-reportsingle .entry audio,
+#page-mod-diary-reportone .entry .mediaplugin audio,
+#page-mod-diary-reportone .entry audio {
+    width: 100%;
+    max-width: 24rem;
+}
+
+#page-mod-diary-view .entry .mediaplugin img,
+#page-mod-diary-view .entry img,
+#page-mod-diary-report .entry .mediaplugin img,
+#page-mod-diary-report .entry img,
+#page-mod-diary-reportsingle .entry .mediaplugin img,
+#page-mod-diary-reportsingle .entry img,
+#page-mod-diary-reportone .entry .mediaplugin img,
+#page-mod-diary-reportone .entry img {
+    max-width: 100%;
+    height: auto;
+}
+
+#page-mod-diary-report .mediaplugin {
+    width: 100%;
+}
+
+#lastedit {
+    font-size: 0.7em;
+    margin: 5px;
+    text-align: center;
+}
+
+.promptentry {
+    --diary-prompt-bg-default: transparent;
+    --diary-prompt-border: 0;
+    text-align: left;
+    font-size: 1em;
+    padding: 5px;
+    border: var(--diary-prompt-border);
+    border-radius: 16px;
+    background: var(--diary-prompt-bg, var(--diary-prompt-bg-default));
+}
+
+.entry {
+    --diary-entry-bg-default: transparent;
+    --diary-entry-border: 0;
+    text-align: left;
+    font-size: 1em;
+    padding: 5px;
+    border: var(--diary-entry-border);
+    border-radius: 16px;
+    background: var(--diary-entry-bg, var(--diary-entry-bg-default));
+}
+
+.diary-entry-themed {
+    background: var(--diary-entry-bg, var(--diary-entry-bg-default));
+}
+
+.diary-prompt-themed {
+    background: var(--diary-prompt-bg, var(--diary-prompt-bg-default));
+}
+
+.diary-prompt-picker-wrap {
+    margin-bottom: 1rem;
+}
+
+.diary-prompt-picker-heading {
+    margin-bottom: 0.35rem;
+}
+
+.diary-prompt-picker {
+    list-style: none;
+    margin: 0 0 1rem;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.diary-prompt-choice {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    position: relative;
+    max-width: 100%;
+    padding: 0.2rem 0.45rem;
+    border: 1px solid #c7d2e0;
+    border-radius: 999px;
+    background: #ffffff;
+    font-size: 0.72rem;
+    cursor: default;
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+/* Hover highlight only — no size change so flexbox layout stays stable */
+.diary-prompt-choice:hover {
+    border-color: #0a5aa0;
+    background: #d6eaff;
+    z-index: 10;
+}
+
+/* Full-text tooltip via ::after — absolutely positioned, no reflow */
+.diary-prompt-choice::after {
+    content: attr(data-pickertitle);
+    display: none;
+    position: absolute;
+    left: 0;
+    top: calc(100% + 0.3rem);
+    background: #eef4fb;
+    border: 1px solid #0f6cbf;
+    border-radius: 6px;
+    padding: 0.35rem 0.65rem;
+    white-space: normal;
+    min-width: 14rem;
+    max-width: 36rem;
+    z-index: 20;
+    font-size: 0.88rem;
+    line-height: 1.4;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+    pointer-events: none;
+}
+
+.diary-prompt-choice:hover::after {
+    display: block;
+}
+
+.diary-prompt-choice.is-current {
+    border-color: #0f6cbf;
+    background: #e9f4ff;
+}
+
+.diary-prompt-choice.is-completed {
+    border-color: #6c8a5b;
+    background: #eef7e9;
+}
+
+.diary-prompt-choice.is-unavailable {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.diary-prompt-choice-link,
+.diary-prompt-choice-text {
+    display: inline-block;
+    max-width: 20rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: inherit;
+}
+
+.diary-prompt-choice-link {
+    cursor: pointer;
+}
+
+.diary-prompt-choice-badge {
+    display: inline-block;
+    padding: 0.1rem 0.35rem;
+    border-radius: 999px;
+    background: rgba(15, 108, 191, 0.12);
+    font-size: 0.75em;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.diary-prompt-choice-badge.is-future {
+    background: rgba(180, 140, 0, 0.15);
+    color: #7a5c00;
+}
+
+.diary-prompt-choice-badge.is-closed {
+    background: rgba(150, 30, 30, 0.12);
+    color: #8a2020;
+}
+
+.diary-col-narrow {
+    width: 35px;
+}
+
+.diary-col-actions {
+    width: 55px;
+}
+
+.diary-stat-highlight {
+    background-color: var(--diary-stat-highlight-bg, #fff3a6);
+}
+
+.diary-stats-table .diary-stats-meta td {
+    white-space: normal;
+    font-weight: 400;
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+}
+
+.diary-stats-table .diary-stats-col {
+    width: 25%;
+}
+
+.diary-stats-table {
+    width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
+}
+
+.diary-stats-table td,
+.diary-stats-table th {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* View prompt indcators. */
+.arrow-n,
+.arrow-e,
+.arrow-s,
+.arrow-w {
+    border-style: dashed;
+    border-color: transparent;
+    border-width: 0.53em;
+    display: inline-block;
+    font-size: 100px;
+    height: 0;
+    line-height: 0;
+    position: relative;
+    vertical-align: middle;
+    left: 3px;
+    width: 0;
+}
+
+.arrow-n {
+    border-bottom-width: 0.7em;
+    border-bottom-style: solid;
+    border-bottom-color: #000;
+    bottom: 0.25em;
+}
+
+.arrow-s {
+    border-top-width: 0.7em;
+    border-top-style: solid;
+    border-top-color: #000;
+    top: 0.25em;
+}
+
+.arrow-e {
+    border-bottom-width: 0.7em;
+    border-bottom-style: solid;
+    border-bottom-color: #000;
+    bottom: 0.25em;
+}
+
+[id^="rating-anchor-"] {
+    scroll-margin-top: 300px;   /* Adjust: Using 300px so the teacher can see the possible rating part of statistics. */
+    display: block;
+}
+
+/* Or more specific if you want to target only Diary anchors */
+.anchor-offset {
+    scroll-margin-top: 300px;
+}
+
+/* 1. Force all cells in the feedback box to be transparent so the table color shows through */
+#page-mod-diary-view .feedbackbox td.left,
+#page-mod-diary-view .feedbackbox td.entryheader,
+#page-mod-diary-view .feedbackbox td.entrycontent,
+#page-mod-diary-view .feedbackbox td.side {
+    background-color: transparent;
+}
+
+/* 2. Optional: Ensure the table has no internal borders that might look white */
+#page-mod-diary-view .feedbackbox {
+    border-spacing: 0;
+    border-collapse: collapse;
+}
+
+/* Keep Diary stats/autorating tables transparent, but preserve warning/highlight rows. */
+#page-mod-diary-view .generaltable,
+#page-mod-diary-view .generaltable tr,
+#page-mod-diary-view .generaltable th,
+#page-mod-diary-view .generaltable td,
+#page-mod-diary-prompt-edit .generaltable,
+#page-mod-diary-prompt-edit .generaltable tr,
+#page-mod-diary-prompt-edit .generaltable th,
+#page-mod-diary-prompt-edit .generaltable td,
+#page-mod-diary-prompt_edit .generaltable,
+#page-mod-diary-prompt_edit .generaltable tr,
+#page-mod-diary-prompt_edit .generaltable th,
+#page-mod-diary-prompt_edit .generaltable td,
+#page-mod-diary-report .generaltable,
+#page-mod-diary-report .generaltable tr,
+#page-mod-diary-report .generaltable th,
+#page-mod-diary-report .generaltable td,
+#page-mod-diary-reportsingle .generaltable,
+#page-mod-diary-reportsingle .generaltable tr,
+#page-mod-diary-reportsingle .generaltable th,
+#page-mod-diary-reportsingle .generaltable td,
+#page-mod-diary-reportone .generaltable,
+#page-mod-diary-reportone .generaltable tr,
+#page-mod-diary-reportone .generaltable th,
+#page-mod-diary-reportone .generaltable td {
+    background-color: transparent;
+    --bs-table-bg: transparent;
+    --bs-table-accent-bg: transparent;
+}
+
+/* Preserve explicit highlight rows/cells used by autorating output. */
+#page-mod-diary-view .generaltable tr.table-primary > td,
+#page-mod-diary-report .generaltable tr.table-primary > td,
+#page-mod-diary-reportsingle .generaltable tr.table-primary > td,
+#page-mod-diary-reportone .generaltable tr.table-primary > td {
+    background-color: #cfe2ff;
+}
+
+#page-mod-diary-view .generaltable td.table-danger,
+#page-mod-diary-report .generaltable td.table-danger,
+#page-mod-diary-reportsingle .generaltable td.table-danger,
+#page-mod-diary-reportone .generaltable td.table-danger {
+    background-color: #f8d7da;
+}
+
+#page-mod-diary-view .generaltable td.table-success,
+#page-mod-diary-report .generaltable td.table-success,
+#page-mod-diary-reportsingle .generaltable td.table-success,
+#page-mod-diary-reportone .generaltable td.table-success {
+    background-color: #d1e7dd;
+}
+
+#page-mod-diary-view .generaltable tr.table-warning > td,
+#page-mod-diary-report .generaltable tr.table-warning > td,
+#page-mod-diary-reportsingle .generaltable tr.table-warning > td,
+#page-mod-diary-reportone .generaltable tr.table-warning > td,
+#page-mod-diary-view .generaltable td.table-warning,
+#page-mod-diary-report .generaltable td.table-warning,
+#page-mod-diary-reportsingle .generaltable td.table-warning,
+#page-mod-diary-reportone .generaltable td.table-warning {
+    background-color: #fff3cd;
+}
+
+/* Prompt autograde rules — visual parity with Essay target-phrase rows. */
+
+/* Rule list container */
+#page-mod-diary-prompt-edit .diary-targetphrases,
+#page-mod-diary-prompt_edit .diary-targetphrases {
+    margin-bottom: 1rem;
+}
+
+/* Each rule: two-column flex (label | body), row dividers instead of cards. */
+#page-mod-diary-prompt-edit .diary-targetphrase-rule,
+#page-mod-diary-prompt_edit .diary-targetphrase-rule {
+    display: flex;
+    gap: 0 1rem;
+    padding: 0.75rem 0;
+    border-top: 1px solid #dee2e6;
+}
+
+#page-mod-diary-prompt-edit .diary-targetphrase-rule:last-child,
+#page-mod-diary-prompt_edit .diary-targetphrase-rule:last-child {
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Left label column */
+#page-mod-diary-prompt-edit .diary-targetphrase-rule__label,
+#page-mod-diary-prompt_edit .diary-targetphrase-rule__label {
+    width: 10rem;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+#page-mod-diary-prompt-edit .diary-targetphrase-rule__title,
+#page-mod-diary-prompt_edit .diary-targetphrase-rule__title {
+    font-weight: 600;
+    display: block;
+}
+
+#page-mod-diary-prompt-edit .diary-targetphrase-rule__actions,
+#page-mod-diary-prompt_edit .diary-targetphrase-rule__actions {
+    font-size: 0.875rem;
+}
+
+/* Right body column */
+#page-mod-diary-prompt-edit .diary-targetphrase-rule__body,
+#page-mod-diary-prompt_edit .diary-targetphrase-rule__body {
+    flex: 1;
+    min-width: 0;
+}
+
+#page-mod-diary-prompt-edit .diary-targetphrase-rule__line,
+#page-mod-diary-prompt_edit .diary-targetphrase-rule__line {
+    margin-bottom: 0.3rem;
+}
+
+/* Behavior token row */
+#page-mod-diary-prompt-edit .diary-targetphrase-rule__behavior,
+#page-mod-diary-prompt_edit .diary-targetphrase-rule__behavior {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.2rem 0.4rem;
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+/* Muted dot separator between behavior tokens */
+#page-mod-diary-prompt-edit .diary-targetphrase-sep,
+#page-mod-diary-prompt_edit .diary-targetphrase-sep {
+    color: #adb5bd;
+    user-select: none;
+}
+
+/* Edit / add form panel */
+#page-mod-diary-prompt-edit .diary-targetphrase-editor,
+#page-mod-diary-prompt_edit .diary-targetphrase-editor {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 0.875rem 1rem;
+    margin-top: 0.75rem;
+}
+
+/* Phrase sentence row: "If [input] is used, award [N] % of the entry grade." */
+#page-mod-diary-prompt-edit .diary-targetphrase-editor__phraseline,
+#page-mod-diary-prompt_edit .diary-targetphrase-editor__phraseline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.6rem;
+}
+
+#page-mod-diary-prompt-edit .diary-targetphrase-editor__phrasetext,
+#page-mod-diary-prompt_edit .diary-targetphrase-editor__phrasetext {
+    width: 220px !important;
+    flex: 0 0 auto;
+}
+
+#page-mod-diary-prompt-edit .diary-targetphrase-editor__pctinput,
+#page-mod-diary-prompt_edit .diary-targetphrase-editor__pctinput {
+    width: 72px !important;
+    flex: 0 0 auto;
+}
+
+/* Behavior selects row: inline auto-width dropdowns */
+#page-mod-diary-prompt-edit .diary-targetphrase-editor__behaviorline,
+#page-mod-diary-prompt_edit .diary-targetphrase-editor__behaviorline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+    margin-bottom: 0.6rem;
+}
+
+#page-mod-diary-prompt-edit .diary-targetphrase-editor__behaviorline .form-select,
+#page-mod-diary-prompt_edit .diary-targetphrase-editor__behaviorline .form-select {
+    width: auto;
+    flex: 0 0 auto;
+}
+
+#page-mod-diary-prompt-edit .diary-targetphrase-editor__sortlabel,
+#page-mod-diary-prompt_edit .diary-targetphrase-editor__sortlabel {
+    font-size: 0.875rem;
+    color: #495057;
+    white-space: nowrap;
+}
+
+#page-mod-diary-prompt-edit .diary-targetphrase-editor__sortinput,
+#page-mod-diary-prompt_edit .diary-targetphrase-editor__sortinput {
+    width: 70px !important;
+    flex: 0 0 auto;
+}
+
+/* Submit button row */
+#page-mod-diary-prompt-edit .diary-targetphrase-editor__formactions,
+#page-mod-diary-prompt_edit .diary-targetphrase-editor__formactions {
+    margin-top: 0.5rem;
+}
+
+/* 20260401 Error behavior form group: keep three selectors on one line in all themes */
+#page-mod-diary-mod #id_errorbehavior {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#page-mod-diary-mod #id_errorbehavior .form-select {
+    width: auto;
+    flex: 0 0 auto;
+    min-width: 140px;
+}
+
+/* 20260402 Course topic summary: current prompt block appended below description. */
+.diary-course-topic-currentprompt {
+    margin-top: 0.5rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    line-height: 1.4;
+}
+
+.diary-course-topic-currentprompt strong {
+    margin-right: 0.25rem;
+}

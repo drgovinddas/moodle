@@ -1,0 +1,290 @@
+<?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * Define all the backup steps that will be used by the backup_diary_activity_task
+ *
+ * @package mod_diary
+ * @copyright 2020 AL Rachels <drachels@drachels.com>
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+defined('MOODLE_INTERNAL') || die(); // phpcs:ignore
+
+/**
+ * Define the complete diary structure for backup, with file and id annotations.
+ *
+ * @package mod_diary
+ * @copyright 2020 AL Rachels <drachels@drachels.com>
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class backup_diary_activity_structure_step extends backup_activity_structure_step {
+    /**
+     * Define the complete data structure for backup, with file and id annotations
+     *
+     * @return void
+     */
+    protected function define_structure() {
+        global $DB;
+
+         // To know if we are including userinfo.
+        $userinfo = $this->get_setting_value('userinfo');
+
+        // Define each element separated.
+        $diary = new backup_nested_element(
+            'diary',
+            [
+                'id',
+            ],
+            [
+                'name',
+                'intro',
+                'introformat',
+                'alwaysshowdescription',
+                'days',
+                'scale',
+                'assessed',
+                'assesstimestart',
+                'assesstimefinish',
+                'timemodified',
+                'timeopen',
+                'timeclose',
+                'editall',
+                'editdates',
+                'maxeditopens',
+                'deleteentry',
+                'entrybgc',
+                'entrytextbgc',
+                'enablestats',
+                'enabletitles',
+                'submissionemail',
+                'teacheremail',
+                'studentemail',
+                'mincharacterlimit',
+                'maxcharacterlimit',
+                'minmaxcharpercent',
+                'minwordlimit',
+                'maxwordlimit',
+                'minmaxwordpercent',
+                'minsentencelimit',
+                'maxsentencelimit',
+                'minmaxsentpercent',
+                'minparagraphlimit',
+                'maxparagraphlimit',
+                'minmaxparapercent',
+                'enableautorating',
+                'showtextstats',
+                'textstatitems',
+                'errorcmid',
+                'errorpercent',
+                'errorfullmatch',
+                'errorcasesensitive',
+                'errorignorebreaks',
+                'promptmode',
+                'requiredpromptcount',
+                'metricrequirements',
+            ]
+        );
+
+        $prompts = new backup_nested_element('prompts');
+        $prompt = new backup_nested_element(
+            'prompt',
+            [
+                'id',
+            ],
+            [
+                'diaryid',
+                'datestart',
+                'datestop',
+                'text',
+                'format',
+                'promptbgc',
+                'minchar',
+                'maxchar',
+                'minmaxcharpercent',
+                'minword',
+                'maxword',
+                'minmaxwordpercent',
+                'minsentence',
+                'maxsentence',
+                'minmaxsentencepercent',
+                'minparagraph',
+                'maxparagraph',
+                'minmaxparagraphpercent',
+                'maxeditopens',
+                'title',
+            ]
+        );
+
+        $autograderules = new backup_nested_element('autograde_rules');
+        $autograderule = new backup_nested_element(
+            'autograde_rule',
+            [
+                'id',
+            ],
+            [
+                'diaryid',
+                'promptid',
+                'phrase',
+                'matchtype',
+                'casesensitive',
+                'fullmatch',
+                'ignorebreaks',
+                'weightpercent',
+                'required',
+                'studentvisible',
+                'sortorder',
+                'timecreated',
+                'timemodified',
+                'usermodified',
+            ]
+        );
+
+        $entries = new backup_nested_element('entries');
+        $entry = new backup_nested_element(
+            'entry',
+            [
+                'id',
+            ],
+            [
+                'promptid',
+                'userid',
+                'timecreated',
+                'timemodified',
+                'editcount',
+                'title',
+                'entrynoticemailed',
+                'text',
+                'format',
+                'rating',
+                'entrycomment',
+                'teacher',
+                'timemarked',
+                'mailed',
+            ]
+        );
+
+        $tags = new backup_nested_element('entriestags');
+        $tag = new backup_nested_element(
+            'tag',
+            [
+                'id',
+            ],
+            [
+                'itemid',
+                'rawname',
+            ]
+        );
+
+        $ratings = new backup_nested_element('ratings');
+        $rating = new backup_nested_element(
+            'rating',
+            [
+                'id',
+            ],
+            [
+                'component',
+                'ratingarea',
+                'scaleid',
+                'value',
+                'userid',
+                'timecreated',
+                'timemodified',
+            ]
+        );
+
+        // Build the tree.
+        $diary->add_child($prompts);
+        $prompts->add_child($prompt);
+        $prompt->add_child($autograderules);
+        $autograderules->add_child($autograderule);
+
+        $diary->add_child($entries);
+        $entries->add_child($entry);
+
+        $entry->add_child($ratings);
+        $ratings->add_child($rating);
+
+        $diary->add_child($tags);
+        $tags->add_child($tag);
+
+        // Define sources.
+        $metricrequirementskey = $DB->sql_concat("'metricrequirements_'", 'd.id');
+        $diary->set_source_sql(
+            'SELECT d.*, cp.value AS metricrequirements
+               FROM {diary} d
+          LEFT JOIN {config_plugins} cp
+                 ON cp.plugin = ?
+                AND cp.name = ' . $metricrequirementskey . '
+              WHERE d.id = ?',
+            [
+                backup_helper::is_sqlparam('mod_diary'),
+                backup::VAR_ACTIVITYID,
+            ]
+        );
+        $prompt->set_source_table('diary_prompts', ['diaryid' => backup::VAR_PARENTID]);
+        $autograderule->set_source_table('diary_prompt_autograde_rules', ['promptid' => backup::VAR_PARENTID]);
+
+        // All the rest of elements only happen if we are including user info.
+        if ($this->get_setting_value('userinfo')) {
+            $entry->set_source_table('diary_entries', ['diary' => backup::VAR_PARENTID]);
+
+            $rating->set_source_table('rating', ['contextid' => backup::VAR_CONTEXTID,
+                                                    'itemid' => backup::VAR_PARENTID,
+                                                    'component' => backup_helper::is_sqlparam('mod_diary'),
+                                                    'ratingarea' => backup_helper::is_sqlparam('entry'),
+                                                ]);
+
+            $rating->set_source_alias('rating', 'value');
+
+            if (core_tag_tag::is_enabled('mod_diary', 'diary_entries')) {
+                $tag->set_source_sql(
+                    'SELECT t.id, ti.itemid, t.rawname
+                                        FROM {tag} t
+                                        JOIN {tag_instance} ti
+                                          ON ti.tagid = t.id
+                                       WHERE ti.itemtype = ?
+                                         AND ti.component = ?
+                                         AND ti.contextid = ?',
+                    [
+                        backup_helper::is_sqlparam('diary_entries'),
+                        backup_helper::is_sqlparam('mod_diary'),
+                        backup::VAR_CONTEXTID,
+                    ]
+                );
+            }
+        }
+
+        // Define id annotations.
+        $diary->annotate_ids('scale', 'scale');
+        $entry->annotate_ids('user', 'userid');
+        $entry->annotate_ids('user', 'teacher'); // Not sure if this is needed.
+        $entry->annotate_ids('promptid', 'promptid');
+        $prompt->annotate_ids('diaryid', 'diaryid');
+        $autograderule->annotate_ids('diaryid', 'diaryid');
+        $autograderule->annotate_ids('promptid', 'promptid');
+        $autograderule->annotate_ids('user', 'usermodified');
+        $rating->annotate_ids('scale', 'scaleid');
+        $rating->annotate_ids('user', 'userid');
+
+        // Define file annotations.
+        $diary->annotate_files('mod_diary', 'intro', null); // This file areas haven't itemid.
+        $prompt->annotate_files('mod_diary', 'prompt', 'id');
+        $entry->annotate_files('mod_diary', 'entry', 'id');
+
+        return $this->prepare_activity_structure($diary);
+    }
+}
