@@ -35,6 +35,8 @@ $string['collegelongname_help'] = 'The full formal/official name of the college.
 $string['customcollegename'] = 'Custom College Name';
 $string['customcollegename_help'] = 'Enter the full name of your college if not listed above.';
 $string['othercollege'] = 'Other (enter manually)';
+$string['degrees'] = 'Offered Degrees';
+$string['degrees_help'] = 'Enter comma-separated degrees offered by this college (e.g. MBBS, BDS, BHMS, BPT). Leave blank to allow all degrees.';
 
 // Degree fields.
 $string['degree'] = 'Degree';

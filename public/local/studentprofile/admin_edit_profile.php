@@ -23,13 +23,22 @@ $PAGE->set_pagelayout('admin');
 $PAGE->set_title(get_string('editprofile', 'local_studentprofile'));
 $PAGE->set_heading(get_string('editprofile', 'local_studentprofile'));
 
-// Build degree type map for JS filter.
+// Build degree type map and college degree map for JS filter.
 $degrees = $DB->get_records('local_studentprofile_degrees', null, '', 'degreename, degreetype');
 $degree_map = [];
 foreach ($degrees as $d) {
     $degree_map[$d->degreename] = $d->degreetype;
 }
-$PAGE->requires->js_call_amd('local_studentprofile/degree_filter', 'init', [$degree_map]);
+
+$colleges = $DB->get_records('local_studentprofile_colleges', null, '', 'id, degrees');
+$college_map = [];
+foreach ($colleges as $c) {
+    if (!empty($c->degrees)) {
+        $college_map[$c->id] = array_map('trim', explode(',', $c->degrees));
+    }
+}
+
+$PAGE->requires->js_call_amd('local_studentprofile/degree_filter', 'init', [$degree_map, $college_map]);
 
 // Load the form
 $form = new \local_studentprofile\form\profile_completion_form($url);
@@ -97,10 +106,12 @@ if ($form->is_cancelled()) {
                 $counter++;
             }
             
+            $degree = clean_param($data->degree ?? '', PARAM_TEXT);
             $newcollege = new \stdClass();
             $newcollege->shortname = $shortname;
             $newcollege->collegename = $collegename;
             $newcollege->longname = '';
+            $newcollege->degrees = $degree;
             $newcollege->sortorder = 0;
             $newcollege->timecreated = $now;
             $newcollege->timemodified = $now;

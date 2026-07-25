@@ -38,6 +38,23 @@ class college_form extends \moodleform {
         $mform->addHelpButton('collegename', 'collegename', 'local_studentprofile');
 
 
+        // Degrees multi-select autocomplete based on local_studentprofile_degrees table.
+        global $DB;
+        $dbdegrees = $DB->get_records('local_studentprofile_degrees', null, 'sortorder ASC, degreename ASC');
+        $degreeoptions = [];
+        foreach ($dbdegrees as $d) {
+            $degreeoptions[$d->degreename] = $d->degreename;
+        }
+
+        $mform->addElement(
+            'autocomplete',
+            'degrees',
+            get_string('degrees', 'local_studentprofile'),
+            $degreeoptions,
+            ['multiple' => true, 'placeholder' => get_string('all')]
+        );
+        $mform->addHelpButton('degrees', 'degrees', 'local_studentprofile');
+
         // Sort Order.
         $mform->addElement('text', 'sortorder', get_string('sortorder', 'local_studentprofile'), ['size' => 5]);
         $mform->setType('sortorder', PARAM_INT);

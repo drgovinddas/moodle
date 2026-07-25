@@ -1,0 +1,403 @@
+{
+    "meta": {
+        "state": "Gujarat",
+        "data_scope": "Colleges currently NMC-approved and offering MBBS for the 2026-27 admission cycle",
+        "note_on_2026_approvals": "No individual Gujarat college could be confirmed as a brand-new 2026 NMC approval. The most recently established colleges found were ESIC Medical College Naroda and Matushri Prabhaben Khodabhai Boghara Medical College Amreli, both established 2025. NMC's live college search tool and official seat-matrix PDF could not be scraped directly (JS-rendered page / robots.txt block), so this list is built from cross-checked secondary sources, not fetched directly from nmc.org.in.",
+        "degree_data_caveat": "MBBS is confirmed for every entry below. Postgraduate (MD/MS/PG Diploma) offerings were NOT individually verified per college in this session and are marked 'unverified' rather than guessed. Confirm PG courses via NMC's College and Course Search tool before relying on them.",
+        "total_colleges": 43,
+        "government_colleges": 24,
+        "private_colleges": 19,
+        "last_checked": "2026-07-25"
+    },
+    "government_colleges": [
+        {
+            "name": "AIIMS, Rajkot",
+            "short_code": "AIIMS-RJT",
+            "established": 2019,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "B.J. Medical College, Ahmedabad",
+            "short_code": "BJMC-AHD",
+            "established": 1946,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "ESIC Medical College, Naroda, Ahmedabad",
+            "short_code": "ESIC-NRD",
+            "established": 2025,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Government Medical College, Bhavnagar",
+            "short_code": "GMC-BHV",
+            "established": 1995,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Government Medical College, Surat",
+            "short_code": "GMC-SRT",
+            "established": 1964,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Medical College, Baroda",
+            "short_code": "MCB-VDR",
+            "established": 1949,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "M.P. Shah Medical College, Jamnagar",
+            "short_code": "MPSMC-JMN",
+            "established": 1955,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Narendra Modi Medical College, Ahmedabad",
+            "short_code": "NMMC-AHD",
+            "established": 2009,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Pandit Deendayal Upadhyay Medical College, Rajkot",
+            "short_code": "PDUMC-RJT",
+            "established": 1995,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "GMERS Medical College, Sola, Ahmedabad",
+            "short_code": "GMERS-SOL",
+            "established": 2011,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "GMERS Medical College, Gotri, Vadodara",
+            "short_code": "GMERS-GTR",
+            "established": 2011,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "GMERS Medical College, Gandhinagar",
+            "short_code": "GMERS-GNR",
+            "established": 2012,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "GMERS Medical College, Dharpur, Patan",
+            "short_code": "GMERS-PTN",
+            "established": 2012,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "GMERS Medical College, Valsad",
+            "short_code": "GMERS-VLS",
+            "established": 2012,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "GMERS Medical College, Himmatnagar",
+            "short_code": "GMERS-HMT",
+            "established": 2015,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "GMERS Medical College, Junagadh",
+            "short_code": "GMERS-JNG",
+            "established": 2015,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "GMERS Medical College, Vadnagar, Mehsana",
+            "short_code": "GMERS-VDN",
+            "established": 2017,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "GMERS Medical College, Morbi",
+            "short_code": "GMERS-MRB",
+            "established": 2022,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "GMERS Medical College, Godhra",
+            "short_code": "GMERS-GDH",
+            "established": 2022,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "GMERS Medical College, Porbandar",
+            "short_code": "GMERS-PBD",
+            "established": 2022,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "GMERS Medical College, Navsari",
+            "short_code": "GMERS-NAV",
+            "established": 2022,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "GMERS Medical College, Rajpipla",
+            "short_code": "GMERS-RJP",
+            "established": 2022,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Smt. NHL Municipal Medical College, Ahmedabad",
+            "short_code": "NHLMC-AHD",
+            "established": 1963,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "SMIMER, Surat",
+            "short_code": "SMIMER-SRT",
+            "established": 1999,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        }
+    ],
+    "private_colleges": [
+        {
+            "name": "Ananya College of Medicine & Research",
+            "short_code": "ACMR",
+            "established": 2023,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Banas Medical College, Palanpur",
+            "short_code": "BANAS-MC",
+            "established": 2018,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Bhagyoday Medical College",
+            "short_code": "BHAGYODAY-MC",
+            "established": 2024,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "C.U. Shah Medical College, Surendranagar",
+            "short_code": "CUSHAH-MC",
+            "established": 2000,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Dr. Kiran C. Patel Medical College",
+            "short_code": "KCP-MC",
+            "established": 2020,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Dr. M.K. Shah Medical College, Ahmedabad",
+            "short_code": "MKSHAH-MC",
+            "established": 2017,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Dr. N.D. Desai Faculty of Medical Science, Nadiad",
+            "short_code": "NDDESAI-MC",
+            "established": 2019,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "GCS Medical College, Ahmedabad",
+            "short_code": "GCS-MC",
+            "established": 2011,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Gujarat Adani Institute of Medical Sciences, Bhuj",
+            "short_code": "GAIMS-BHUJ",
+            "established": 2009,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Kiran Medical College, Surat",
+            "short_code": "KIRAN-MC-SRT",
+            "established": 2023,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Matushri Prabhaben Khodabhai Boghara Medical College, Atkot",
+            "short_code": "MPKB-ATK",
+            "established": 2025,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Nootan Medical College, Mehsana",
+            "short_code": "NOOTAN-MC",
+            "established": 2019,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Parul Institute of Medical Sciences, Vadodara",
+            "short_code": "PIMS-VDR",
+            "established": 2016,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Pramukhswami Medical College, Karamsad",
+            "short_code": "PSMC-KRD",
+            "established": 1987,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "SAL Institute of Medical Sciences, Ahmedabad",
+            "short_code": "SAL-MC",
+            "established": 2023,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "SBKS Medical Institute, Vadodara",
+            "short_code": "SBKS-MC",
+            "established": 2002,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Shantabaa Medical College, Amreli",
+            "short_code": "SHANTABAA-MC",
+            "established": 2019,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Swaminarayan Institute of Medical Sciences",
+            "short_code": "SIMS",
+            "established": 2023,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        },
+        {
+            "name": "Zydus Medical College & Hospital, Dahod",
+            "short_code": "ZMCH-DHD",
+            "established": 2018,
+            "degrees": {
+                "mbbs": true,
+                "pg": "unverified"
+            }
+        }
+    ]
+}

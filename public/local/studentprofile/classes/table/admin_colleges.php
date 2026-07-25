@@ -29,6 +29,7 @@ class admin_colleges extends \table_sql {
         $this->define_columns([
             'shortname',
             'collegename',
+            'degrees',
             'sortorder',
             'actions'
         ]);
@@ -36,12 +37,13 @@ class admin_colleges extends \table_sql {
         $this->define_headers([
             get_string('collegeshortname', 'local_studentprofile'),
             get_string('collegename', 'local_studentprofile'),
+            get_string('degrees', 'local_studentprofile'),
             get_string('sortorder', 'local_studentprofile'),
             get_string('edit') . ' / ' . get_string('delete')
         ]);
         
         $this->no_sorting('actions');
-        $this->sortable(true, 'sortorder');
+        $this->sortable(true, 'timecreated', SORT_DESC);
         $this->set_attribute('class', 'admintable generaltable');
     }
     
@@ -69,7 +71,11 @@ class admin_colleges extends \table_sql {
      * @return string
      */
     public function col_shortname($row) {
-        return s($row->shortname);
+        $short = s($row->shortname);
+        if ($row->sortorder == 0) {
+            return '<span class="badge bg-warning text-dark me-1" title="User added custom college">Custom</span> ' . $short;
+        }
+        return $short;
     }
     
     /**
@@ -78,7 +84,20 @@ class admin_colleges extends \table_sql {
      * @return string
      */
     public function col_collegename($row) {
-        return s($row->collegename);
+        $name = s($row->collegename);
+        if ($row->sortorder == 0) {
+            return '<strong class="text-primary">' . $name . '</strong>';
+        }
+        return $name;
+    }
+    
+    /**
+     * Format the degrees column.
+     * @param \stdClass $row
+     * @return string
+     */
+    public function col_degrees($row) {
+        return !empty($row->degrees) ? s($row->degrees) : '<em>' . s(get_string('all')) . '</em>';
     }
     
     /**

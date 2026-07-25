@@ -10,6 +10,7 @@
         <FIELD NAME="shortname" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="Short abbreviation e.g. MIT"/>
         <FIELD NAME="collegename" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Display/full college name"/>
         <FIELD NAME="longname" TYPE="char" LENGTH="500" NOTNULL="false" SEQUENCE="false" COMMENT="Extended/formal college name"/>
+        <FIELD NAME="degrees" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Comma-separated degree names e.g. MBBS, BDS, BHMS, BPT"/>
         <FIELD NAME="sortorder" TYPE="int" LENGTH="5" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
@@ -57,6 +58,7 @@
         <FIELD NAME="draft" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = draft/pending, 0 = completed"/>
         <FIELD NAME="draftdata" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON of pending form values"/>
         <FIELD NAME="rollno" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="Student roll number"/>
+        <FIELD NAME="mobileno" TYPE="char" LENGTH="20" NOTNULL="false" SEQUENCE="false" COMMENT="Student mobile number"/>
         <FIELD NAME="rollnotype" TYPE="char" LENGTH="20" NOTNULL="false" DEFAULT="permanent" SEQUENCE="false" COMMENT="temporary or permanent"/>
         <FIELD NAME="rollnostatus" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0=Pending, 1=Approved, 2=Disapproved"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>

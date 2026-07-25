@@ -31,13 +31,22 @@ $PAGE->requires->js_call_amd('local_studentprofile/profile_autosave', 'init', [
     ['formid' => 'mform1', 'interval' => 30000]
 ]);
 
-// Build degree type map for JS filter.
+// Build degree type map and college degree map for JS filter.
 $degrees = $DB->get_records('local_studentprofile_degrees', null, '', 'degreename, degreetype');
 $degree_map = [];
 foreach ($degrees as $d) {
     $degree_map[$d->degreename] = $d->degreetype;
 }
-$PAGE->requires->js_call_amd('local_studentprofile/degree_filter', 'init', [$degree_map]);
+
+$colleges = $DB->get_records('local_studentprofile_colleges', null, '', 'id, degrees');
+$college_map = [];
+foreach ($colleges as $c) {
+    if (!empty($c->degrees)) {
+        $college_map[$c->id] = array_map('trim', explode(',', $c->degrees));
+    }
+}
+
+$PAGE->requires->js_call_amd('local_studentprofile/degree_filter', 'init', [$degree_map, $college_map]);
 
 $form = new \local_studentprofile\form\profile_completion_form();
 
@@ -50,6 +59,9 @@ if ($existing && !empty($existing->draftdata) && $existing->draft == 1) {
         foreach ($draftdata as $k => $v) {
             $formdata->$k = $v;
         }
+        if (empty($formdata->phone2)) {
+            $formdata->phone2 = $USER->phone2 ?? '';
+        }
         $form->set_data($formdata);
     }
 } elseif ($existing && $existing->draft == 0) {
@@ -58,6 +70,7 @@ if ($existing && !empty($existing->draftdata) && $existing->draft == 1) {
     $formdata->firstname         = $existing->firstname ?? '';
     $formdata->middlename        = $existing->middlename ?? '';
     $formdata->lastname          = $existing->lastname ?? '';
+    $formdata->phone2            = $USER->phone2 ?? '';
     $formdata->admissionyear     = $existing->admissionyear ?? '';
     $formdata->degree            = $existing->degree ?? '';
     $formdata->degreetype        = $existing->degreetype ?? '';
@@ -116,11 +129,13 @@ if ($form->is_cancelled()) {
                 $counter++;
             }
             
-            // 4. Insert into master table.
+            // 4. Insert into master table with degree attached.
+            $degree = clean_param($data->degree ?? '', PARAM_TEXT);
             $newcollege = new \stdClass();
             $newcollege->shortname = $shortname;
             $newcollege->collegename = $collegename;
             $newcollege->longname = '';
+            $newcollege->degrees = $degree;
             $newcollege->sortorder = 0;
             $newcollege->timecreated = $now;
             $newcollege->timemodified = $now;
@@ -184,6 +199,7 @@ if ($form->is_cancelled()) {
     $record->degree        = $degree;
     $record->degreetype    = $degreetype;
     $record->rollno        = $rollno;
+    $record->mobileno      = clean_param(trim($data->phone2 ?? ''), PARAM_NOTAGS);
     $record->rollnostatus  = $rollnostatus;
     $record->draft         = 0;   // Mark as complete.
     $record->draftdata     = null; // Clear draft.
@@ -197,11 +213,12 @@ if ($form->is_cancelled()) {
         $DB->insert_record('local_studentprofile_data', $record);
     }
 
-    // Sync Moodle user's firstname/lastname.
+    // Sync Moodle user's firstname/lastname and phone2.
     $userupdate = new stdClass();
     $userupdate->id        = $USER->id;
     $userupdate->firstname = $firstname;
     $userupdate->lastname  = $lastname;
+    $userupdate->phone2    = clean_param(trim($data->phone2 ?? ''), PARAM_NOTAGS);
     $DB->update_record('user', $userupdate);
 
     // Clear session flag.
