@@ -236,8 +236,6 @@ class user_edit_form extends moodleform {
             }
         }
 
-        $errors += useredit_validate_description_length((array)$usernew);
-
         // Next the customisable profile fields.
         $errors += profile_validation($usernew, $files);
 

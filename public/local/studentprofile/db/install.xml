@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/studentprofile/db" VERSION="20260606" COMMENT="XMLDB file for Moodle local_studentprofile"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="local_studentprofile_colleges" COMMENT="Managed list of colleges with short, full, and long names.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="shortname" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="Short abbreviation e.g. MIT"/>
+        <FIELD NAME="collegename" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Display/full college name"/>
+        <FIELD NAME="longname" TYPE="char" LENGTH="500" NOTNULL="false" SEQUENCE="false" COMMENT="Extended/formal college name"/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="5" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="shortname" UNIQUE="true" FIELDS="shortname"/>
+        <INDEX NAME="sortorder" UNIQUE="false" FIELDS="sortorder"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_studentprofile_degrees" COMMENT="Managed list of degrees with UG/PG classification.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="degreename" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Degree name e.g. B.Sc., M.Tech"/>
+        <FIELD NAME="degreetype" TYPE="char" LENGTH="2" NOTNULL="true" DEFAULT="UG" SEQUENCE="false" COMMENT="UG or PG"/>
+        <FIELD NAME="sortorder" TYPE="int" LENGTH="5" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="degreetype" UNIQUE="false" FIELDS="degreetype"/>
+        <INDEX NAME="sortorder" UNIQUE="false" FIELDS="sortorder"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_studentprofile_data" COMMENT="Stores the completed student profile fields.">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Foreign key to user table"/>
+        <FIELD NAME="firstname" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="middlename" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="lastname" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="collegeid" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="FK to local_studentprofile_colleges; 0 = custom"/>
+        <FIELD NAME="collegename" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Stored name (from list or custom)"/>
+        <FIELD NAME="fullname" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Composed first+middle+last name"/>
+        <FIELD NAME="shortname" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false" COMMENT="College short name"/>
+        <FIELD NAME="longname" TYPE="char" LENGTH="500" NOTNULL="false" SEQUENCE="false" COMMENT="College long name"/>
+        <FIELD NAME="admissionyear" TYPE="int" LENGTH="4" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="degree" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="degreetype" TYPE="char" LENGTH="2" NOTNULL="false" DEFAULT="UG" SEQUENCE="false" COMMENT="UG or PG"/>
+        <FIELD NAME="draft" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1 = draft/pending, 0 = completed"/>
+        <FIELD NAME="draftdata" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON of pending form values"/>
+        <FIELD NAME="rollno" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="Student roll number"/>
+        <FIELD NAME="rollnotype" TYPE="char" LENGTH="20" NOTNULL="false" DEFAULT="permanent" SEQUENCE="false" COMMENT="temporary or permanent"/>
+        <FIELD NAME="rollnostatus" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0=Pending, 1=Approved, 2=Disapproved"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="userid" TYPE="foreign" FIELDS="userid" REFTABLE="user" REFFIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="collegename" UNIQUE="false" FIELDS="collegename"/>
+        <INDEX NAME="admissionyear" UNIQUE="false" FIELDS="admissionyear"/>
+        <INDEX NAME="degree" UNIQUE="false" FIELDS="degree"/>
+        <INDEX NAME="degreetype" UNIQUE="false" FIELDS="degreetype"/>
+        <INDEX NAME="draft" UNIQUE="false" FIELDS="draft"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_studentprofile_rules" COMMENT="Course assignment rules engine">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="rulename" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="status" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1=Active, 0=Inactive"/>
+        <FIELD NAME="priority" TYPE="int" LENGTH="5" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="stopprocessing" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="conditions" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON encoded conditions"/>
+        <FIELD NAME="courses" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON array of course IDs"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="status_priority" UNIQUE="false" FIELDS="status, priority"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>
