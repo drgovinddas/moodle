@@ -1,0 +1,198 @@
+/**
+ * Styles for local_studentprofile plugin.
+ *
+ * Fixes form label column width so headings like "First Name",
+ * "College Name", "Admission Year" do not word-wrap.
+ *
+ * @package    local_studentprofile
+ * @copyright  2024
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+/* ======================================================
+   Profile completion form — label column fix
+   ====================================================== */
+
+/* Moodle wraps each form row in a .fitem div.
+   The label cell is .fitemtitle and input cell is .felement. */
+
+.path-local-studentprofile .mform .fitem {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+    margin-bottom: 1.1rem;
+}
+
+/* Label column: give it a fixed minimum width so it never wraps */
+.path-local-studentprofile .mform .fitem .fitemtitle,
+.path-local-studentprofile .mform .fitem > .col-md-3 {
+    min-width: 160px;
+    max-width: 180px;
+    width: 160px;
+    white-space: nowrap;          /* prevent label from wrapping */
+    overflow: visible;
+    font-weight: 500;
+    color: #3d3d3d;
+    padding-top: 0.45rem;
+    flex-shrink: 0;
+}
+
+/* Input/control column: takes remaining space */
+.path-local-studentprofile .mform .fitem .felement,
+.path-local-studentprofile .mform .fitem > .col-md-9 {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* Required asterisk / error icon — keep inline */
+.path-local-studentprofile .mform .fitem .fitemtitle .req,
+.path-local-studentprofile .mform .fitem .fitemtitle .icon {
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* ======================================================
+   Page & section headings
+   ====================================================== */
+
+/* Main "Complete Profile" h1/heading */
+.path-local-studentprofile #page-header h1,
+.path-local-studentprofile .page-header-headings h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    letter-spacing: -0.3px;
+    margin-bottom: 0.25rem;
+}
+
+/* Form section header (collapsible panel title) */
+.path-local-studentprofile .mform .fheader,
+.path-local-studentprofile .mform legend,
+.path-local-studentprofile .mform .card-header {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    background: transparent;
+    border-bottom: 2px solid #e8eaf0;
+    padding-bottom: 0.4rem;
+    margin-bottom: 1rem;
+}
+
+/* Admin page table headings */
+.path-local-studentprofile .admintable th {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: #555;
+    background: #f5f6fa;
+    padding: 0.6rem 0.9rem;
+    border-bottom: 2px solid #dee2e6;
+    white-space: nowrap;
+}
+
+/* Admin page h3 above add/edit form */
+.path-local-studentprofile h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1a1a2e;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* ======================================================
+   Form inputs — consistent sizing & style
+   ====================================================== */
+
+.path-local-studentprofile .mform input[type="text"],
+.path-local-studentprofile .mform select {
+    border: 1px solid #c8cdd5;
+    border-radius: 6px;
+    padding: 0.42rem 0.75rem;
+    font-size: 0.95rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+    max-width: 420px;
+}
+
+.path-local-studentprofile .mform input[type="text"]:focus,
+.path-local-studentprofile .mform select:focus {
+    border-color: #4a7abb;
+    box-shadow: 0 0 0 3px rgba(74, 122, 187, 0.15);
+    outline: none;
+}
+
+/* ======================================================
+   Auto-save "Draft saved" indicator (injected by AMD)
+   — override with theme-safe fallback for older themes
+   ====================================================== */
+
+#sp-draft-saved-indicator {
+    font-family: inherit;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* ======================================================
+   Participants filter bar headings
+   ====================================================== */
+
+.path-local-studentprofile .userlist .filter-bar legend,
+.path-local-studentprofile .userlist h4 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.4rem;
+}
+
+/* ======================================================
+   Responsive: on small screens allow label to wrap
+   ====================================================== */
+
+@media (max-width: 576px) {
+    .path-local-studentprofile .mform .fitem {
+        flex-wrap: wrap;
+    }
+    .path-local-studentprofile .mform .fitem .fitemtitle,
+    .path-local-studentprofile .mform .fitem > .col-md-3 {
+        min-width: 100%;
+        white-space: normal;
+    }
+}
+
+/* ======================================================
+   Participants table — email column hidden (belt & braces)
+   PHP already removes it; CSS hides it if AJAX re-injects it.
+   ====================================================== */
+
+.path-local-studentprofile [data-region="participants-table"] th.email,
+.path-local-studentprofile [data-region="participants-table"] td.email,
+.path-local-studentprofile table.userlist th.email,
+.path-local-studentprofile table.userlist td.email {
+    display: none !important;
+}
+
+/* ======================================================
+   Participants table — student identifier name style
+   Format: {shortname}{year2}-{firstname}   e.g.  hns24-Ravi
+   ====================================================== */
+
+.path-local-studentprofile a.sp-student-name {
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: #1a73e8;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.path-local-studentprofile a.sp-student-name:hover {
+    text-decoration: underline;
+    color: #0d5bd1;
+}
+
+.path-local-studentprofile table.userlist td.fullname {
+    vertical-align: middle;
+}
