@@ -30,4 +30,4 @@ $plugin->maturity = MATURITY_STABLE;
 $plugin->version = 2026070302;
 $plugin->requires = 2022041900;
 $plugin->component = 'local_commander';
-$plugin->supported = [401, 502];
+$plugin->supported = [401, 501];

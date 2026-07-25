@@ -31,4 +31,4 @@ $plugin->cron      = 60; // Period for cron to check this module (secs).
 $plugin->component = 'mod_diary';
 $plugin->maturity  = MATURITY_STABLE;
 $plugin->release   = '5.1.2 (Build: 2026071109)'; // User-friendly version number.
-$plugin->supported = [405, 502];
+$plugin->supported = [405, 501];

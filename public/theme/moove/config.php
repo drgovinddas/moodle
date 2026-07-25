@@ -43,9 +43,20 @@ $THEME->layouts = [
     ],
     'frontpage' => [
         'file' => 'frontpage.php',
-        'regions' => ['side-pre'],
+        'regions' => ['side-pre', 'content'],
         'defaultregion' => 'side-pre',
         'options' => ['nonavbar' => true],
+    ],
+    'course' => [
+        'file' => 'drawers.php',
+        'regions' => ['side-pre', 'content'],
+        'defaultregion' => 'side-pre',
+        'options' => ['langmenu' => true],
+    ],
+    'login' => [
+        'file' => 'login.php',
+        'regions' => [],
+        'options' => ['langmenu' => true],
     ],
 ];
 
