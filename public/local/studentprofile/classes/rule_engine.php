@@ -79,7 +79,30 @@ class rule_engine {
         $expected = $rule['value'] ?? null;
 
         // Extract actual value from student data.
-        $actual = property_exists($data, $field) ? $data->$field : null;
+        if ($field === 'reporting_week') {
+            $timestamp = !empty($data->timecreated) ? (int)$data->timecreated : 0;
+            if ($timestamp <= 0) {
+                return false;
+            }
+            $month = strtolower(date('M', $timestamp)); // e.g. jan, feb, mar
+            $year  = date('Y', $timestamp);             // e.g. 2026
+            $day   = (int)date('j', $timestamp);
+            
+            // Calculate week of month (1, 2, 3, or 4)
+            if ($day <= 7) {
+                $week = 1;
+            } else if ($day <= 14) {
+                $week = 2;
+            } else if ($day <= 21) {
+                $week = 3;
+            } else {
+                $week = 4;
+            }
+            
+            $actual = $month . ' ' . $year . ' ' . $week . ' week';
+        } else {
+            $actual = property_exists($data, $field) ? $data->$field : null;
+        }
 
         if ($actual === null) {
             return false;

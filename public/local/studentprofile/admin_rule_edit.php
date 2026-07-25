@@ -82,6 +82,48 @@ foreach ($degrees as $d) {
     $degree_opts[$d->degreename] = $d->degreename;
 }
 
+// Build reporting week options from oldest profile timecreated to current/newest profile timecreated.
+$min_time = $DB->get_field_sql("SELECT MIN(timecreated) FROM {local_studentprofile_data} WHERE timecreated > 0");
+$max_time = $DB->get_field_sql("SELECT MAX(timecreated) FROM {local_studentprofile_data} WHERE timecreated > 0");
+
+if (!$min_time) {
+    $min_time = strtotime('-1 month');
+}
+if (!$max_time) {
+    $max_time = time();
+}
+if ($max_time < time()) {
+    $max_time = time();
+}
+
+$reporting_week_opts = [];
+// Iterate month by month from min_time to max_time
+$start_yr = (int)date('Y', $min_time);
+$start_mo = (int)date('n', $min_time);
+$end_yr   = (int)date('Y', $max_time);
+$end_mo   = (int)date('n', $max_time);
+
+$curr_yr = $start_yr;
+$curr_mo = $start_mo;
+
+while ($curr_yr < $end_yr || ($curr_yr == $end_yr && $curr_mo <= $end_mo)) {
+    $dateObj = DateTime::createFromFormat('!n-Y', $curr_mo . '-' . $curr_yr);
+    $monthCode = strtolower($dateObj->format('M')); // jan, feb, etc.
+    $monthTitle = $dateObj->format('M');           // Jan, Feb, etc.
+    
+    for ($w = 1; $w <= 4; $w++) {
+        $key   = $monthCode . ' ' . $curr_yr . ' ' . $w . ' week';
+        $label = $monthTitle . ' ' . $curr_yr . ' - Week ' . $w;
+        $reporting_week_opts[$key] = $label;
+    }
+    
+    $curr_mo++;
+    if ($curr_mo > 12) {
+        $curr_mo = 1;
+        $curr_yr++;
+    }
+}
+
 // Prepare configuration for JS.
 $builder_config = [
     'existing_conditions' => $id ? $rule->conditions : null,
@@ -133,6 +175,15 @@ $builder_config = [
             'label' => 'Last Name',
             'type' => 'string',
             'operators' => ['equal', 'not_equal', 'contains', 'starts_with', 'ends_with']
+        ],
+        [
+            'id' => 'reporting_week',
+            'label' => 'Reporting Week (Profile Created At)',
+            'type' => 'string',
+            'input' => 'select',
+            'values' => $reporting_week_opts,
+            'multiple' => true,
+            'operators' => ['in', 'not_in', 'equal', 'not_equal']
         ],
     ]
 ];

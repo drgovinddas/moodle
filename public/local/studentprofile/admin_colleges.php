@@ -157,6 +157,11 @@ $form = new \local_studentprofile\form\college_form();
 
 if ($action === 'edit' && $id > 0) {
     $record = $DB->get_record('local_studentprofile_colleges', ['id' => $id], '*', MUST_EXIST);
+    if (!empty($record->degrees)) {
+        $record->degrees = array_map('trim', explode(',', $record->degrees));
+    } else {
+        $record->degrees = [];
+    }
     $form->set_data($record);
 }
 
@@ -165,10 +170,19 @@ if ($form->is_cancelled()) {
 } else if ($data = $form->get_data()) {
     require_sesskey();
     $now = time();
+    
+    $degreesval = '';
+    if (!empty($data->degrees) && is_array($data->degrees)) {
+        $degreesval = implode(',', array_filter(array_map('trim', $data->degrees)));
+    } else if (is_string($data->degrees)) {
+        $degreesval = clean_param(trim($data->degrees), PARAM_TEXT);
+    }
+
     // Sanitize inputs server-side.
     $record = new stdClass();
     $record->shortname    = clean_param(trim($data->shortname), PARAM_TEXT);
     $record->collegename  = clean_param(trim($data->collegename), PARAM_TEXT);
+    $record->degrees      = $degreesval;
     $record->sortorder    = (int)$data->sortorder;
     $record->timemodified = $now;
 

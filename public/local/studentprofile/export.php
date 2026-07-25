@@ -40,7 +40,8 @@ fputcsv($output, [
     get_string('collegename', 'local_studentprofile'),
     get_string('shortname', 'local_studentprofile'),
     get_string('admissionyear', 'local_studentprofile'),
-    get_string('degree', 'local_studentprofile')
+    get_string('degree', 'local_studentprofile'),
+    get_string('phone2')
 ]);
 
 // Fetch data using participants table logic.
@@ -111,7 +112,8 @@ if (!empty($table->rawdata)) {
             $usercustom ? $usercustom->collegename : '',
             $usercustom ? $usercustom->shortname : '',
             $usercustom ? $usercustom->admissionyear : '',
-            $usercustom ? $usercustom->degree : ''
+            $usercustom ? $usercustom->degree : '',
+            $usercustom ? $usercustom->mobileno : ''
         ]);
     }
 }

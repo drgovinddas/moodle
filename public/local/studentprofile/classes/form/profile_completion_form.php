@@ -42,10 +42,46 @@ class profile_completion_form extends \moodleform {
         $mform->addRule('lastname', get_string('maximumchars', '', 100), 'maxlength', 100, 'client');
         $mform->addHelpButton('lastname', 'lastname', 'local_studentprofile');
 
+        // --- Mobile Number ---
+        $mform->addElement('text', 'phone2', get_string('phone2'), ['maxlength' => 20, 'size' => 20]);
+        $mform->setType('phone2', PARAM_NOTAGS);
+        $mform->addRule('phone2', null, 'required', null, 'client');
+
+        // --- Roll Number ---
         $mform->addElement('text', 'rollno', get_string('rollno', 'local_studentprofile'), ['maxlength' => 50, 'size' => 20]);
         $mform->setType('rollno', PARAM_TEXT);
         $mform->addRule('rollno', get_string('maximumchars', '', 50), 'maxlength', 50, 'client');
         $mform->addHelpButton('rollno', 'rollno', 'local_studentprofile');
+
+        // --- Degree Type (UG / PG) ---
+        $typeoptions = [
+            ''   => get_string('choosedots'),
+            'UG' => get_string('ugpg_ug', 'local_studentprofile'),
+            'PG' => get_string('ugpg_pg', 'local_studentprofile'),
+        ];
+        $mform->addElement('select', 'degreetype', get_string('degreetype', 'local_studentprofile'), $typeoptions, ['id' => 'id_degreetype_select']);
+        $mform->addRule('degreetype', null, 'required', null, 'client');
+        $mform->addHelpButton('degreetype', 'degreetype', 'local_studentprofile');
+
+        // --- Degree ---
+        $degrees = $DB->get_records('local_studentprofile_degrees', null, 'sortorder ASC, degreename ASC');
+        $degreeoptions = ['' => get_string('choosedots')];
+        foreach ($degrees as $d) {
+            $degreeoptions[$d->degreename] = $d->degreename;
+        }
+        // Fallback to config if no DB degrees exist yet.
+        if (count($degrees) === 0) {
+            $rawdegrees = explode("\n", str_replace("\r", "", (string)get_config('local_studentprofile', 'degrees')));
+            foreach ($rawdegrees as $deg) {
+                $deg = trim($deg);
+                if (!empty($deg)) {
+                    $degreeoptions[$deg] = $deg;
+                }
+            }
+        }
+        $mform->addElement('select', 'degree', get_string('degree', 'local_studentprofile'), $degreeoptions, ['id' => 'id_degree_select']);
+        $mform->addRule('degree', null, 'required', null, 'client');
+        $mform->addHelpButton('degree', 'degree', 'local_studentprofile');
 
         // --- College Selection ---
         // Build options from the DB-managed list.
@@ -85,36 +121,6 @@ class profile_completion_form extends \moodleform {
         $mform->addElement('select', 'admissionyear', get_string('admissionyear', 'local_studentprofile'), $yearoptions);
         $mform->addRule('admissionyear', null, 'required', null, 'client');
         $mform->addHelpButton('admissionyear', 'admissionyear', 'local_studentprofile');
-
-        // --- Degree Type (UG / PG) ---
-        $typeoptions = [
-            ''   => get_string('choosedots'),
-            'UG' => get_string('ugpg_ug', 'local_studentprofile'),
-            'PG' => get_string('ugpg_pg', 'local_studentprofile'),
-        ];
-        $mform->addElement('select', 'degreetype', get_string('degreetype', 'local_studentprofile'), $typeoptions, ['id' => 'id_degreetype_select']);
-        $mform->addRule('degreetype', null, 'required', null, 'client');
-        $mform->addHelpButton('degreetype', 'degreetype', 'local_studentprofile');
-
-        // --- Degree ---
-        $degrees = $DB->get_records('local_studentprofile_degrees', null, 'sortorder ASC, degreename ASC');
-        $degreeoptions = ['' => get_string('choosedots')];
-        foreach ($degrees as $d) {
-            $degreeoptions[$d->degreename] = $d->degreename;
-        }
-        // Fallback to config if no DB degrees exist yet.
-        if (count($degrees) === 0) {
-            $rawdegrees = explode("\n", str_replace("\r", "", (string)get_config('local_studentprofile', 'degrees')));
-            foreach ($rawdegrees as $deg) {
-                $deg = trim($deg);
-                if (!empty($deg)) {
-                    $degreeoptions[$deg] = $deg;
-                }
-            }
-        }
-        $mform->addElement('select', 'degree', get_string('degree', 'local_studentprofile'), $degreeoptions, ['id' => 'id_degree_select']);
-        $mform->addRule('degree', null, 'required', null, 'client');
-        $mform->addHelpButton('degree', 'degree', 'local_studentprofile');
 
         $this->add_action_buttons(false, get_string('savechanges'));
     }
