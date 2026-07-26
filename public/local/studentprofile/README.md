@@ -1,41 +1,67 @@
-# Local Student Profile Plugin
+# Local Student Profile Plugin (`local_studentprofile`)
 
-This Moodle plugin (`local_studentprofile`) forces students to complete their profiles upon their first login (typically via Google OAuth). It captures extended information such as College, Degree, Degree Type, and Admission Year, which is then used to automatically assign students to specific courses based on dynamic admin-defined rules.
+The `local_studentprofile` plugin for Moodle enforces mandatory extended profile completion for students upon login (especially useful with Google OAuth2 login), provides centralized master management for Colleges and Degrees, automates course enrolments using a visual dynamic rules engine, manages roll number verification workflows, replaces the standard Moodle participants list with an advanced filterable directory, and supports bulk CSV import/export operations.
 
-## Features
+---
 
-1. **Mandatory Profile Completion:** Forces students to fill out missing profile fields before they can access the dashboard.
-2. **College & Degree Management:** Admins can manage a centralized list of allowed Colleges and Degrees in the Site Administration.
-3. **Roll Number Assignment:** Admins can assign permanent or temporary roll numbers to students who have completed their profiles.
-4. **Course Assignment Rules Engine:** A powerful dynamic rules engine to auto-enroll students into courses based on their profile data.
+## 🌟 Key Features
 
-## Course Assignment Rules Engine
+1. **Mandatory Profile Completion & Session Redirection**
+   - Intercepts student logins via the `user_loggedin` event observer.
+   - Redirects uncompleted profiles to `/local/studentprofile/complete.php` via the `after_config` hook.
+   - Collects personal details (First Name, Middle Name, Last Name, Phone Number), Degree Type (UG/PG), Degree Name, College Name, Roll Number, and Admission Year.
+   - Synchronizes basic profile fields (First/Last name, Phone Number) back to Moodle's core `mdl_user` table.
 
-The rules engine automatically evaluates a student's profile upon completion and enrolls them into designated courses if they meet specific criteria.
+2. **Auto-Saving & Draft Recovery**
+   - Periodically auto-saves unsubmitted form data via AJAX (`local_studentprofile_save_draft`).
+   - Displays a warning banner on the student Dashboard (`/my/`) if an unfinalized draft exists.
 
-### Accessing the Rules Engine
-Navigate to **Site Administration > Plugins > Local plugins > Student Profile Settings > Manage Rules** (`/local/studentprofile/admin_rules.php`).
+3. **Dynamic Course Assignment Rules Engine**
+   - Admins define automated course enrolment rules using a visual hierarchical query builder (`admin_rule_edit.php`).
+   - Supports `AND`/`OR` logic groups and operators across text fields, numeric fields, selection options, and computed temporal fields (`reporting_week`).
+   - Automatically enrols matching students into designated courses via Moodle's `manual` enrolment plugin upon profile completion.
+   - Includes priority-based evaluation and a **Stop Processing** flag.
+   - Supports **Retroactive Rule Execution** across all existing completed profiles from `admin_rules.php`.
 
-### How It Works
-1. **Trigger:** When a student successfully submits the profile completion form for the first time, a `profile_completed` event is fired.
-2. **Evaluation:** The system fetches all *Active* rules and evaluates them in ascending order of their **Priority**.
-3. **Action:** If a student's profile matches the conditions defined in a rule, they are automatically enrolled (via Manual Enrolment) into the courses selected for that rule.
-4. **Stop Processing:** If a matched rule has the "Stop Processing" flag set to Yes, the engine immediately halts and will not evaluate any subsequent lower-priority rules.
+4. **College & Degree Master Data Management**
+   - **College Management (`admin_colleges.php`):** Centralized CRUD with support for full names, acronym shortnames, long descriptions, and linked degrees. Automatically generates acronym shortnames on-the-fly when students input custom college names.
+   - **Degree Management (`admin_degrees.php`):** Master degree list with UG/PG classification.
+   - **Automated Installation Seeder & CLI (`db/install.php` & `cli_seed.php`):** Automatically seeds all master colleges (98) and degrees (58) from `seed_data.json` upon fresh plugin installation on any domain or manually via CLI.
 
-### Building Rules
-Rules are created using a dynamic **Visual Query Builder**. The builder supports nested logic groups (AND/OR) and allows conditions based on:
-- **Text Fields** (First Name, Last Name): Supports Operators like `=`, `!=`, `Starts With`, `Ends With`, `Contains`.
-- **Numeric Fields** (Admission Year): Supports Operators like `=`, `!=`, `<`, `<=`, `>`, `>=`, `Between`.
-- **Dropdown/Selection Fields** (College Name, Degree, Degree Type): Supports Operators like `=`, `!=`, `IN`, `NOT IN`.
+5. **Roll Number Verification Workflow**
+   - Administrative review table at `admin_rollnumbers.php`.
+   - Tracks approval status (`0 = Pending`, `1 = Approved`, `2 = Disapproved`).
+   - Allows inline AJAX editing of roll numbers and statuses via `rollno_updater.js`.
 
-### Retroactive Execution
-If you create new rules and wish to apply them to students who have *already* completed their profiles in the past, you can click the **Run Rules Engine on All Profiles** button on the Manage Rules page. This will iterate through all completed profiles and evaluate them against the current active rules.
+6. **Custom Course Participants Directory**
+   - Overrides standard Moodle course participants navigation (`/user/index.php`) and redirects to `/local/studentprofile/participants.php`.
+   - Provides real-time AJAX filtering by **College**, **Degree**, **Admission Year**, **Search Keywords**, and **Alphabetical Initials**.
 
-## Development & Architecture
+7. **Bulk Data Operations (CSV Import & Export)**
+   - **CSV Export (`admin_export_profiles.php`):** Export completed student records with academic metadata, email, and roll number statuses.
+   - **CSV Import (`admin_import_profiles.php`):** Bulk update or create student profiles from CSV uploads matched by email address.
 
-- **Schema:** 
-  - `local_studentprofile_data`: Stores the submitted profile fields for each user.
-  - `local_studentprofile_rules`: Stores the rule definitions, statuses, priorities, and conditions (as JSON).
-  - `local_studentprofile_colleges` / `local_studentprofile_degrees`: Stores the master lists of valid options.
-- **Rule Engine Core:** The evaluation logic resides in `\local_studentprofile\rule_engine` (`classes/rule_engine.php`), which recursively parses the JSON condition tree.
-- **Frontend Builder:** The custom visual query builder is built using jQuery and AMD (`amd/src/rule_builder.js`) and serializes the DOM state into JSON upon form submission.
+8. **OAuth2 Integration & Admin Settings**
+   - Enabling mandatory completion automatically configures Google OAuth2 issuers (`requireconfirmation = 0`) so students seamlessly transition from Google login directly to profile completion.
+
+---
+
+## 🛠️ Architecture & Database Schema
+
+### Database Tables
+- `local_studentprofile_data`: Stores student extended profile records, draft state JSON, and roll number statuses.
+- `local_studentprofile_rules`: Stores rule conditions (JSON tree), target course IDs, priority, and status.
+- `local_studentprofile_colleges`: Stores master list of colleges, shortname acronyms, and associated degrees.
+- `local_studentprofile_degrees`: Stores master list of degrees and degree types (UG/PG).
+
+### Key Classes & Entry Points
+- `\local_studentprofile\hook\after_config`: Navigation interception hook for redirection.
+- `\local_studentprofile\observer`: Event listeners for `user_loggedin` and `profile_completed`.
+- `\local_studentprofile\rule_engine`: Recursive rule evaluation core logic.
+- `\local_studentprofile\external`: Web service endpoints for participant table rendering, draft saving, and roll number updates.
+- `db/install.php`: Post-install hook that populates all 98 colleges and 58 degrees from `seed_data.json` automatically.
+
+---
+
+## 📜 License
+GNU GPL v3 or later
