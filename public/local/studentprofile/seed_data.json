@@ -1,0 +1,982 @@
+{
+    "degrees": [
+        {
+            "degreename": "MBBS",
+            "degreetype": "UG",
+            "sortorder": 1
+        },
+        {
+            "degreename": "BDS",
+            "degreetype": "UG",
+            "sortorder": 2
+        },
+        {
+            "degreename": "BSc Nursing",
+            "degreetype": "UG",
+            "sortorder": 3
+        },
+        {
+            "degreename": "BPT",
+            "degreetype": "UG",
+            "sortorder": 4
+        },
+        {
+            "degreename": "BOT",
+            "degreetype": "UG",
+            "sortorder": 5
+        },
+        {
+            "degreename": "BASLP",
+            "degreetype": "UG",
+            "sortorder": 6
+        },
+        {
+            "degreename": "BSc Medical Laboratory Technology",
+            "degreetype": "UG",
+            "sortorder": 7
+        },
+        {
+            "degreename": "BSc Radiology",
+            "degreetype": "UG",
+            "sortorder": 8
+        },
+        {
+            "degreename": "BSc Operation Theatre Technology",
+            "degreetype": "UG",
+            "sortorder": 9
+        },
+        {
+            "degreename": "BSc Optometry",
+            "degreetype": "UG",
+            "sortorder": 10
+        },
+        {
+            "degreename": "BSc Emergency Medicine",
+            "degreetype": "UG",
+            "sortorder": 11
+        },
+        {
+            "degreename": "MD",
+            "degreetype": "PG",
+            "sortorder": 12
+        },
+        {
+            "degreename": "MS",
+            "degreetype": "PG",
+            "sortorder": 13
+        },
+        {
+            "degreename": "DNB",
+            "degreetype": "PG",
+            "sortorder": 14
+        },
+        {
+            "degreename": "MSc Nursing",
+            "degreetype": "PG",
+            "sortorder": 15
+        },
+        {
+            "degreename": "MPT",
+            "degreetype": "PG",
+            "sortorder": 16
+        },
+        {
+            "degreename": "MHA",
+            "degreetype": "PG",
+            "sortorder": 17
+        },
+        {
+            "degreename": "MPH",
+            "degreetype": "PG",
+            "sortorder": 18
+        },
+        {
+            "degreename": "MD General Medicine",
+            "degreetype": "PG",
+            "sortorder": 19
+        },
+        {
+            "degreename": "MD Pediatrics",
+            "degreetype": "PG",
+            "sortorder": 20
+        },
+        {
+            "degreename": "MD Dermatology",
+            "degreetype": "PG",
+            "sortorder": 21
+        },
+        {
+            "degreename": "MD Psychiatry",
+            "degreetype": "PG",
+            "sortorder": 22
+        },
+        {
+            "degreename": "MD Radiology",
+            "degreetype": "PG",
+            "sortorder": 23
+        },
+        {
+            "degreename": "MD Anesthesiology",
+            "degreetype": "PG",
+            "sortorder": 24
+        },
+        {
+            "degreename": "MD Pathology",
+            "degreetype": "PG",
+            "sortorder": 25
+        },
+        {
+            "degreename": "MD Pharmacology",
+            "degreetype": "PG",
+            "sortorder": 26
+        },
+        {
+            "degreename": "MD Microbiology",
+            "degreetype": "PG",
+            "sortorder": 27
+        },
+        {
+            "degreename": "MD Community Medicine",
+            "degreetype": "PG",
+            "sortorder": 28
+        },
+        {
+            "degreename": "MD Forensic Medicine",
+            "degreetype": "PG",
+            "sortorder": 29
+        },
+        {
+            "degreename": "MD Emergency Medicine",
+            "degreetype": "PG",
+            "sortorder": 30
+        },
+        {
+            "degreename": "MD Respiratory Medicine",
+            "degreetype": "PG",
+            "sortorder": 31
+        },
+        {
+            "degreename": "MS General Surgery",
+            "degreetype": "PG",
+            "sortorder": 32
+        },
+        {
+            "degreename": "MS Orthopedics",
+            "degreetype": "PG",
+            "sortorder": 33
+        },
+        {
+            "degreename": "MS ENT",
+            "degreetype": "PG",
+            "sortorder": 34
+        },
+        {
+            "degreename": "MS Ophthalmology",
+            "degreetype": "PG",
+            "sortorder": 35
+        },
+        {
+            "degreename": "MS Obstetrics and Gynecology",
+            "degreetype": "PG",
+            "sortorder": 36
+        },
+        {
+            "degreename": "DM Cardiology",
+            "degreetype": "PG",
+            "sortorder": 37
+        },
+        {
+            "degreename": "DM Neurology",
+            "degreetype": "PG",
+            "sortorder": 38
+        },
+        {
+            "degreename": "DM Nephrology",
+            "degreetype": "PG",
+            "sortorder": 39
+        },
+        {
+            "degreename": "DM Gastroenterology",
+            "degreetype": "PG",
+            "sortorder": 40
+        },
+        {
+            "degreename": "DM Endocrinology",
+            "degreetype": "PG",
+            "sortorder": 41
+        },
+        {
+            "degreename": "DM Medical Oncology",
+            "degreetype": "PG",
+            "sortorder": 42
+        },
+        {
+            "degreename": "DM Critical Care Medicine",
+            "degreetype": "PG",
+            "sortorder": 43
+        },
+        {
+            "degreename": "MCh Neurosurgery",
+            "degreetype": "PG",
+            "sortorder": 44
+        },
+        {
+            "degreename": "MCh Urology",
+            "degreetype": "PG",
+            "sortorder": 45
+        },
+        {
+            "degreename": "MCh Plastic Surgery",
+            "degreetype": "PG",
+            "sortorder": 46
+        },
+        {
+            "degreename": "MCh Surgical Oncology",
+            "degreetype": "PG",
+            "sortorder": 47
+        },
+        {
+            "degreename": "MCh Pediatric Surgery",
+            "degreetype": "PG",
+            "sortorder": 48
+        },
+        {
+            "degreename": "MCh Cardiothoracic Surgery",
+            "degreetype": "PG",
+            "sortorder": 49
+        },
+        {
+            "degreename": "BHMS",
+            "degreetype": "UG",
+            "sortorder": 50
+        },
+        {
+            "degreename": "MD (Hom) Organon of Medicine",
+            "degreetype": "PG",
+            "sortorder": 51
+        },
+        {
+            "degreename": "MD (Hom) Materia Medica",
+            "degreetype": "PG",
+            "sortorder": 52
+        },
+        {
+            "degreename": "MD (Hom) Repertory",
+            "degreetype": "PG",
+            "sortorder": 53
+        },
+        {
+            "degreename": "MD (Hom) Practice of Medicine",
+            "degreetype": "PG",
+            "sortorder": 54
+        },
+        {
+            "degreename": "MD (Hom) Pharmacy",
+            "degreetype": "PG",
+            "sortorder": 55
+        },
+        {
+            "degreename": "MD (Hom) Pediatrics",
+            "degreetype": "PG",
+            "sortorder": 56
+        },
+        {
+            "degreename": "MD (Hom) Psychiatry",
+            "degreetype": "PG",
+            "sortorder": 57
+        },
+        {
+            "degreename": "PhD in Homeopathy",
+            "degreetype": "PG",
+            "sortorder": 58
+        }
+    ],
+    "colleges": [
+        {
+            "shortname": "MCN",
+            "collegename": "my collage name",
+            "longname": "",
+            "degrees": "",
+            "sortorder": 0
+        },
+        {
+            "shortname": "AIIMS-RJT",
+            "collegename": "AIIMS, Rajkot",
+            "longname": "AIIMS, Rajkot",
+            "degrees": "MBBS,BHMS",
+            "sortorder": 1
+        },
+        {
+            "shortname": "BJMC-AHD",
+            "collegename": "B.J. Medical College, Ahmedabad",
+            "longname": "B.J. Medical College, Ahmedabad",
+            "degrees": "MBBS",
+            "sortorder": 2
+        },
+        {
+            "shortname": "ESIC-NRD",
+            "collegename": "ESIC Medical College, Naroda, Ahmedabad",
+            "longname": "ESIC Medical College, Naroda, Ahmedabad",
+            "degrees": "MBBS",
+            "sortorder": 3
+        },
+        {
+            "shortname": "GMC-BHV",
+            "collegename": "Government Medical College, Bhavnagar",
+            "longname": "Government Medical College, Bhavnagar",
+            "degrees": "MBBS",
+            "sortorder": 4
+        },
+        {
+            "shortname": "GMC-SRT",
+            "collegename": "Government Medical College, Surat",
+            "longname": "Government Medical College, Surat",
+            "degrees": "MBBS",
+            "sortorder": 5
+        },
+        {
+            "shortname": "MCB-VDR",
+            "collegename": "Medical College, Baroda",
+            "longname": "Medical College, Baroda",
+            "degrees": "MBBS",
+            "sortorder": 6
+        },
+        {
+            "shortname": "MPSMC-JMN",
+            "collegename": "M.P. Shah Medical College, Jamnagar",
+            "longname": "M.P. Shah Medical College, Jamnagar",
+            "degrees": "MBBS",
+            "sortorder": 7
+        },
+        {
+            "shortname": "NMMC-AHD",
+            "collegename": "Narendra Modi Medical College, Ahmedabad",
+            "longname": "Narendra Modi Medical College, Ahmedabad",
+            "degrees": "MBBS",
+            "sortorder": 8
+        },
+        {
+            "shortname": "PDUMC-RJT",
+            "collegename": "Pandit Deendayal Upadhyay Medical College, Rajkot",
+            "longname": "Pandit Deendayal Upadhyay Medical College, Rajkot",
+            "degrees": "MBBS",
+            "sortorder": 9
+        },
+        {
+            "shortname": "GMERS-SOL",
+            "collegename": "GMERS Medical College, Sola, Ahmedabad",
+            "longname": "GMERS Medical College, Sola, Ahmedabad",
+            "degrees": "MBBS",
+            "sortorder": 10
+        },
+        {
+            "shortname": "GMERS-GTR",
+            "collegename": "GMERS Medical College, Gotri, Vadodara",
+            "longname": "GMERS Medical College, Gotri, Vadodara",
+            "degrees": "MBBS",
+            "sortorder": 11
+        },
+        {
+            "shortname": "GMERS-GNR",
+            "collegename": "GMERS Medical College, Gandhinagar",
+            "longname": "GMERS Medical College, Gandhinagar",
+            "degrees": "MBBS",
+            "sortorder": 12
+        },
+        {
+            "shortname": "GMERS-PTN",
+            "collegename": "GMERS Medical College, Dharpur, Patan",
+            "longname": "GMERS Medical College, Dharpur, Patan",
+            "degrees": "MBBS",
+            "sortorder": 13
+        },
+        {
+            "shortname": "GMERS-VLS",
+            "collegename": "GMERS Medical College, Valsad",
+            "longname": "GMERS Medical College, Valsad",
+            "degrees": "MBBS",
+            "sortorder": 14
+        },
+        {
+            "shortname": "GMERS-HMT",
+            "collegename": "GMERS Medical College, Himmatnagar",
+            "longname": "GMERS Medical College, Himmatnagar",
+            "degrees": "MBBS",
+            "sortorder": 15
+        },
+        {
+            "shortname": "GMERS-JNG",
+            "collegename": "GMERS Medical College, Junagadh",
+            "longname": "GMERS Medical College, Junagadh",
+            "degrees": "MBBS",
+            "sortorder": 16
+        },
+        {
+            "shortname": "GMERS-VDN",
+            "collegename": "GMERS Medical College, Vadnagar, Mehsana",
+            "longname": "GMERS Medical College, Vadnagar, Mehsana",
+            "degrees": "MBBS",
+            "sortorder": 17
+        },
+        {
+            "shortname": "GMERS-MRB",
+            "collegename": "GMERS Medical College, Morbi",
+            "longname": "GMERS Medical College, Morbi",
+            "degrees": "MBBS",
+            "sortorder": 18
+        },
+        {
+            "shortname": "GMERS-GDH",
+            "collegename": "GMERS Medical College, Godhra",
+            "longname": "GMERS Medical College, Godhra",
+            "degrees": "MBBS",
+            "sortorder": 19
+        },
+        {
+            "shortname": "GMERS-PBD",
+            "collegename": "GMERS Medical College, Porbandar",
+            "longname": "GMERS Medical College, Porbandar",
+            "degrees": "MBBS",
+            "sortorder": 20
+        },
+        {
+            "shortname": "GMERS-NAV",
+            "collegename": "GMERS Medical College, Navsari",
+            "longname": "GMERS Medical College, Navsari",
+            "degrees": "MBBS",
+            "sortorder": 21
+        },
+        {
+            "shortname": "GMERS-RJP",
+            "collegename": "GMERS Medical College, Rajpipla",
+            "longname": "GMERS Medical College, Rajpipla",
+            "degrees": "MBBS",
+            "sortorder": 22
+        },
+        {
+            "shortname": "NHLMC-AHD",
+            "collegename": "Smt. NHL Municipal Medical College, Ahmedabad",
+            "longname": "Smt. NHL Municipal Medical College, Ahmedabad",
+            "degrees": "MBBS",
+            "sortorder": 23
+        },
+        {
+            "shortname": "SMIMER-SRT",
+            "collegename": "SMIMER, Surat",
+            "longname": "SMIMER, Surat",
+            "degrees": "MBBS",
+            "sortorder": 24
+        },
+        {
+            "shortname": "ACMR",
+            "collegename": "Ananya College of Medicine & Research",
+            "longname": "Ananya College of Medicine & Research",
+            "degrees": "MBBS",
+            "sortorder": 25
+        },
+        {
+            "shortname": "BANAS-MC",
+            "collegename": "Banas Medical College, Palanpur",
+            "longname": "Banas Medical College, Palanpur",
+            "degrees": "MBBS",
+            "sortorder": 26
+        },
+        {
+            "shortname": "BHAGYODAY-MC",
+            "collegename": "Bhagyoday Medical College",
+            "longname": "Bhagyoday Medical College",
+            "degrees": "MBBS",
+            "sortorder": 27
+        },
+        {
+            "shortname": "CUSHAH-MC",
+            "collegename": "C.U. Shah Medical College, Surendranagar",
+            "longname": "C.U. Shah Medical College, Surendranagar",
+            "degrees": "MBBS",
+            "sortorder": 28
+        },
+        {
+            "shortname": "KCP-MC",
+            "collegename": "Dr. Kiran C. Patel Medical College",
+            "longname": "Dr. Kiran C. Patel Medical College",
+            "degrees": "MBBS",
+            "sortorder": 29
+        },
+        {
+            "shortname": "MKSHAH-MC",
+            "collegename": "Dr. M.K. Shah Medical College, Ahmedabad",
+            "longname": "Dr. M.K. Shah Medical College, Ahmedabad",
+            "degrees": "MBBS",
+            "sortorder": 30
+        },
+        {
+            "shortname": "NDDESAI-MC",
+            "collegename": "Dr. N.D. Desai Faculty of Medical Science, Nadiad",
+            "longname": "Dr. N.D. Desai Faculty of Medical Science, Nadiad",
+            "degrees": "MBBS",
+            "sortorder": 31
+        },
+        {
+            "shortname": "GCS-MC",
+            "collegename": "GCS Medical College, Ahmedabad",
+            "longname": "GCS Medical College, Ahmedabad",
+            "degrees": "MBBS",
+            "sortorder": 32
+        },
+        {
+            "shortname": "GAIMS-BHUJ",
+            "collegename": "Gujarat Adani Institute of Medical Sciences, Bhuj",
+            "longname": "Gujarat Adani Institute of Medical Sciences, Bhuj",
+            "degrees": "MBBS",
+            "sortorder": 33
+        },
+        {
+            "shortname": "KIRAN-MC-SRT",
+            "collegename": "Kiran Medical College, Surat",
+            "longname": "Kiran Medical College, Surat",
+            "degrees": "MBBS",
+            "sortorder": 34
+        },
+        {
+            "shortname": "MPKB-ATK",
+            "collegename": "Matushri Prabhaben Khodabhai Boghara Medical College, Atkot",
+            "longname": "Matushri Prabhaben Khodabhai Boghara Medical College, Atkot",
+            "degrees": "MBBS",
+            "sortorder": 35
+        },
+        {
+            "shortname": "NOOTAN-MC",
+            "collegename": "Nootan Medical College, Mehsana",
+            "longname": "Nootan Medical College, Mehsana",
+            "degrees": "MBBS",
+            "sortorder": 36
+        },
+        {
+            "shortname": "PIMS-VDR",
+            "collegename": "Parul Institute of Medical Sciences, Vadodara",
+            "longname": "Parul Institute of Medical Sciences, Vadodara",
+            "degrees": "MBBS",
+            "sortorder": 37
+        },
+        {
+            "shortname": "PSMC-KRD",
+            "collegename": "Pramukhswami Medical College, Karamsad",
+            "longname": "Pramukhswami Medical College, Karamsad",
+            "degrees": "MBBS",
+            "sortorder": 38
+        },
+        {
+            "shortname": "SAL-MC",
+            "collegename": "SAL Institute of Medical Sciences, Ahmedabad",
+            "longname": "SAL Institute of Medical Sciences, Ahmedabad",
+            "degrees": "MBBS",
+            "sortorder": 39
+        },
+        {
+            "shortname": "SBKS-MC",
+            "collegename": "SBKS Medical Institute, Vadodara",
+            "longname": "SBKS Medical Institute, Vadodara",
+            "degrees": "MBBS",
+            "sortorder": 40
+        },
+        {
+            "shortname": "SHANTABAA-MC",
+            "collegename": "Shantabaa Medical College, Amreli",
+            "longname": "Shantabaa Medical College, Amreli",
+            "degrees": "MBBS",
+            "sortorder": 41
+        },
+        {
+            "shortname": "SIMS",
+            "collegename": "Swaminarayan Institute of Medical Sciences",
+            "longname": "Swaminarayan Institute of Medical Sciences",
+            "degrees": "MBBS",
+            "sortorder": 42
+        },
+        {
+            "shortname": "ZMCH-DHD",
+            "collegename": "Zydus Medical College & Hospital, Dahod",
+            "longname": "Zydus Medical College & Hospital, Dahod",
+            "degrees": "MBBS",
+            "sortorder": 43
+        },
+        {
+            "shortname": "HMC_901",
+            "collegename": "Aarihant Homoeopathic Medical College & Research Institute, Gandhinagar",
+            "longname": "Aarihant Homoeopathic Medical College & Research Institute, Gandhinagar",
+            "degrees": "BHMS",
+            "sortorder": 44
+        },
+        {
+            "shortname": "HMC_902",
+            "collegename": "Laxmiben Homoeopathy Institute & Research Centre, Mehsana",
+            "longname": "Laxmiben Homoeopathy Institute & Research Centre, Mehsana",
+            "degrees": "BHMS",
+            "sortorder": 45
+        },
+        {
+            "shortname": "HMC_903",
+            "collegename": "Shree Limbdi Vikas Trust Homoeopathic Medical College, Surendranagar",
+            "longname": "Shree Limbdi Vikas Trust Homoeopathic Medical College, Surendranagar",
+            "degrees": "BHMS",
+            "sortorder": 46
+        },
+        {
+            "shortname": "HMC_904",
+            "collegename": "Anand Homoeopathic Medical College and Research Institute, Anand",
+            "longname": "Anand Homoeopathic Medical College and Research Institute, Anand",
+            "degrees": "BHMS",
+            "sortorder": 47
+        },
+        {
+            "shortname": "HMC_905",
+            "collegename": "Baroda Homoeopathic Medical College, Vadodara",
+            "longname": "Baroda Homoeopathic Medical College, Vadodara",
+            "degrees": "BHMS",
+            "sortorder": 48
+        },
+        {
+            "shortname": "HMC_906",
+            "collegename": "Dr. V.H. Dave Homoeopathic Medical College, Anand",
+            "longname": "Dr. V.H. Dave Homoeopathic Medical College, Anand",
+            "degrees": "BHMS",
+            "sortorder": 49
+        },
+        {
+            "shortname": "HMC_907",
+            "collegename": "Jawaharlal Nehru Homoeopathic Medical College, Vadodara",
+            "longname": "Jawaharlal Nehru Homoeopathic Medical College, Vadodara",
+            "degrees": "BHMS",
+            "sortorder": 50
+        },
+        {
+            "shortname": "HMC_908",
+            "collegename": "Govt. Homoeopathic Medical College and Hospital, Dethali (Patan)",
+            "longname": "Govt. Homoeopathic Medical College and Hospital, Dethali (Patan)",
+            "degrees": "BHMS",
+            "sortorder": 51
+        },
+        {
+            "shortname": "HMC_909",
+            "collegename": "Sh. H.N. Shukla Homoeopathic Medical College & Hospital, Rajkot",
+            "longname": "Sh. H.N. Shukla Homoeopathic Medical College & Hospital, Rajkot",
+            "degrees": "BHMS",
+            "sortorder": 52
+        },
+        {
+            "shortname": "HMC_910",
+            "collegename": "Swami Vivekanand Homoeopathic Medical College & Hospital, Bhavnagar",
+            "longname": "Swami Vivekanand Homoeopathic Medical College & Hospital, Bhavnagar",
+            "degrees": "BHMS",
+            "sortorder": 53
+        },
+        {
+            "shortname": "HMC_911",
+            "collegename": "Vidhyadeep Homoeopathic Medical College and Research Center, Surat",
+            "longname": "Vidhyadeep Homoeopathic Medical College and Research Center, Surat",
+            "degrees": "BHMS",
+            "sortorder": 54
+        },
+        {
+            "shortname": "HMC_913",
+            "collegename": "Samarpan Trust's Shri Bachubhai Alabhai Dangar Homoeopathic Medical College, Rajkot",
+            "longname": "Samarpan Trust's Shri Bachubhai Alabhai Dangar Homoeopathic Medical College, Rajkot",
+            "degrees": "BHMS",
+            "sortorder": 55
+        },
+        {
+            "shortname": "HMC_914",
+            "collegename": "Ahmedabad Homoeopathic Medical College, Ahmedabad",
+            "longname": "Ahmedabad Homoeopathic Medical College, Ahmedabad",
+            "degrees": "BHMS",
+            "sortorder": 56
+        },
+        {
+            "shortname": "HMC_915",
+            "collegename": "Rajkot Homoeopathic Medical College, Rajkot",
+            "longname": "Rajkot Homoeopathic Medical College, Rajkot",
+            "degrees": "BHMS",
+            "sortorder": 57
+        },
+        {
+            "shortname": "HMC_916",
+            "collegename": "Aarya-Veer Homoeopathic Medical College, Rajkot",
+            "longname": "Aarya-Veer Homoeopathic Medical College, Rajkot",
+            "degrees": "BHMS",
+            "sortorder": 58
+        },
+        {
+            "shortname": "HMC_917",
+            "collegename": "S.S. Agarwal Homoeopathic Medical College, Navsari",
+            "longname": "S.S. Agarwal Homoeopathic Medical College, Navsari",
+            "degrees": "BHMS",
+            "sortorder": 59
+        },
+        {
+            "shortname": "HMC_918",
+            "collegename": "Ananya College of Homoeopathic, Kalol, Gandhinagar",
+            "longname": "Ananya College of Homoeopathic, Kalol, Gandhinagar",
+            "degrees": "BHMS",
+            "sortorder": 60
+        },
+        {
+            "shortname": "HMC_919",
+            "collegename": "Bhargva Homoeopathic Medical College, Anand",
+            "longname": "Bhargva Homoeopathic Medical College, Anand",
+            "degrees": "BHMS",
+            "sortorder": 61
+        },
+        {
+            "shortname": "HMC_920",
+            "collegename": "C.D. Pachchigar Homoeopathic Medical College, Surat",
+            "longname": "C.D. Pachchigar Homoeopathic Medical College, Surat",
+            "degrees": "BHMS",
+            "sortorder": 62
+        },
+        {
+            "shortname": "HMC_921",
+            "collegename": "Gujarat Homoeopathic Medical College, Savli, Vadodara",
+            "longname": "Gujarat Homoeopathic Medical College, Savli, Vadodara",
+            "degrees": "BHMS",
+            "sortorder": 63
+        },
+        {
+            "shortname": "HMC_922",
+            "collegename": "Gyan Jyot B.G. Garaiya Homoeopathy Medical College, Rajkot",
+            "longname": "Gyan Jyot B.G. Garaiya Homoeopathy Medical College, Rajkot",
+            "degrees": "BHMS",
+            "sortorder": 64
+        },
+        {
+            "shortname": "HMC_923",
+            "collegename": "Jay Jalaram Homoeopathic Medical College, Panchmahal",
+            "longname": "Jay Jalaram Homoeopathic Medical College, Panchmahal",
+            "degrees": "BHMS",
+            "sortorder": 65
+        },
+        {
+            "shortname": "HMC_924",
+            "collegename": "Kamdar Homoeopathy Medical College & Research Centre, Rajkot",
+            "longname": "Kamdar Homoeopathy Medical College & Research Centre, Rajkot",
+            "degrees": "BHMS",
+            "sortorder": 66
+        },
+        {
+            "shortname": "HMC_925",
+            "collegename": "Merchant Homoeopathic Medical College, Mehsana",
+            "longname": "Merchant Homoeopathic Medical College, Mehsana",
+            "degrees": "BHMS",
+            "sortorder": 67
+        },
+        {
+            "shortname": "HMC_927",
+            "collegename": "Parul Institute of Homoeopathy & Research, Vadodara",
+            "longname": "Parul Institute of Homoeopathy & Research, Vadodara",
+            "degrees": "BHMS",
+            "sortorder": 68
+        },
+        {
+            "shortname": "HMC_928",
+            "collegename": "Pioneer Homoeopathic Medical College, Vadodara",
+            "longname": "Pioneer Homoeopathic Medical College, Vadodara",
+            "degrees": "BHMS",
+            "sortorder": 69
+        },
+        {
+            "shortname": "HMC_929",
+            "collegename": "Shree Chotalal Nagindas Kothari Homoeopathic Medical College, Surat",
+            "longname": "Shree Chotalal Nagindas Kothari Homoeopathic Medical College, Surat",
+            "degrees": "BHMS",
+            "sortorder": 70
+        },
+        {
+            "shortname": "HMC_930",
+            "collegename": "Shree Mahalaxmi Mahila Homoeopathic Medical College, Vadodara",
+            "longname": "Shree Mahalaxmi Mahila Homoeopathic Medical College, Vadodara",
+            "degrees": "BHMS",
+            "sortorder": 71
+        },
+        {
+            "shortname": "HMC_931",
+            "collegename": "Shree Swaminarayan Homoeopathy College, Kalol",
+            "longname": "Shree Swaminarayan Homoeopathy College, Kalol",
+            "degrees": "BHMS",
+            "sortorder": 72
+        },
+        {
+            "shortname": "HMC_932",
+            "collegename": "Shri Shamlaji Homoeopathic Medical College and Research Institute, Godhra",
+            "longname": "Shri Shamlaji Homoeopathic Medical College and Research Institute, Godhra",
+            "degrees": "BHMS",
+            "sortorder": 73
+        },
+        {
+            "shortname": "HMC_933",
+            "collegename": "Noble Homoeopathic College & Research Institute, Junagadh",
+            "longname": "Noble Homoeopathic College & Research Institute, Junagadh",
+            "degrees": "BHMS",
+            "sortorder": 74
+        },
+        {
+            "shortname": "HMC_939",
+            "collegename": "Smt. A.J. Savla Homoeopathic Medical College and Research Institute, Mehsana",
+            "longname": "Smt. A.J. Savla Homoeopathic Medical College and Research Institute, Mehsana",
+            "degrees": "BHMS",
+            "sortorder": 75
+        },
+        {
+            "shortname": "HMC_940",
+            "collegename": "Smt. Malini Kishore Sanghavi Homoeopathic Medical College, Karjan, Vadodara",
+            "longname": "Smt. Malini Kishore Sanghavi Homoeopathic Medical College, Karjan, Vadodara",
+            "degrees": "BHMS",
+            "sortorder": 76
+        },
+        {
+            "shortname": "HMC_941",
+            "collegename": "Lalitaben Ramniklal Shah Homoeopathic Medical College, Rajkot",
+            "longname": "Lalitaben Ramniklal Shah Homoeopathic Medical College, Rajkot",
+            "degrees": "BHMS",
+            "sortorder": 77
+        },
+        {
+            "shortname": "HMC_942",
+            "collegename": "Smt. Vasantaben N. Vyas Homoeopathic Medical College & Hospital, Amreli",
+            "longname": "Smt. Vasantaben N. Vyas Homoeopathic Medical College & Hospital, Amreli",
+            "degrees": "BHMS",
+            "sortorder": 78
+        },
+        {
+            "shortname": "HMC_943",
+            "collegename": "Gandhinagar Homoeopathic Medical College, Ahmedabad",
+            "longname": "Gandhinagar Homoeopathic Medical College, Ahmedabad",
+            "degrees": "BHMS",
+            "sortorder": 79
+        },
+        {
+            "shortname": "BPT_GCPA",
+            "collegename": "Government Physiotherapy College, Ahmedabad",
+            "longname": "Government Physiotherapy College, Ahmedabad",
+            "degrees": "BPT",
+            "sortorder": 80
+        },
+        {
+            "shortname": "BPT_GCPJ",
+            "collegename": "Government Physiotherapy College, Jamnagar",
+            "longname": "Government Physiotherapy College, Jamnagar",
+            "degrees": "BPT",
+            "sortorder": 81
+        },
+        {
+            "shortname": "BPT_GCPS",
+            "collegename": "Government Physiotherapy College, Surat",
+            "longname": "Government Physiotherapy College, Surat",
+            "degrees": "BPT",
+            "sortorder": 82
+        },
+        {
+            "shortname": "BPT_GCPB",
+            "collegename": "Government Physiotherapy College, Bhavnagar",
+            "longname": "Government Physiotherapy College, Bhavnagar",
+            "degrees": "BPT",
+            "sortorder": 83
+        },
+        {
+            "shortname": "BPT_RPCP",
+            "collegename": "Ramanbhai Patel College of Physiotherapy, Charotar",
+            "longname": "Ramanbhai Patel College of Physiotherapy, Charotar",
+            "degrees": "BPT",
+            "sortorder": 84
+        },
+        {
+            "shortname": "BPT_SBB",
+            "collegename": "SBB College of Physiotherapy, Ahmedabad",
+            "longname": "SBB College of Physiotherapy, Ahmedabad",
+            "degrees": "BPT",
+            "sortorder": 85
+        },
+        {
+            "shortname": "BPT_JGCP",
+            "collegename": "JG College of Physiotherapy, Ahmedabad",
+            "longname": "JG College of Physiotherapy, Ahmedabad",
+            "degrees": "BPT",
+            "sortorder": 86
+        },
+        {
+            "shortname": "BPT_AIMS",
+            "collegename": "Ahmedabad Institute of Medical Sciences College of Physiotherapy",
+            "longname": "Ahmedabad Institute of Medical Sciences College of Physiotherapy",
+            "degrees": "BPT",
+            "sortorder": 87
+        },
+        {
+            "shortname": "BPT_KPGU",
+            "collegename": "KPGU College of Physiotherapy, Vadodara",
+            "longname": "KPGU College of Physiotherapy, Vadodara",
+            "degrees": "BPT",
+            "sortorder": 88
+        },
+        {
+            "shortname": "BPT_MUCP",
+            "collegename": "Marwadi University College of Physiotherapy, Rajkot",
+            "longname": "Marwadi University College of Physiotherapy, Rajkot",
+            "degrees": "BPT",
+            "sortorder": 89
+        },
+        {
+            "shortname": "BPT_PUCP",
+            "collegename": "Parul Institute of Physiotherapy, Vadodara",
+            "longname": "Parul Institute of Physiotherapy, Vadodara",
+            "degrees": "BPT",
+            "sortorder": 90
+        },
+        {
+            "shortname": "BPT_SUMCP",
+            "collegename": "Sumandeep Vidyapeeth College of Physiotherapy, Vadodara",
+            "longname": "Sumandeep Vidyapeeth College of Physiotherapy, Vadodara",
+            "degrees": "BPT",
+            "sortorder": 91
+        },
+        {
+            "shortname": "BPT_NCP",
+            "collegename": "Nootan College of Physiotherapy, Visnagar",
+            "longname": "Nootan College of Physiotherapy, Visnagar",
+            "degrees": "BPT",
+            "sortorder": 92
+        },
+        {
+            "shortname": "BPT_BMU",
+            "collegename": "Bhagwan Mahavir College of Physiotherapy, Surat",
+            "longname": "Bhagwan Mahavir College of Physiotherapy, Surat",
+            "degrees": "BPT",
+            "sortorder": 93
+        },
+        {
+            "shortname": "BPT_SCP",
+            "collegename": "Shree Swaminarayan Physiotherapy College",
+            "longname": "Shree Swaminarayan Physiotherapy College",
+            "degrees": "BPT",
+            "sortorder": 94
+        },
+        {
+            "shortname": "BPT_PDUCP",
+            "collegename": "PDU College of Physiotherapy",
+            "longname": "PDU College of Physiotherapy",
+            "degrees": "BPT",
+            "sortorder": 95
+        },
+        {
+            "shortname": "BPT_AUCP",
+            "collegename": "Anand College of Physiotherapy",
+            "longname": "Anand College of Physiotherapy",
+            "degrees": "BPT",
+            "sortorder": 96
+        },
+        {
+            "shortname": "BPT_GMERSCP",
+            "collegename": "GMERS College of Physiotherapy",
+            "longname": "GMERS College of Physiotherapy",
+            "degrees": "BPT",
+            "sortorder": 97
+        }
+    ]
+}
