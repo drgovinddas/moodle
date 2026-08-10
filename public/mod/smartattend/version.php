@@ -9,7 +9,7 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2026062700; // The current module version (Date: YYYYMMDDXX).
+$plugin->version   = 2026080800; // The current module version (Date: YYYYMMDDXX).
 $plugin->requires  = 2022041900; // Requires this Moodle version (Moodle 4.0+).
 $plugin->component = 'mod_smartattend'; // Full name of the plugin (used for diagnostics).
 $plugin->cron      = 0;
